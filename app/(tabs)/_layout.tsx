@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tabs, useRouter } from 'expo-router';
+import { Tabs } from 'expo-router';
 import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import {
   Ionicons,
@@ -7,10 +7,6 @@ import {
   FontAwesome5,
 } from '@expo/vector-icons';
 import { colors } from '../../constants/theme';
-
-const TIPO_USUARIO: 'aluno' | 'instituicao' = 'instituicao'; // TODO: fetch from auth context or similar
-
-const isAluno = TIPO_USUARIO === 'aluno';
 
 const TAB_ICONS: Record<string, (focused: boolean) => React.ReactNode> = {
   Home: (f) => (
@@ -54,16 +50,6 @@ const LABELS: Record<string, string> = {
 };
 
 export default function TabsLayout() {
-  const router = useRouter();
-
-  const irParaHome = () => {
-    if (isAluno) {
-      router.replace('/HomeAluno');
-    } else {
-      router.replace('/Home');
-    }
-  };
-
   return (
     <Tabs
       screenOptions={{
@@ -88,13 +74,7 @@ export default function TabsLayout() {
                   key={route.key}
                   testID={`tab-${route.name}`}
                   style={styles.tabItem}
-                  onPress={() => {
-                    if (route.name === 'Home') {
-                      irParaHome();
-                    } else {
-                      navigation.navigate(route.name);
-                    }
-                  }}
+                  onPress={() => navigation.navigate(route.name)}
                 >
                   <View
                     style={[
