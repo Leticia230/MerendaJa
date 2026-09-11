@@ -4,13 +4,11 @@ import { useRouter } from 'expo-router';
 
 import ChefLogo from '../components/ChefLogo';
 import { colors } from '../constants/theme';
-import { registrarParaNotificacoes } from './Notifica';
 
 export default function SplashScreen() {
   const router = useRouter();
 
   useEffect(() => {
-    registrarParaNotificacoes();
 
     const timer = setTimeout(() => {
       router.replace('/Inicio');
