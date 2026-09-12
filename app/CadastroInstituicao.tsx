@@ -13,16 +13,47 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { doc, setDoc } from 'firebase/firestore';
 import ScreenHeader from '../components/ScreenHeader';
 import LabeledInput from '../components/LabeledInput';
 import BotaoPrimario from '../components/BotaoPrimario';
 import { colors } from '../constants/theme';
 import { cadastrar } from '../components/auth';
-import { db } from '../components/firebaseConfig';
+
+// Mapa de erros do Firebase Auth para mensagens amigáveis
+const ERROS_CADASTRO: Record<string, { titulo: string; mensagem: string }> = {
+  'auth/email-already-in-use': {
+    titulo: 'E-mail já cadastrado',
+    mensagem: 'Já existe uma conta com este e-mail. Tente fazer login.',
+  },
+  'auth/invalid-email': {
+    titulo: 'E-mail inválido',
+    mensagem: 'Digite um endereço de e-mail válido.',
+  },
+  'auth/weak-password': {
+    titulo: 'Senha fraca',
+    mensagem: 'A senha precisa ter pelo menos 6 caracteres.',
+  },
+  'auth/network-request-failed': {
+    titulo: 'Sem conexão',
+    mensagem: 'Verifique sua internet e tente novamente.',
+  },
+  'auth/too-many-requests': {
+    titulo: 'Muitas tentativas',
+    mensagem: 'Aguarde alguns minutos antes de tentar novamente.',
+  },
+};
+
+// Mesma lógica pros dois casos (Alert.alert não é confiável no Expo Web).
+function mostrarAlerta(titulo: string, mensagem: string, aoFechar?: () => void) {
+  if (Platform.OS === 'web') {
+    window.alert(`${titulo}\n\n${mensagem}`);
+    aoFechar?.();
+  } else {
+    Alert.alert(titulo, mensagem, aoFechar ? [{ text: 'OK', onPress: aoFechar }] : undefined);
+  }
+}
 
 export default function RegisterInstitution() {
-
   const router = useRouter();
 
   const [email, setEmail] = useState('');
@@ -31,63 +62,64 @@ export default function RegisterInstitution() {
   const [pass2, setPass2] = useState('');
   const [carregando, setCarregando] = useState(false); // evita cliques duplicados
 
+  async function realizarCadastro() {
+    const emailNormalizado = email.trim().toLowerCase();
+    const inepNormalizado = inep.trim();
 
- async function realizarCadastro() {
+    if (!emailNormalizado || !inepNormalizado || !pass || !pass2) {
+      mostrarAlerta('Campos obrigatórios', 'Preencha todos os campos.');
+      return;
+    }
 
-  if (!email || !inep || !pass || !pass2) {
-    Alert.alert('Campos obrigatórios', 'Preencha todos os campos.');
-    return;
+    if (pass !== pass2) {
+      mostrarAlerta('Senhas diferentes', 'As senhas precisam ser iguais.');
+      return;
+    }
+
+    if (carregando) return; // evita múltiplos envios simultâneos
+
+    setCarregando(true);
+    console.log('[cadastro] iniciando...');
+
+    try {
+      console.log('[cadastro] chamando cadastrar()...');
+
+      // 'instituicao' é o tipo do usuário; o INEP vai como dado extra e é
+      // salvo junto no mesmo documento em Firestore (coleção "users"),
+      // sem precisar de um setDoc manual separado.
+      const resultado = await cadastrar(emailNormalizado, pass, 'instituicao', {
+        inep: inepNormalizado,
+      });
+
+      console.log('[cadastro] auth + firestore OK, uid:', resultado.user.uid);
+
+      // Navega direto após o sucesso — no Android/iOS o Alert some antes
+      // de qualquer confirmação atrapalhar; no web o window.alert já
+      // bloqueia a tela, então navegamos depois que a pessoa fecha ele.
+      if (Platform.OS === 'web') {
+        mostrarAlerta(
+          'Cadastro realizado!',
+          'A instituição foi cadastrada com sucesso.',
+          () => router.replace('/(tabs-instituicao)/Home')
+        );
+      } else {
+        router.replace('/(tabs-instituicao)/Home');
+        mostrarAlerta('Cadastro realizado!', 'A instituição foi cadastrada com sucesso.');
+      }
+    } catch (error: any) {
+      console.log('[cadastro] ERRO CAPTURADO:', error);
+
+      const erroConhecido = ERROS_CADASTRO[error?.code];
+
+      mostrarAlerta(
+        erroConhecido?.titulo ?? 'Erro no cadastro',
+        erroConhecido?.mensagem ??
+          `Não foi possível cadastrar a instituição. (${error?.code ?? 'erro desconhecido'})`
+      );
+    } finally {
+      setCarregando(false);
+    }
   }
-
-  if (pass !== pass2) {
-    Alert.alert('Senhas diferentes', 'As senhas precisam ser iguais.');
-    return;
-  }
-
-  setCarregando(true);
-  console.log('[cadastro] iniciando...');
-
-  try {
-    console.log('[cadastro] chamando cadastrar()...');
-    const resultado = await cadastrar(email, pass);
-    console.log('[cadastro] auth OK, uid:', resultado.user.uid);
-
-    const uid = resultado.user.uid;
-
-    console.log('[cadastro] salvando no firestore...');
-    await setDoc(doc(db, 'usuarios', uid), {
-      tipo: 'instituicao',
-      email: email,
-      inep: inep,
-    });
-    console.log('[cadastro] firestore OK');
-
-    setCarregando(false);
-    // 4. CADASTRO CONCLUÍDO
-setCarregando(false);
-
-if (Platform.OS === 'web') {
-  window.alert('Cadastro realizado! A instituição foi cadastrada com sucesso.');
-  router.replace('/Home');
-} else {
-  Alert.alert(
-    'Cadastro realizado!',
-    'A instituição foi cadastrada com sucesso.',
-    [
-      {
-        text: 'OK',
-        onPress: () => router.replace('/Home'),
-      },
-    ]
-  );
-}
-
-  } catch (error: any) {
-    console.log('[cadastro] ERRO CAPTURADO:', error);
-    setCarregando(false);
-    // ... resto dos ifs de erro
-  }
- }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -112,7 +144,11 @@ if (Platform.OS === 'web') {
             label="E-mail institucional"
             placeholder="seu@email.com"
             autoCapitalize="none"
+            autoCorrect={false}
             keyboardType="email-address"
+            autoComplete="email"
+            textContentType="username"
+            editable={!carregando}
             value={email}
             onChangeText={setEmail}
             containerStyle={styles.firstInput}
@@ -123,6 +159,7 @@ if (Platform.OS === 'web') {
             label="Código de INEP"
             placeholder="Digite o código do INEP"
             keyboardType="number-pad"
+            editable={!carregando}
             value={inep}
             onChangeText={setInep}
           />
@@ -132,6 +169,9 @@ if (Platform.OS === 'web') {
             label="Senha"
             placeholder="Digite sua senha"
             isPassword
+            autoComplete="password-new"
+            textContentType="newPassword"
+            editable={!carregando}
             value={pass}
             onChangeText={setPass}
           />
@@ -141,6 +181,9 @@ if (Platform.OS === 'web') {
             label="Confirmar senha"
             placeholder="Confirme sua senha"
             isPassword
+            autoComplete="password-new"
+            textContentType="newPassword"
+            editable={!carregando}
             value={pass2}
             onChangeText={setPass2}
           />

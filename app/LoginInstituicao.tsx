@@ -84,7 +84,7 @@ export default function LoginInstitution() {
 
       // Navega imediatamente após o sucesso — não depende do onPress
       // do Alert, que não dispara de forma confiável no Expo Web.
-      router.replace('/(tabs)/Home');
+      router.replace('/(tabs-instituicao)/Home');
 
       // Alert é só feedback visual, sem lógica de navegação dentro dele
       if (Platform.OS !== 'web') {

@@ -2,21 +2,17 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
-import {
-  doc,
-  setDoc,
-  serverTimestamp,
-} from 'firebase/firestore';
-
-import { auth, db } from './firebaseConfig';
+import { auth, db } from '../components/firebaseConfig';
 
 export type TipoUsuario = 'aluno' | 'instituicao';
 
 export async function cadastrar(
   email: string,
   senha: string,
-  tipo: TipoUsuario
+  tipo: TipoUsuario,
+  dadosExtras: Record<string, unknown> = {}
 ) {
   const usuario = await createUserWithEmailAndPassword(
     auth,
@@ -24,20 +20,20 @@ export async function cadastrar(
     senha
   );
 
-  // Salva os dados do usuário no Firestore
+  // Grava o tipo do usuário (e quaisquer dados extras, como nome e RM)
+  // no Firestore, usado depois pelo AuthContext e por telas como
+  // NovaTurma para listar os alunos cadastrados.
   await setDoc(doc(db, 'users', usuario.user.uid), {
-    email: email,
-    tipo: tipo,
-    criadoEm: serverTimestamp(),
+    email,
+    tipo,
+    ...dadosExtras,
+    criadoEm: new Date().toISOString(),
   });
 
   return usuario;
 }
 
-export async function login(
-  email: string,
-  senha: string
-) {
+export async function login(email: string, senha: string) {
   const usuario = await signInWithEmailAndPassword(
     auth,
     email,

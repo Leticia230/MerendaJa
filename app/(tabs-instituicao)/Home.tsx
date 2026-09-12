@@ -1,25 +1,23 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { colors } from '../../constants/theme';
+import { listarAlunos } from '../services/alunos';
+import { listarTurmas } from '../services/turmas';
+import { assinarCardapioDia, Refeicao } from '../services/cardapio';
+import { diaAbreviadoDeHoje, nomeDiaSemanaPtBR, dataPorExtensoPtBR } from '../services/data';
 
-const MEAL_COLORS: Record<string, string> = {
-  breakfast: '#FFD79A',
-  lunch: '#FFB27A',
-  snack: '#FFC845',
-};
-
-function MealRow({ title, time, color, icon }: any) {
+function MealRow({ titulo, horario, color, icon }: Refeicao) {
   return (
-    <View style={styles.mealRow} testID={`meal-${title}`}>
+    <View style={styles.mealRow} testID={`meal-${titulo}`}>
       <View style={{ flex: 1 }}>
-        <Text style={styles.mealTitle}>{title}</Text>
-        <Text style={styles.mealTime}>{time}</Text>
+        <Text style={styles.mealTitle}>{titulo}</Text>
+        <Text style={styles.mealTime}>{horario}</Text>
       </View>
       <View style={[styles.mealIcon, { backgroundColor: color }]}>
-        <MaterialCommunityIcons name={icon} size={24} color="#fff" />
+        <MaterialCommunityIcons name={icon as any} size={24} color="#fff" />
       </View>
     </View>
   );
@@ -27,6 +25,49 @@ function MealRow({ title, time, color, icon }: any) {
 
 export default function HomeScreen() {
   const router = useRouter();
+
+  const [totalAlunos, setTotalAlunos] = useState<number | null>(null);
+  const [totalTurmas, setTotalTurmas] = useState<number | null>(null);
+  const [refeicoesHoje, setRefeicoesHoje] = useState<Refeicao[]>([]);
+  const [carregandoRefeicoes, setCarregandoRefeicoes] = useState(true);
+
+  const diaHoje = diaAbreviadoDeHoje(); // null se for fim de semana
+
+  useEffect(() => {
+    listarAlunos()
+      .then((alunos) => setTotalAlunos(alunos.length))
+      .catch((e) => {
+        console.error('Erro ao carregar total de alunos:', e);
+        setTotalAlunos(0);
+      });
+
+    listarTurmas()
+      .then((turmas) => setTotalTurmas(turmas.length))
+      .catch((e) => {
+        console.error('Erro ao carregar total de turmas:', e);
+        setTotalTurmas(0);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (!diaHoje) {
+      // Fim de semana — não há cardápio cadastrado pra hoje.
+      setCarregandoRefeicoes(false);
+      return;
+    }
+
+    const unsubscribe = assinarCardapioDia(
+      diaHoje,
+      (refeicoes) => {
+        setRefeicoesHoje(refeicoes);
+        setCarregandoRefeicoes(false);
+      },
+      () => setCarregandoRefeicoes(false)
+    );
+
+    return unsubscribe;
+  }, [diaHoje]);
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
@@ -46,8 +87,8 @@ export default function HomeScreen() {
           onPress={() => router.push('/RefeicoesDia')}
         >
           <View style={{ flex: 1 }}>
-            <Text style={styles.dayTitle}>Segunda-feira</Text>
-            <Text style={styles.dayDate}>20 de Maio de 2024</Text>
+            <Text style={styles.dayTitle}>{nomeDiaSemanaPtBR()}</Text>
+            <Text style={styles.dayDate}>{dataPorExtensoPtBR()}</Text>
           </View>
           <MaterialCommunityIcons name="food-apple" size={44} color="#fff" />
         </Pressable>
@@ -73,26 +114,51 @@ export default function HomeScreen() {
         <Text style={styles.section}>Resumo do dia</Text>
         <View style={styles.summaryRow}>
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryValue}>128</Text>
+            {totalAlunos === null ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : (
+              <Text style={styles.summaryValue}>{totalAlunos}</Text>
+            )}
             <Text style={styles.summaryLabel}>Alunos</Text>
           </View>
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryValue}>05</Text>
+            {carregandoRefeicoes ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : (
+              <Text style={styles.summaryValue}>{refeicoesHoje.length}</Text>
+            )}
             <Text style={styles.summaryLabel}>Refeições</Text>
           </View>
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryValue}>12</Text>
+            {totalTurmas === null ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : (
+              <Text style={styles.summaryValue}>{totalTurmas}</Text>
+            )}
             <Text style={styles.summaryLabel}>Turmas</Text>
           </View>
         </View>
 
         <Text style={styles.section}>Próximas refeições</Text>
         <View style={styles.mealsCard}>
-          <MealRow title="Café da manhã" time="07:30 - 08:30" color={MEAL_COLORS.breakfast} icon="bread-slice" />
-          <View style={styles.divider} />
-          <MealRow title="Almoço" time="11:30 - 12:30" color={MEAL_COLORS.lunch} icon="food" />
-          <View style={styles.divider} />
-          <MealRow title="Lanche da tarde" time="15:30 - 16:00" color={MEAL_COLORS.snack} icon="fruit-cherries" />
+          {carregandoRefeicoes ? (
+            <ActivityIndicator color={colors.primary} style={{ padding: 20 }} />
+          ) : !diaHoje ? (
+            <Text style={styles.emptyText}>
+              Hoje é fim de semana — sem cardápio cadastrado.
+            </Text>
+          ) : refeicoesHoje.length === 0 ? (
+            <Text style={styles.emptyText}>
+              Nenhuma refeição cadastrada para hoje ainda.
+            </Text>
+          ) : (
+            refeicoesHoje.map((refeicao, i) => (
+              <React.Fragment key={i}>
+                <MealRow {...refeicao} />
+                {i < refeicoesHoje.length - 1 && <View style={styles.divider} />}
+              </React.Fragment>
+            ))
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -168,6 +234,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 14,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 74,
     shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowRadius: 6,
@@ -180,6 +248,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 16,
     padding: 8,
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: colors.textMuted,
+    fontSize: 13,
+    padding: 20,
   },
   mealRow: {
     flexDirection: 'row',

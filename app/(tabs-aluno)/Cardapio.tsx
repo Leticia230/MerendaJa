@@ -2,17 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { colors } from '../../constants/theme';
 import { assinarCardapioDia, Refeicao } from '../services/cardapio';
 
 const DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
 
-export default function CardapioScreen() {
+export default function CardapioAlunoScreen() {
   const [day, setDay] = useState('Seg');
   const [refeicoes, setRefeicoes] = useState<Refeicao[]>([]);
   const [carregando, setCarregando] = useState(true);
-  const router = useRouter();
 
   useEffect(() => {
     setCarregando(true);
@@ -23,21 +21,6 @@ export default function CardapioScreen() {
 
     return unsubscribe;
   }, [day]);
-
-  function abrirEdicao(refeicao: Refeicao, index: number) {
-    router.push({
-      pathname: '/AddRefeicao',
-      params: {
-        dia: day,
-        index: String(index),
-        titulo: refeicao.titulo,
-        horario: refeicao.horario,
-        desc: refeicao.desc,
-        icon: refeicao.icon,
-        color: refeicao.color,
-      },
-    });
-  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -68,16 +51,11 @@ export default function CardapioScreen() {
           <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
         ) : refeicoes.length === 0 ? (
           <Text style={styles.emptyText}>
-            Nenhuma refeição cadastrada para esse dia ainda.
+            A instituição ainda não cadastrou o cardápio desse dia.
           </Text>
         ) : (
           refeicoes.map((m, i) => (
-            <Pressable
-              key={i}
-              style={styles.mealCard}
-              testID={`cardapio-meal-${i}`}
-              onPress={() => abrirEdicao(m, i)}
-            >
+            <View key={i} style={styles.mealCard} testID={`cardapio-meal-${i}`}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.mealTitle}>{m.titulo}</Text>
                 <Text style={styles.mealHorario}>{m.horario}</Text>
@@ -86,17 +64,9 @@ export default function CardapioScreen() {
               <View style={[styles.mealIcon, { backgroundColor: m.color }]}>
                 <MaterialCommunityIcons name={m.icon as any} size={26} color="#fff" />
               </View>
-            </Pressable>
+            </View>
           ))
         )}
-
-        <Pressable
-          testID="add-refeicao"
-          style={styles.addBtn}
-          onPress={() => router.push({ pathname: '/AddRefeicao', params: { dia: day } })}
-        >
-          <Text style={styles.addBtnText}>Adicionar refeição</Text>
-        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -162,12 +132,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  addBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: 14,
-    padding: 15,
-    alignItems: 'center',
-    marginTop: 6,
-  },
-  addBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });

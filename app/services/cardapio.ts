@@ -9,6 +9,7 @@ import { db } from '../../components/firebaseConfig';
 export type Refeicao = {
   titulo: string;
   desc: string;
+  horario: string; // ex: '07:30 - 08:30'
   icon: string; // nome de um ícone do MaterialCommunityIcons
   color: string; // cor de fundo do ícone, ex: '#FFD79A'
 };
