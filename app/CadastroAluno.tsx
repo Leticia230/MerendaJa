@@ -1,8 +1,8 @@
-
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
+  TextInput,
   StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
@@ -20,6 +20,43 @@ import BotaoPrimario from '../components/BotaoPrimario';
 import { colors } from '../constants/theme';
 import { cadastrar } from '../components/auth';
 
+// Mapa de erros do Firebase Authentication
+const ERROS_CADASTRO: Record<
+  string,
+  { titulo: string; mensagem: string }
+> = {
+  'auth/email-already-in-use': {
+    titulo: 'E-mail já cadastrado',
+    mensagem:
+      'Já existe uma conta com este e-mail. Tente fazer login.',
+  },
+
+  'auth/invalid-email': {
+    titulo: 'E-mail inválido',
+    mensagem:
+      'Digite um endereço de e-mail válido.',
+  },
+
+  'auth/weak-password': {
+    titulo: 'Senha fraca',
+    mensagem:
+      'A senha precisa ter pelo menos 6 caracteres.',
+  },
+
+  'auth/network-request-failed': {
+    titulo: 'Sem conexão',
+    mensagem:
+      'Verifique sua internet e tente novamente.',
+  },
+
+  'auth/too-many-requests': {
+    titulo: 'Muitas tentativas',
+    mensagem:
+      'Aguarde alguns minutos antes de tentar novamente.',
+  },
+};
+
+// Componente de seleção
 function Select({
   placeholder,
   testID,
@@ -28,8 +65,13 @@ function Select({
   testID?: string;
 }) {
   return (
-    <Pressable testID={testID} style={styles.select}>
-      <Text style={styles.selectText}>{placeholder}</Text>
+    <Pressable
+      testID={testID}
+      style={styles.select}
+    >
+      <Text style={styles.selectText}>
+        {placeholder}
+      </Text>
 
       <Ionicons
         name="chevron-down"
@@ -43,40 +85,110 @@ function Select({
 export default function CadastroAluno() {
   const router = useRouter();
 
+  // Estados dos campos
   const [nome, setNome] = useState('');
   const [rm, setRm] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
 
+  // Estado de carregamento
+  const [carregando, setCarregando] = useState(false);
+
+  // Refs para navegação entre os campos
+  const rmInputRef = useRef<TextInput>(null);
+  const emailInputRef = useRef<TextInput>(null);
+  const senhaInputRef = useRef<TextInput>(null);
+
   async function realizarCadastro() {
-    if (!nome || !rm || !email || !senha) {
+    const nomeNormalizado = nome.trim();
+    const rmNormalizado = rm.trim();
+    const emailNormalizado = email.trim().toLowerCase();
+
+    // Validação dos campos obrigatórios
+    if (
+      !nomeNormalizado ||
+      !rmNormalizado ||
+      !emailNormalizado ||
+      !senha
+    ) {
       Alert.alert(
         'Campos obrigatórios',
         'Preencha nome, RM, e-mail e senha.'
       );
+
       return;
     }
 
+    // Validação da senha
+    if (senha.length < 6) {
+      Alert.alert(
+        'Senha fraca',
+        'A senha precisa ter pelo menos 6 caracteres.'
+      );
+
+      return;
+    }
+
+    // Evita múltiplos cadastros simultâneos
+    if (carregando) {
+      return;
+    }
+
+    setCarregando(true);
+
     try {
-      await cadastrar(email, senha);
+      console.log('Iniciando cadastro do aluno...');
+      console.log('E-mail:', emailNormalizado);
+      console.log('RM:', rmNormalizado);
+
+      // Cria a conta no Firebase Authentication
+      // e salva o tipo "aluno" no Firestore.
+      await cadastrar(
+        emailNormalizado,
+        senha,
+        'aluno'
+      );
+
+      console.log('Aluno cadastrado com sucesso!');
+
+      // Vai para a tela de Login depois do cadastro
+      router.replace('/Login');
+
+      // Exibe mensagem apenas no aplicativo nativo.
+      // No Expo Web, não dependemos do Alert para continuar o fluxo.
+      if (Platform.OS !== 'web') {
+        Alert.alert(
+          'Cadastro realizado!',
+          'O aluno foi cadastrado com sucesso.'
+        );
+      }
+    } catch (error: unknown) {
+      console.error(
+        'Erro ao cadastrar aluno:',
+        error
+      );
+
+      // Obtém o código do erro do Firebase
+      const codigoErro =
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error
+          ? String(
+              (error as { code?: unknown }).code
+            )
+          : '';
+
+      const erroConhecido =
+        ERROS_CADASTRO[codigoErro];
 
       Alert.alert(
-        'Cadastro realizado!',
-        'O aluno foi cadastrado com sucesso.',
-        [
-          {
-            text: 'OK',
-            onPress: () => router.replace('/Login'),
-          },
-        ]
+        erroConhecido?.titulo ??
+          'Erro no cadastro',
+        erroConhecido?.mensagem ??
+          'Não foi possível cadastrar o aluno. Verifique os dados e tente novamente.'
       );
-    } catch (error) {
-      console.error('Erro ao cadastrar aluno:', error);
-
-      Alert.alert(
-        'Erro no cadastro',
-        'Não foi possível cadastrar o aluno. Verifique os dados e tente novamente.'
-      );
+    } finally {
+      setCarregando(false);
     }
   }
 
@@ -85,13 +197,19 @@ export default function CadastroAluno() {
       <ScreenHeader title="" />
 
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.keyboard}
+        behavior={
+          Platform.OS === 'ios'
+            ? 'padding'
+            : undefined
+        }
       >
         <ScrollView
           contentContainerStyle={styles.body}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
+          {/* Ícone do aluno */}
           <View style={styles.avatar}>
             <Ionicons
               name="person"
@@ -100,28 +218,47 @@ export default function CadastroAluno() {
             />
           </View>
 
+          {/* Título */}
           <Text style={styles.title}>
             Cadastro de Aluno
           </Text>
 
+          {/* Nome */}
           <LabeledInput
             testID="aluno-nome-input"
             label="Nome do aluno"
             placeholder="Nome completo"
+            returnKeyType="next"
+            onSubmitEditing={() =>
+              rmInputRef.current?.focus()
+            }
+            blurOnSubmit={false}
+            editable={!carregando}
             value={nome}
             onChangeText={setNome}
-            containerStyle={{ marginTop: 16 }}
+            containerStyle={{
+              marginTop: 16,
+            }}
           />
 
+          {/* RM */}
           <LabeledInput
+            ref={rmInputRef}
             testID="aluno-rm-input"
             label="RM"
             placeholder="Número de matrícula"
             keyboardType="number-pad"
+            returnKeyType="next"
+            onSubmitEditing={() =>
+              emailInputRef.current?.focus()
+            }
+            blurOnSubmit={false}
+            editable={!carregando}
             value={rm}
             onChangeText={setRm}
           />
 
+          {/* Turma */}
           <View>
             <Text style={styles.label}>
               Turma
@@ -133,7 +270,8 @@ export default function CadastroAluno() {
             />
           </View>
 
-          <View style={{ marginTop: 14 }}>
+          {/* Período */}
+          <View style={styles.periodoContainer}>
             <Text style={styles.label}>
               Período
             </Text>
@@ -144,33 +282,64 @@ export default function CadastroAluno() {
             />
           </View>
 
+          {/* E-mail */}
           <LabeledInput
+            ref={emailInputRef}
             testID="aluno-email-input"
             label="E-mail institucional"
             placeholder="aluno@email.com"
             autoCapitalize="none"
+            autoCorrect={false}
             keyboardType="email-address"
+            autoComplete="email"
+            textContentType="username"
+            returnKeyType="next"
+            onSubmitEditing={() =>
+              senhaInputRef.current?.focus()
+            }
+            blurOnSubmit={false}
+            editable={!carregando}
             value={email}
             onChangeText={setEmail}
-            containerStyle={{ marginTop: 14 }}
+            containerStyle={{
+              marginTop: 14,
+            }}
           />
 
+          {/* Senha */}
           <LabeledInput
+            ref={senhaInputRef}
             testID="aluno-senha-input"
             label="Senha"
             placeholder="Digite uma senha"
-            secureTextEntry
+            isPassword
             autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="password-new"
+            textContentType="newPassword"
+            returnKeyType="done"
+            onSubmitEditing={realizarCadastro}
+            editable={!carregando}
             value={senha}
             onChangeText={setSenha}
-            containerStyle={{ marginTop: 14 }}
+            containerStyle={{
+              marginTop: 14,
+            }}
           />
 
+          {/* Botão de cadastro */}
           <BotaoPrimario
             testID="aluno-submit-button"
-            title="Cadastrar aluno"
+            title={
+              carregando
+                ? 'Cadastrando...'
+                : 'Cadastrar aluno'
+            }
             onPress={realizarCadastro}
-            style={{ marginTop: 12 }}
+            disabled={carregando}
+            style={{
+              marginTop: 12,
+            }}
           />
         </ScrollView>
       </KeyboardAvoidingView>
@@ -182,6 +351,10 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: colors.cream,
+  },
+
+  keyboard: {
+    flex: 1,
   },
 
   body: {
@@ -231,5 +404,8 @@ const styles = StyleSheet.create({
     color: colors.textLight,
     fontSize: 14,
   },
-});
 
+  periodoContainer: {
+    marginTop: 14,
+  },
+});

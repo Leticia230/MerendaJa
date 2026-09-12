@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
+  TextInput,
   StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
@@ -21,15 +22,51 @@ import { colors } from '../constants/theme';
 
 import { login } from '../components/auth';
 
+// Mapa de erros do Firebase Auth para mensagens amigáveis
+const ERROS_LOGIN: Record<string, { titulo: string; mensagem: string }> = {
+  'auth/user-not-found': {
+    titulo: 'Conta não encontrada',
+    mensagem: 'Não existe uma conta cadastrada com este e-mail.',
+  },
+  'auth/wrong-password': {
+    titulo: 'Senha incorreta',
+    mensagem: 'A senha informada está incorreta.',
+  },
+  'auth/invalid-credential': {
+    titulo: 'Login inválido',
+    mensagem: 'E-mail ou senha incorretos.',
+  },
+  'auth/invalid-email': {
+    titulo: 'E-mail inválido',
+    mensagem: 'Digite um endereço de e-mail válido.',
+  },
+  'auth/network-request-failed': {
+    titulo: 'Sem conexão',
+    mensagem: 'Verifique sua internet e tente novamente.',
+  },
+  'auth/too-many-requests': {
+    titulo: 'Muitas tentativas',
+    mensagem: 'Aguarde alguns minutos antes de tentar novamente.',
+  },
+};
+
 export default function LoginInstitution() {
   const router = useRouter();
 
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
+  const [carregando, setCarregando] = useState(false);
+
+  // Ref para permitir que o "próximo" do teclado pule do e-mail pra senha.
+  // Só funciona se LabeledInput encaminhar a ref para o TextInput interno
+  // (React.forwardRef). Se não encaminhar, isso é ignorado sem quebrar nada.
+  const passInputRef = useRef<TextInput>(null);
 
   async function realizarLogin() {
+    const emailNormalizado = email.trim().toLowerCase();
+
     // Verifica se os campos estão preenchidos
-    if (!email || !pass) {
+    if (!emailNormalizado || !pass) {
       Alert.alert(
         'Campos obrigatórios',
         'Digite seu e-mail e sua senha.'
@@ -37,63 +74,34 @@ export default function LoginInstitution() {
       return;
     }
 
+    if (carregando) return; // evita múltiplos toques/envios simultâneos
+
+    setCarregando(true);
+
     try {
       // Firebase verifica o e-mail e a senha
-      await login(email, pass);
+      await login(emailNormalizado, pass);
 
-      // Se chegou aqui, o login foi realizado
-      Alert.alert(
-        'Login realizado!',
-        'Bem-vindo ao Merenda Já.',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              router.replace('/(tabs)/Home');
-            },
-          },
-        ]
-      );
+      // Navega imediatamente após o sucesso — não depende do onPress
+      // do Alert, que não dispara de forma confiável no Expo Web.
+      router.replace('/(tabs)/Home');
+
+      // Alert é só feedback visual, sem lógica de navegação dentro dele
+      if (Platform.OS !== 'web') {
+        Alert.alert('Login realizado!', 'Bem-vindo ao Merenda Já.');
+      }
 
     } catch (error: any) {
       console.error('Erro no login:', error);
 
-      if (error.code === 'auth/user-not-found') {
-        Alert.alert(
-          'Conta não encontrada',
-          'Não existe uma conta cadastrada com este e-mail.'
-        );
-        return;
-      }
-
-      if (error.code === 'auth/wrong-password') {
-        Alert.alert(
-          'Senha incorreta',
-          'A senha informada está incorreta.'
-        );
-        return;
-      }
-
-      if (error.code === 'auth/invalid-credential') {
-        Alert.alert(
-          'Login inválido',
-          'E-mail ou senha incorretos.'
-        );
-        return;
-      }
-
-      if (error.code === 'auth/invalid-email') {
-        Alert.alert(
-          'E-mail inválido',
-          'Digite um endereço de e-mail válido.'
-        );
-        return;
-      }
+      const erroConhecido = ERROS_LOGIN[error?.code];
 
       Alert.alert(
-        'Erro no login',
-        'Não foi possível realizar o login. Tente novamente.'
+        erroConhecido?.titulo ?? 'Erro no login',
+        erroConhecido?.mensagem ?? 'Não foi possível realizar o login. Tente novamente.'
       );
+    } finally {
+      setCarregando(false);
     }
   }
 
@@ -130,23 +138,38 @@ export default function LoginInstitution() {
             label="E-mail institucional"
             placeholder="seu@email.com"
             autoCapitalize="none"
+            autoCorrect={false}
             keyboardType="email-address"
+            autoComplete="email"
+            textContentType="username"
+            returnKeyType="next"
+            onSubmitEditing={() => passInputRef.current?.focus()}
+            blurOnSubmit={false}
+            editable={!carregando}
             value={email}
             onChangeText={setEmail}
             containerStyle={styles.firstInput}
           />
 
           <LabeledInput
+            ref={passInputRef}
             testID="loginst-pass-input"
             label="Senha"
             placeholder="Digite sua senha"
             isPassword
+            autoComplete="password"
+            textContentType="password"
+            returnKeyType="done"
+            onSubmitEditing={realizarLogin}
+            editable={!carregando}
             value={pass}
             onChangeText={setPass}
           />
 
           <Pressable
             onPress={() => router.push('/RecuperarSenha')}
+            accessibilityRole="link"
+            accessibilityLabel="Esqueceu a senha?"
           >
             <Text style={styles.link}>
               Esqueceu a senha?
@@ -155,8 +178,9 @@ export default function LoginInstitution() {
 
           <BotaoPrimario
             testID="loginst-submit-button"
-            title="Entrar"
+            title={carregando ? 'Entrando...' : 'Entrar'}
             onPress={realizarLogin}
+            disabled={carregando}
             style={styles.button}
           />
 
@@ -169,6 +193,9 @@ export default function LoginInstitution() {
               onPress={() =>
                 router.push('/CadastroInstituicao')
               }
+              accessibilityRole="link"
+              accessibilityLabel="Criar conta"
+              disabled={carregando}
             >
               <Text
                 style={[

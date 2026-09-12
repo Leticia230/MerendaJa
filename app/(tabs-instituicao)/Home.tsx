@@ -52,6 +52,24 @@ export default function HomeScreen() {
           <MaterialCommunityIcons name="food-apple" size={44} color="#fff" />
         </Pressable>
 
+        <Text style={styles.section}>Ações rápidas</Text>
+        <Pressable
+          testID="cadastrar-aluno-button"
+          style={styles.quickAction}
+          onPress={() => router.push('/CadastroAluno')}
+        >
+          <View style={styles.quickActionIcon}>
+            <Ionicons name="person-add" size={22} color="#fff" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.quickActionTitle}>Cadastrar aluno</Text>
+            <Text style={styles.quickActionSubtitle}>
+              Adicione um novo aluno à instituição
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+        </Pressable>
+
         <Text style={styles.section}>Resumo do dia</Text>
         <View style={styles.summaryRow}>
           <View style={styles.summaryCard}>
@@ -120,6 +138,29 @@ const styles = StyleSheet.create({
     marginTop: 18,
     marginBottom: 10,
   },
+  quickAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 12,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  quickActionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickActionTitle: { fontSize: 14, fontWeight: '700', color: colors.textDark },
+  quickActionSubtitle: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
   summaryRow: { flexDirection: 'row', gap: 10 },
   summaryCard: {
     flex: 1,

@@ -1,118 +1,172 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Pressable, TextInput } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+
 import ScreenHeader from '../components/ScreenHeader';
 import LabeledInput from '../components/LabeledInput';
 import BotaoPrimario from '../components/BotaoPrimario';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../constants/theme';
+import { adicionarRefeicao, assinarCardapioDia, salvarRefeicoesDoDia, Refeicao } from '../app/services/cardapio';
 
-const OPCOES_REFEICAO = [
-  { value: 'cafe', label: 'Café da manhã' },
-  { value: 'almoco', label: 'Almoço' },
-  { value: 'janta', label: 'Janta' },
-];
+const CORES = ['#FFD79A', '#FFB27A', '#FFC845', '#FF9E7A', '#B7E4C7'];
+const ICONES = ['bread-slice', 'food', 'fruit-cherries', 'coffee', 'cup', 'food-apple'];
 
 export default function AddRefeicao() {
-  const [opcaoSelecionada, setOpcaoSelecionada] = useState('');
-  const [menuAberto, setMenuAberto] = useState(false);
   const router = useRouter();
-  const [nome, setNome] = useState('');
+  const params = useLocalSearchParams<{
+    dia: string;
+    index?: string;
+    titulo?: string;
+    desc?: string;
+    icon?: string;
+    color?: string;
+  }>();
 
-  const labelSelecionado =
-    OPCOES_REFEICAO.find((o) => o.value === opcaoSelecionada)?.label ??
-    'Selecione o tipo de refeição';
+  const modoEdicao = params.index !== undefined;
+
+  const [titulo, setTitulo] = useState(params.titulo ?? '');
+  const [desc, setDesc] = useState(params.desc ?? '');
+  const [icon, setIcon] = useState(params.icon ?? ICONES[0]);
+  const [color, setColor] = useState(params.color ?? CORES[0]);
+  const [salvando, setSalvando] = useState(false);
+
+  async function salvar() {
+    const tituloNormalizado = titulo.trim();
+    const descNormalizado = desc.trim();
+
+    if (!tituloNormalizado || !descNormalizado) {
+      Alert.alert('Campos obrigatórios', 'Preencha o título e a descrição da refeição.');
+      return;
+    }
+
+    if (!params.dia) {
+      Alert.alert('Erro', 'Dia da semana não informado.');
+      return;
+    }
+
+    setSalvando(true);
+
+    const refeicao: Refeicao = {
+      titulo: tituloNormalizado,
+      desc: descNormalizado,
+      icon,
+      color,
+    };
+
+    try {
+      if (modoEdicao) {
+        // Edição: precisamos da lista atual pra substituir só o item certo.
+        await new Promise<void>((resolve, reject) => {
+          const unsubscribe = assinarCardapioDia(
+            params.dia,
+            async (refeicoes) => {
+              unsubscribe();
+              try {
+                const index = Number(params.index);
+                const novaLista = [...refeicoes];
+                novaLista[index] = refeicao;
+                await salvarRefeicoesDoDia(params.dia, novaLista);
+                resolve();
+              } catch (e) {
+                reject(e);
+              }
+            },
+            reject
+          );
+        });
+      } else {
+        await adicionarRefeicao(params.dia, refeicao);
+      }
+
+      router.back();
+    } catch (error) {
+      console.error('Erro ao salvar refeição:', error);
+      Alert.alert('Erro', 'Não foi possível salvar a refeição. Tente novamente.');
+    } finally {
+      setSalvando(false);
+    }
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScreenHeader title="Adicionar refeição" />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.body}>
-          <View style={styles.avatar}>
-            <MaterialCommunityIcons name="bread-slice" size={38} color="#fff" />
-          </View>
+      <ScreenHeader title={modoEdicao ? 'Editar refeição' : 'Adicionar refeição'} />
 
-          <View>
-            <LabeledInput
-              label="Descrição"
-              placeholder="Digite os alimentos da refeição"
-              testID="descricao-input"
-            />
-          </View>
-
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
           <LabeledInput
-            testID="turma-nome-input"
-            label="Horario da refeição"
-            placeholder="10h00 - 10h20"
-            value={nome}
-            onChangeText={setNome}
-            containerStyle={{ marginTop: 16 }}
+            testID="refeicao-titulo-input"
+            label="Título"
+            placeholder="Ex: Almoço"
+            value={titulo}
+            onChangeText={setTitulo}
           />
 
           <LabeledInput
-            testID="turma-nome-input"
-            label="data refeição"
-            placeholder="07/04 - 12/04"
-            value={nome}
-            onChangeText={setNome}
-            containerStyle={{ marginTop: 16 }}
+            testID="refeicao-desc-input"
+            label="Descrição"
+            placeholder="Ex: Arroz, feijão, frango grelhado"
+            multiline
+            value={desc}
+            onChangeText={setDesc}
+            containerStyle={{ marginTop: 14 }}
           />
 
-          <Text style={styles.label}>Tipo de refeição</Text>
+          <Text style={styles.label}>Ícone</Text>
+          <View style={styles.row}>
+            {ICONES.map((i) => (
+              <Pressable
+                key={i}
+                testID={`icone-${i}`}
+                onPress={() => setIcon(i)}
+                style={[styles.iconOption, icon === i && styles.iconOptionActive]}
+              >
+                <MaterialCommunityIcons
+                  name={i as any}
+                  size={22}
+                  color={icon === i ? '#fff' : colors.textMuted}
+                />
+              </Pressable>
+            ))}
+          </View>
 
-          <Pressable
-            style={styles.select}
-            onPress={() => setMenuAberto((prev) => !prev)}
-          >
-            <Text
-              style={[
-                styles.selectText,
-                !opcaoSelecionada && { color: colors.textDark, opacity: 0.5 },
-              ]}
-            >
-              {labelSelecionado}
-            </Text>
-            <Ionicons
-              name={menuAberto ? 'chevron-up' : 'chevron-down'}
-              size={18}
-              color={colors.textDark}
-            />
-          </Pressable>
-
-          {menuAberto && (
-            <View style={styles.dropdown}>
-              {OPCOES_REFEICAO.map((opcao) => {
-                const ativo = opcao.value === opcaoSelecionada;
-                return (
-                  <Pressable
-                    key={opcao.value}
-                    style={[styles.dropdownItem, ativo && styles.dropdownItemAtivo]}
-                    onPress={() => {
-                      setOpcaoSelecionada(opcao.value);
-                      setMenuAberto(false);
-                    }}
-                  >
-                    <Text
-                      style={[
-                        styles.dropdownItemText,
-                        ativo && styles.dropdownItemTextAtivo,
-                      ]}
-                    >
-                      {opcao.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          )}
+          <Text style={styles.label}>Cor</Text>
+          <View style={styles.row}>
+            {CORES.map((c) => (
+              <Pressable
+                key={c}
+                testID={`cor-${c}`}
+                onPress={() => setColor(c)}
+                style={[
+                  styles.colorSwatch,
+                  { backgroundColor: c },
+                  color === c && styles.colorSwatchActive,
+                ]}
+              >
+                {color === c && <Ionicons name="checkmark" size={16} color="#fff" />}
+              </Pressable>
+            ))}
+          </View>
 
           <BotaoPrimario
-            testID="turma-save-button"
-            title="Enviar refeição"
-            onPress={() => router.back()}
-            style={{ marginTop: 22 }}
+            testID="salvar-refeicao-button"
+            title={salvando ? 'Salvando...' : modoEdicao ? 'Salvar alterações' : 'Adicionar'}
+            onPress={salvar}
+            disabled={salvando}
+            style={{ marginTop: 24 }}
           />
         </ScrollView>
       </KeyboardAvoidingView>
@@ -121,49 +175,40 @@ export default function AddRefeicao() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.splashBg },
-  body: { padding: 22, paddingTop: 4 },
-  avatar: {
-    width: 78, height: 78, borderRadius: 39,
-    backgroundColor: colors.primary,
-    alignSelf: 'center',
-    alignItems: 'center', justifyContent: 'center',
+  safe: { flex: 1, backgroundColor: colors.cream },
+  body: { padding: 22, paddingBottom: 40 },
+  label: {
+    fontSize: 13,
+    color: colors.textDark,
+    fontWeight: '600',
+    marginTop: 18,
     marginBottom: 8,
   },
-  label: { fontSize: 13, color: colors.textDark, fontWeight: '600', marginBottom: 6 },
-  select: {
-    backgroundColor: '#fff',
+  row: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
+  iconOption: {
+    width: 44,
+    height: 44,
     borderRadius: 12,
+    backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: colors.inputBorder,
-    height: 48,
-    paddingHorizontal: 14,
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
   },
-  selectText: { flex: 1, color: colors.textDark, fontSize: 14 },
-  dropdown: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.inputBorder,
-    marginTop: 6,
-    overflow: 'hidden',
-  },
-  dropdownItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-  },
-  dropdownItemAtivo: {
+  iconOptionActive: {
     backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
-  dropdownItemText: {
-    fontSize: 14,
-    color: colors.textDark,
+  colorSwatch: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
   },
-  dropdownItemTextAtivo: {
-    color: '#fff',
-    fontWeight: '600',
+  colorSwatchActive: {
+    borderColor: colors.textDark,
   },
 });
