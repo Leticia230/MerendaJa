@@ -1,74 +1,31 @@
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Pressable,
-  TextInput,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import {
-  collection,
-  onSnapshot,
-  query,
-  where,
-} from 'firebase/firestore';
-
 import { colors } from '../../constants/theme';
-import { db } from '../../components/firebaseConfig';
-
-type Turma = {
-  id: string;
-  name: string;
-  students: number;
-  instituicaoId: string;
-};
+import { assinarTurmas, Turma } from '../services/turmas';
 
 export default function TurmasScreen() {
   const router = useRouter();
-
   const [q, setQ] = useState('');
   const [turmas, setTurmas] = useState<Turma[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    // ID da instituição atualmente logada
-    // Depois podemos pegar esse ID diretamente do Firebase Auth.
-    const instituicaoId = 'ID_DA_INSTITUICAO';
-
-    const turmasRef = collection(db, 'turmas');
-
-    const turmasQuery = query(
-      turmasRef,
-      where('instituicaoId', '==', instituicaoId)
-    );
-
-    const unsubscribe = onSnapshot(
-      turmasQuery,
-      (snapshot) => {
-        const lista: Turma[] = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Turma[];
-
-        setTurmas(lista);
-        setLoading(false);
+    const unsubscribe = assinarTurmas(
+      (dados) => {
+        setTurmas(dados);
+        setCarregando(false);
       },
-      (error) => {
-        console.error('Erro ao carregar turmas:', error);
-        setLoading(false);
-      }
+      () => setCarregando(false)
     );
 
     return unsubscribe;
   }, []);
 
-  const filtered = turmas.filter((turma) =>
-    turma.name.toLowerCase().includes(q.toLowerCase())
+  const filtered = turmas.filter((t) =>
+    t.nome.toLowerCase().includes(q.toLowerCase())
   );
 
   return (
@@ -78,12 +35,7 @@ export default function TurmasScreen() {
       </View>
 
       <View style={styles.searchWrap}>
-        <Ionicons
-          name="search"
-          size={16}
-          color={colors.textMuted}
-        />
-
+        <Ionicons name="search" size={16} color={colors.textMuted} />
         <TextInput
           testID="turmas-search-input"
           value={q}
@@ -94,52 +46,31 @@ export default function TurmasScreen() {
         />
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.body}
-        showsVerticalScrollIndicator={false}
-      >
-        {loading ? (
-          <ActivityIndicator
-            size="small"
-            color={colors.primary}
-            style={{ marginTop: 30 }}
-          />
+      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+        {carregando ? (
+          <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
+        ) : turmas.length === 0 ? (
+          <Text style={styles.emptyText}>
+            Nenhuma turma cadastrada ainda. Toque em "Adicionar turma" pra criar a primeira.
+          </Text>
         ) : filtered.length === 0 ? (
-          <View style={styles.empty}>
-            <Ionicons
-              name="school-outline"
-              size={42}
-              color={colors.textMuted}
-            />
-
-            <Text style={styles.emptyTitle}>
-              Nenhuma turma cadastrada
-            </Text>
-
-            <Text style={styles.emptyText}>
-              As turmas cadastradas pela instituição aparecerão aqui.
-            </Text>
-          </View>
+          <Text style={styles.emptyText}>Nenhuma turma encontrada para "{q}".</Text>
         ) : (
-          filtered.map((turma) => (
+          filtered.map((t) => (
             <Pressable
-              key={turma.id}
+              key={t.id}
               style={styles.card}
-              testID={`turma-${turma.name}`}
+              testID={`turma-${t.nome}`}
+              onPress={() => router.push({ pathname: '/NovaTurma', params: { id: t.id } })}
             >
               <View style={{ flex: 1 }}>
-                <Text style={styles.name}>{turma.name}</Text>
-
+                <Text style={styles.name}>{t.nome}</Text>
                 <Text style={styles.count}>
-                  {turma.students ?? 0} alunos
+                  {t.alunosIds.length} aluno{t.alunosIds.length !== 1 ? 's' : ''}
+                  {t.periodo ? ` · ${t.periodo}` : ''}
                 </Text>
               </View>
-
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={colors.textMuted}
-              />
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
             </Pressable>
           ))
         )}
@@ -149,9 +80,7 @@ export default function TurmasScreen() {
           style={styles.addBtn}
           onPress={() => router.push('/NovaTurma')}
         >
-          <Text style={styles.addBtnText}>
-            + Adicionar turma
-          </Text>
+          <Text style={styles.addBtnText}>+ Adicionar turma</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>
@@ -159,11 +88,7 @@ export default function TurmasScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.cream,
-  },
-
+  safe: { flex: 1, backgroundColor: colors.cream },
   headerWrap: {
     backgroundColor: colors.yellow,
     paddingTop: 20,
@@ -172,13 +97,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
   },
-
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: colors.textDark,
-  },
-
+  headerTitle: { fontSize: 20, fontWeight: '800', color: colors.textDark },
   searchWrap: {
     marginHorizontal: 18,
     marginTop: 14,
@@ -192,20 +111,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.inputBorder,
   },
-
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.textDark,
-    padding: 0,
+  searchInput: { flex: 1, fontSize: 14, color: colors.textDark, padding: 0 },
+  body: { padding: 16, paddingTop: 12, gap: 10 },
+  emptyText: {
+    textAlign: 'center',
+    color: colors.textMuted,
+    fontSize: 13,
+    marginTop: 24,
+    paddingHorizontal: 20,
   },
-
-  body: {
-    padding: 16,
-    paddingTop: 12,
-    gap: 10,
-  },
-
   card: {
     backgroundColor: '#fff',
     borderRadius: 14,
@@ -213,41 +127,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-
-  name: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.textDark,
-  },
-
-  count: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-
-  empty: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 30,
-    paddingVertical: 45,
-  },
-
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.textDark,
-    marginTop: 12,
-  },
-
-  emptyText: {
-    fontSize: 13,
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginTop: 6,
-    lineHeight: 19,
-  },
-
+  name: { fontSize: 15, fontWeight: '700', color: colors.textDark },
+  count: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
   addBtn: {
     backgroundColor: colors.primary,
     borderRadius: 14,
@@ -255,10 +136,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
-
-  addBtnText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 15,
-  },
+  addBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });

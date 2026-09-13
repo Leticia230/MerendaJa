@@ -11,18 +11,20 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import ScreenHeader from '../components/ScreenHeader';
 import LabeledInput from '../components/LabeledInput';
 import BotaoPrimario from '../components/BotaoPrimario';
 import { colors } from '../constants/theme';
 import { listarAlunos, Aluno } from './services/alunos';
-import { criarTurma } from './services/turmas';
+import { criarTurma, buscarTurma, atualizarTurma } from './services/turmas';
 
-const PERIODOS = ['Manhã', 'Tarde', 'Integral', 'Noite'];
+const PERIODOS = ['Manhã', 'Tarde', 'Noite'];
 
 export default function NovaTurma() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ id?: string }>();
+  const modoEdicao = !!params.id;
 
   const [nome, setNome] = useState('');
   const [periodo, setPeriodo] = useState('');
@@ -33,10 +35,12 @@ export default function NovaTurma() {
   const [alunosSelecionados, setAlunosSelecionados] = useState<Set<string>>(new Set());
   const [alunosAberto, setAlunosAberto] = useState(false);
 
+  const [carregandoTurma, setCarregandoTurma] = useState(modoEdicao);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState(false);
 
+  // Carrega a lista de alunos disponíveis (sempre necessária, criando ou editando)
   useEffect(() => {
     listarAlunos()
       .then(setAlunos)
@@ -46,6 +50,27 @@ export default function NovaTurma() {
       })
       .finally(() => setCarregandoAlunos(false));
   }, []);
+
+  // Modo edição: busca os dados da turma existente e pré-preenche o formulário
+  useEffect(() => {
+    if (!params.id) return;
+
+    buscarTurma(params.id)
+      .then((turma) => {
+        if (!turma) {
+          setErro('Essa turma não foi encontrada — pode ter sido removida.');
+          return;
+        }
+        setNome(turma.nome);
+        setPeriodo(turma.periodo);
+        setAlunosSelecionados(new Set(turma.alunosIds));
+      })
+      .catch((e) => {
+        console.error('Erro ao carregar turma:', e);
+        setErro('Não foi possível carregar os dados dessa turma.');
+      })
+      .finally(() => setCarregandoTurma(false));
+  }, [params.id]);
 
   function alternarAluno(id: string) {
     setAlunosSelecionados((atual) => {
@@ -84,16 +109,22 @@ export default function NovaTurma() {
     setSalvando(true);
 
     try {
-      await criarTurma({
+      const dados = {
         nome: nomeNormalizado,
         periodo,
         alunosIds: Array.from(alunosSelecionados),
-      });
+      };
+
+      if (modoEdicao && params.id) {
+        await atualizarTurma(params.id, dados);
+      } else {
+        await criarTurma(dados);
+      }
 
       setSucesso(true);
       setTimeout(() => router.back(), 600);
     } catch (error: any) {
-      console.error('Erro ao criar turma:', error);
+      console.error('Erro ao salvar turma:', error);
 
       if (error?.code === 'permission-denied') {
         setErro('Permissão negada pelo Firestore ao salvar a turma. Verifique as Security Rules.');
@@ -105,9 +136,18 @@ export default function NovaTurma() {
     }
   }
 
+  if (carregandoTurma) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <ScreenHeader title="Editar Turma" />
+        <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
-      <ScreenHeader title="Nova Turma" />
+      <ScreenHeader title={modoEdicao ? 'Editar Turma' : 'Nova Turma'} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
           <View style={styles.avatar}>
@@ -124,7 +164,9 @@ export default function NovaTurma() {
           {sucesso && (
             <View style={styles.bannerSucesso} testID="nova-turma-sucesso">
               <Ionicons name="checkmark-circle" size={18} color="#2E7D32" />
-              <Text style={styles.bannerSucessoText}>Turma criada!</Text>
+              <Text style={styles.bannerSucessoText}>
+                {modoEdicao ? 'Turma atualizada!' : 'Turma criada!'}
+              </Text>
             </View>
           )}
 
@@ -237,7 +279,7 @@ export default function NovaTurma() {
 
           <BotaoPrimario
             testID="turma-save-button"
-            title={salvando ? 'Salvando...' : 'Salvar turma'}
+            title={salvando ? 'Salvando...' : modoEdicao ? 'Salvar alterações' : 'Salvar turma'}
             onPress={salvarTurma}
             disabled={salvando}
             style={{ marginTop: 22 }}

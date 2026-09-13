@@ -1,173 +1,643 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+
 import ScreenHeader from '../components/ScreenHeader';
-import BotaoPrimario from '../components/BotaoPrimario';
 import { colors } from '../constants/theme';
-import { useRouter } from 'expo-router';
+import { auth } from '../components/firebaseConfig';
 
-const MEALS = [
-  { key: 'cafe', title: 'Café da manhã', icon: 'coffee', color: '#FFD79A' },
-  { key: 'almoco', title: 'Almoço', icon: 'food', color: '#FFB27A' },
-  { key: 'lanche', title: 'Lanche da tarde', icon: 'fruit-cherries', color: '#FFC845' },
-  { key: 'jantar', title: 'Jantar', icon: 'silverware-variant', color: '#FFB27A' },
+import {
+  assinarCardapioDia,
+  Refeicao,
+} from './services/cardapio';
+
+import {
+  assinarConfirmacaoAluno,
+  definirConfirmacao,
+  RespostasAluno,
+} from './services/confirmacoes';
+
+import {
+  NOME_COMPLETO_DIA,
+} from './services/data';
+
+type DiaSemana = 'Seg' | 'Ter' | 'Qua' | 'Qui' | 'Sex';
+
+type DiaCardapio = {
+  codigo: DiaSemana;
+  data: Date;
+  refeicoes: Refeicao[];
+  respostas: RespostasAluno;
+};
+
+const DIAS_UTEIS: DiaSemana[] = [
+  'Seg',
+  'Ter',
+  'Qua',
+  'Qui',
+  'Sex',
 ];
 
-const DIAS_SEMANA = [
-  { value: 'segunda', label: 'Segunda-feira' },
-  { value: 'terca', label: 'Terça-feira' },
-  { value: 'quarta', label: 'Quarta-feira' },
-  { value: 'quinta', label: 'Quinta-feira' },
-  { value: 'sexta', label: 'Sexta-feira' },
-];
+/**
+ * Retorna a segunda-feira da próxima semana.
+ *
+ * Exemplo:
+ * Se hoje for domingo 13/09,
+ * retorna segunda-feira 14/09.
+ */
+function obterProximaSegunda(): Date {
+  const hoje = new Date();
+  const diaSemana = hoje.getDay();
+
+  const diasAteSegunda =
+    diaSemana === 0
+      ? 1
+      : 8 - diaSemana;
+
+  const segunda = new Date(hoje);
+
+  segunda.setDate(
+    hoje.getDate() + diasAteSegunda
+  );
+
+  segunda.setHours(0, 0, 0, 0);
+
+  return segunda;
+}
+
+/**
+ * Cria as datas de segunda a sexta da próxima semana.
+ */
+function obterProximaSemana(): DiaCardapio[] {
+  const segunda = obterProximaSegunda();
+
+  return DIAS_UTEIS.map((codigo, indice) => {
+    const data = new Date(segunda);
+
+    data.setDate(
+      segunda.getDate() + indice
+    );
+
+    return {
+      codigo,
+      data,
+      refeicoes: [],
+      respostas: {},
+    };
+  });
+}
+
+function formatarData(data: Date): string {
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: 'numeric',
+    month: 'long',
+  }).format(data);
+}
 
 export default function RefeicoesDia() {
-  const router = useRouter();
-  const [selected, setSelected] = useState<Record<string, boolean>>({ cafe: true });
-  const toggle = (k: string) => setSelected(s => ({ ...s, [k]: !s[k] }));
+  const alunoId = auth.currentUser?.uid;
 
-  const [diaSelecionado, setDiaSelecionado] = useState('segunda');
-  const [diaMenuAberto, setDiaMenuAberto] = useState(false);
+  const [dias, setDias] = useState<DiaCardapio[]>(
+    obterProximaSemana()
+  );
 
-  const labelDiaSelecionado =
-    DIAS_SEMANA.find(d => d.value === diaSelecionado)?.label ?? 'Selecione o dia';
+  const [carregando, setCarregando] = useState(true);
+  const [salvando, setSalvando] = useState<string | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+
+  /**
+   * Escuta o cardápio dos cinco dias.
+   */
+  useEffect(() => {
+    setCarregando(true);
+
+    const unsubscribeList: (() => void)[] = [];
+
+    DIAS_UTEIS.forEach((codigo) => {
+      const unsubscribe = assinarCardapioDia(
+        codigo,
+        (refeicoes) => {
+          setDias((atual) =>
+            atual.map((dia) =>
+              dia.codigo === codigo
+                ? {
+                    ...dia,
+                    refeicoes,
+                  }
+                : dia
+            )
+          );
+
+          setCarregando(false);
+        },
+        (erro) => {
+          console.error(
+            `Erro ao carregar cardápio de ${codigo}:`,
+            erro
+          );
+
+          setCarregando(false);
+        }
+      );
+
+      unsubscribeList.push(unsubscribe);
+    });
+
+    return () => {
+      unsubscribeList.forEach((unsubscribe) =>
+        unsubscribe()
+      );
+    };
+  }, []);
+
+  /**
+   * Escuta as respostas do aluno para cada dia.
+   */
+  useEffect(() => {
+    if (!alunoId) return;
+
+    const unsubscribeList: (() => void)[] = [];
+
+    DIAS_UTEIS.forEach((codigo) => {
+      const unsubscribe = assinarConfirmacaoAluno(
+        codigo,
+        alunoId,
+        (respostas) => {
+          setDias((atual) =>
+            atual.map((dia) =>
+              dia.codigo === codigo
+                ? {
+                    ...dia,
+                    respostas,
+                  }
+                : dia
+            )
+          );
+        },
+        (erro) => {
+          console.error(
+            `Erro ao carregar respostas de ${codigo}:`,
+            erro
+          );
+        }
+      );
+
+      unsubscribeList.push(unsubscribe);
+    });
+
+    return () => {
+      unsubscribeList.forEach((unsubscribe) =>
+        unsubscribe()
+      );
+    };
+  }, [alunoId]);
+
+  async function escolher(
+    dia: DiaSemana,
+    indice: number,
+    vaiComer: boolean
+  ) {
+    if (!alunoId) {
+      setErro(
+        'Não foi possível identificar seu usuário. Faça login novamente.'
+      );
+      return;
+    }
+
+    const chave = `${dia}-${indice}`;
+
+    setErro(null);
+    setSalvando(chave);
+
+    try {
+      await definirConfirmacao(
+        dia,
+        alunoId,
+        indice,
+        vaiComer
+      );
+    } catch (e) {
+      console.error(
+        'Erro ao salvar confirmação:',
+        e
+      );
+
+      setErro(
+        'Não foi possível salvar sua escolha. Tente novamente.'
+      );
+    } finally {
+      setSalvando(null);
+    }
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScreenHeader title="" />
-      <ScrollView contentContainerStyle={styles.body}>
-        <Text style={styles.title}>Qual refeição você{'\n'}fará hoje?</Text>
+      <ScreenHeader title="Refeições da próxima semana" />
 
-        <Pressable
-          style={styles.select}
-          onPress={() => setDiaMenuAberto(prev => !prev)}
-        >
-          <Text style={styles.selectText}>{labelDiaSelecionado}</Text>
-          <Ionicons
-            name={diaMenuAberto ? 'chevron-up' : 'chevron-down'}
-            size={18}
-            color={colors.textMuted}
-          />
-        </Pressable>
+      <ScrollView
+        contentContainerStyle={styles.body}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.introducao}>
+          <Text style={styles.introducaoTitulo}>
+            Planeje suas refeições 🍽️
+          </Text>
 
-        {diaMenuAberto && (
-          <View style={styles.dropdown}>
-            {DIAS_SEMANA.map(dia => {
-              const ativo = dia.value === diaSelecionado;
-              return (
-                <Pressable
-                  key={dia.value}
-                  style={[styles.dropdownItem, ativo && styles.dropdownItemAtivo]}
-                  onPress={() => {
-                    setDiaSelecionado(dia.value);
-                    setDiaMenuAberto(false);
-                  }}
-                >
-                  <Text style={[styles.dropdownItemText, ativo && styles.dropdownItemTextAtivo]}>
-                    {dia.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
+          <Text style={styles.introducaoTexto}>
+            Informe quais refeições você pretende
+            consumir na próxima semana.
+          </Text>
+        </View>
+
+        {erro && (
+          <View
+            style={styles.bannerErro}
+            testID="refeicoesdia-erro"
+          >
+            <MaterialCommunityIcons
+              name="alert-circle"
+              size={18}
+              color="#B3261E"
+            />
+
+            <Text style={styles.bannerErroText}>
+              {erro}
+            </Text>
           </View>
         )}
 
-        <View style={{ gap: 10, marginTop: 6 }}>
-          {MEALS.map(m => {
-            const active = !!selected[m.key];
-            return (
-              <Pressable
-                key={m.key}
-                testID={`meal-option-${m.key}`}
-                style={styles.row}
-                onPress={() => toggle(m.key)}
-              >
-                <View style={[styles.iconWrap, { backgroundColor: m.color }]}>
-                  <MaterialCommunityIcons name={m.icon as any} size={22} color="#fff" />
-                </View>
-                <Text style={styles.rowTitle}>{m.title}</Text>
-                <View style={[styles.check, active && styles.checkActive]}>
-                  {active && <Ionicons name="checkmark" size={14} color="#fff" />}
-                </View>
-              </Pressable>
-            );
-          })}
-        </View>
+        {carregando ? (
+          <ActivityIndicator
+            color={colors.primary}
+            style={{ marginTop: 24 }}
+          />
+        ) : (
+          dias.map((dia) => (
+            <View
+              key={dia.codigo}
+              style={styles.diaContainer}
+            >
+              <View style={styles.dateWrap}>
+                <Text style={styles.dateTitle}>
+                  {NOME_COMPLETO_DIA[dia.codigo]}
+                </Text>
 
-        <BotaoPrimario
-          testID="refeicoes-continue-button"
-          title="Continuar"
-          onPress={() => router.back()}
-          style={{ marginTop: 22 }}
-        />
+                <Text style={styles.dateSub}>
+                  {formatarData(dia.data)}
+                </Text>
+              </View>
+
+              {dia.refeicoes.length === 0 ? (
+                <View style={styles.semRefeicao}>
+                  <MaterialCommunityIcons
+                    name="calendar-blank-outline"
+                    size={22}
+                    color={colors.textMuted}
+                  />
+
+                  <Text style={styles.semRefeicaoTexto}>
+                    Nenhuma refeição cadastrada para este dia.
+                  </Text>
+                </View>
+              ) : (
+                dia.refeicoes.map((refeicao, i) => {
+                  const resposta =
+                    dia.respostas[i];
+
+                  const chave =
+                    `${dia.codigo}-${i}`;
+
+                  const estaSalvando =
+                    salvando === chave;
+
+                  return (
+                    <View
+                      key={i}
+                      style={styles.card}
+                      testID={`refeicao-${dia.codigo}-${i}`}
+                    >
+                      <View style={styles.cardHeader}>
+                        <View
+                          style={[
+                            styles.icon,
+                            {
+                              backgroundColor:
+                                refeicao.color,
+                            },
+                          ]}
+                        >
+                          <MaterialCommunityIcons
+                            name={
+                              refeicao.icon as any
+                            }
+                            size={22}
+                            color="#fff"
+                          />
+                        </View>
+
+                        <View
+                          style={{
+                            flex: 1,
+                          }}
+                        >
+                          <Text
+                            style={styles.titulo}
+                          >
+                            {refeicao.titulo}
+                          </Text>
+
+                          <Text
+                            style={styles.horario}
+                          >
+                            {refeicao.horario}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <Text style={styles.desc}>
+                        {refeicao.desc}
+                      </Text>
+
+                      <View style={styles.opcoes}>
+                        <Pressable
+                          testID={`refeicao-${dia.codigo}-${i}-sim`}
+                          style={[
+                            styles.opcaoBtn,
+                            resposta === true &&
+                              styles.opcaoBtnSimAtivo,
+                          ]}
+                          onPress={() =>
+                            escolher(
+                              dia.codigo,
+                              i,
+                              true
+                            )
+                          }
+                          disabled={estaSalvando}
+                        >
+                          <MaterialCommunityIcons
+                            name="check-circle"
+                            size={16}
+                            color={
+                              resposta === true
+                                ? '#fff'
+                                : '#2E7D32'
+                            }
+                          />
+
+                          <Text
+                            style={[
+                              styles.opcaoText,
+                              resposta === true &&
+                                styles.opcaoTextAtivo,
+                            ]}
+                          >
+                            Vou comer
+                          </Text>
+                        </Pressable>
+
+                        <Pressable
+                          testID={`refeicao-${dia.codigo}-${i}-nao`}
+                          style={[
+                            styles.opcaoBtn,
+                            resposta === false &&
+                              styles.opcaoBtnNaoAtivo,
+                          ]}
+                          onPress={() =>
+                            escolher(
+                              dia.codigo,
+                              i,
+                              false
+                            )
+                          }
+                          disabled={estaSalvando}
+                        >
+                          <MaterialCommunityIcons
+                            name="close-circle"
+                            size={16}
+                            color={
+                              resposta === false
+                                ? '#fff'
+                                : '#B3261E'
+                            }
+                          />
+
+                          <Text
+                            style={[
+                              styles.opcaoText,
+                              resposta === false &&
+                                styles.opcaoTextAtivo,
+                            ]}
+                          >
+                            Não vou
+                          </Text>
+                        </Pressable>
+                      </View>
+
+                      {resposta === undefined && (
+                        <Text
+                          style={
+                            styles.pendenteText
+                          }
+                        >
+                          Você ainda não respondeu
+                          essa refeição.
+                        </Text>
+                      )}
+
+                      {estaSalvando && (
+                        <ActivityIndicator
+                          size="small"
+                          color={colors.primary}
+                          style={{
+                            marginTop: 8,
+                          }}
+                        />
+                      )}
+                    </View>
+                  );
+                })
+              )}
+            </View>
+          ))
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.cream },
-  body: { padding: 20 },
-  title: {
-    fontSize: 22,
+  safe: {
+    flex: 1,
+    backgroundColor: colors.cream,
+  },
+
+  body: {
+    padding: 18,
+    paddingBottom: 40,
+  },
+
+  introducao: {
+    marginBottom: 20,
+  },
+
+  introducaoTitulo: {
+    fontSize: 20,
     fontWeight: '800',
     color: colors.textDark,
-    marginBottom: 16,
   },
-  select: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.inputBorder,
-    height: 48,
-    paddingHorizontal: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 14,
+
+  introducaoTexto: {
+    fontSize: 13,
+    color: colors.textMuted,
+    marginTop: 5,
+    lineHeight: 18,
   },
-  selectText: { flex: 1, color: colors.textDark, fontSize: 14, fontWeight: '600' },
-  dropdown: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.inputBorder,
-    marginTop: -8,
-    marginBottom: 14,
-    overflow: 'hidden',
+
+  diaContainer: {
+    marginBottom: 18,
   },
-  dropdownItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+
+  dateWrap: {
+    marginBottom: 10,
   },
-  dropdownItemAtivo: {
-    backgroundColor: colors.primary,
-  },
-  dropdownItemText: {
-    fontSize: 14,
+
+  dateTitle: {
+    fontSize: 18,
+    fontWeight: '800',
     color: colors.textDark,
   },
-  dropdownItemTextAtivo: {
-    color: '#fff',
-    fontWeight: '600',
+
+  dateSub: {
+    fontSize: 13,
+    color: colors.textMuted,
+    marginTop: 2,
   },
-  row: {
+
+  semRefeicao: {
     backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 12,
+    borderRadius: 16,
+    padding: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+
+  semRefeicaoTexto: {
+    textAlign: 'center',
+    color: colors.textMuted,
+    fontSize: 13,
+    marginTop: 7,
+  },
+
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 12,
+  },
+
+  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  iconWrap: {
-    width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
+
+  icon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  rowTitle: { flex: 1, fontSize: 15, fontWeight: '700', color: colors.textDark },
-  check: {
-    width: 24, height: 24, borderRadius: 6,
-    borderWidth: 1.5, borderColor: colors.primary,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#fff',
+
+  titulo: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.textDark,
   },
-  checkActive: { backgroundColor: colors.primary },
+
+  horario: {
+    fontSize: 12,
+    color: colors.primary,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+
+  desc: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 10,
+    lineHeight: 17,
+  },
+
+  opcoes: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14,
+  },
+
+  opcaoBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+    paddingVertical: 10,
+  },
+
+  opcaoBtnSimAtivo: {
+    backgroundColor: '#2E7D32',
+    borderColor: '#2E7D32',
+  },
+
+  opcaoBtnNaoAtivo: {
+    backgroundColor: '#B3261E',
+    borderColor: '#B3261E',
+  },
+
+  opcaoText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textDark,
+  },
+
+  opcaoTextAtivo: {
+    color: '#fff',
+  },
+
+  pendenteText: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
+
+  bannerErro: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FDECEA',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 14,
+  },
+
+  bannerErroText: {
+    flex: 1,
+    color: '#B3261E',
+    fontSize: 13,
+    fontWeight: '600',
+  },
 });

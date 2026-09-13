@@ -7,17 +7,32 @@ import { colors } from '../../constants/theme';
 import { listarAlunos } from '../services/alunos';
 import { listarTurmas } from '../services/turmas';
 import { assinarCardapioDia, Refeicao } from '../services/cardapio';
-import { diaAbreviadoDeHoje, nomeDiaSemanaPtBR, dataPorExtensoPtBR } from '../services/data';
+import { assinarContagemConfirmacoes, ContagemRefeicao } from '../services/confirmacoes';
+import { diaAbreviadoDeHoje, nomeDiaSemanaPtBR, dataPorExtensoPtBR, NOME_COMPLETO_DIA } from '../services/data';
 
-function MealRow({ titulo, horario, color, icon }: Refeicao) {
+const DIAS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
+
+function MealRow({ refeicao, contagem }: { refeicao: Refeicao; contagem: ContagemRefeicao }) {
   return (
-    <View style={styles.mealRow} testID={`meal-${titulo}`}>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.mealTitle}>{titulo}</Text>
-        <Text style={styles.mealTime}>{horario}</Text>
+    <View style={styles.mealRow} testID={`meal-${refeicao.titulo}`}>
+      <View style={[styles.mealIcon, { backgroundColor: refeicao.color }]}>
+        <MaterialCommunityIcons name={refeicao.icon as any} size={22} color="#fff" />
       </View>
-      <View style={[styles.mealIcon, { backgroundColor: color }]}>
-        <MaterialCommunityIcons name={icon as any} size={24} color="#fff" />
+
+      <View style={{ flex: 1 }}>
+        <Text style={styles.mealTitle}>{refeicao.titulo}</Text>
+        <Text style={styles.mealTime}>{refeicao.horario}</Text>
+      </View>
+
+      <View style={styles.contagens}>
+        <View style={[styles.badge, styles.badgeSim]}>
+          <Ionicons name="checkmark-circle" size={13} color="#2E7D32" />
+          <Text style={[styles.badgeText, styles.badgeTextSim]}>{contagem.sim}</Text>
+        </View>
+        <View style={[styles.badge, styles.badgeNao]}>
+          <Ionicons name="close-circle" size={13} color="#B3261E" />
+          <Text style={[styles.badgeText, styles.badgeTextNao]}>{contagem.nao}</Text>
+        </View>
       </View>
     </View>
   );
@@ -26,13 +41,19 @@ function MealRow({ titulo, horario, color, icon }: Refeicao) {
 export default function HomeScreen() {
   const router = useRouter();
 
-  const [totalAlunos, setTotalAlunos] = useState<number | null>(null);
-  const [totalTurmas, setTotalTurmas] = useState<number | null>(null);
-  const [refeicoesHoje, setRefeicoesHoje] = useState<Refeicao[]>([]);
-  const [carregandoRefeicoes, setCarregandoRefeicoes] = useState(true);
-
   const diaHoje = diaAbreviadoDeHoje(); // null se for fim de semana
 
+  // No fim de semana, já abre mostrando a segunda-feira que vem, pra
+  // instituição se programar com antecedência.
+  const [diaSelecionado, setDiaSelecionado] = useState(diaHoje ?? 'Seg');
+
+  const [totalAlunos, setTotalAlunos] = useState<number | null>(null);
+  const [totalTurmas, setTotalTurmas] = useState<number | null>(null);
+  const [refeicoesDoDia, setRefeicoesDoDia] = useState<Refeicao[]>([]);
+  const [carregandoRefeicoes, setCarregandoRefeicoes] = useState(true);
+  const [contagemPorRefeicao, setContagemPorRefeicao] = useState<Record<number, ContagemRefeicao>>({});
+
+  // Total de alunos e turmas cadastrados — sem relação com o dia selecionado.
   useEffect(() => {
     listarAlunos()
       .then((alunos) => setTotalAlunos(alunos.length))
@@ -50,23 +71,29 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
-    if (!diaHoje) {
-      // Fim de semana — não há cardápio cadastrado pra hoje.
-      setCarregandoRefeicoes(false);
-      return;
-    }
+    setCarregandoRefeicoes(true);
 
-    const unsubscribe = assinarCardapioDia(
-      diaHoje,
+    const unsubscribeCardapio = assinarCardapioDia(
+      diaSelecionado,
       (refeicoes) => {
-        setRefeicoesHoje(refeicoes);
+        setRefeicoesDoDia(refeicoes);
         setCarregandoRefeicoes(false);
       },
       () => setCarregandoRefeicoes(false)
     );
 
-    return unsubscribe;
-  }, [diaHoje]);
+    const unsubscribeContagem = assinarContagemConfirmacoes(diaSelecionado, setContagemPorRefeicao);
+
+    return () => {
+      unsubscribeCardapio();
+      unsubscribeContagem();
+    };
+  }, [diaSelecionado]);
+
+  const vendoHoje = diaSelecionado === diaHoje;
+  const tituloSecao = vendoHoje
+    ? 'Refeições de hoje'
+    : `Prévia de ${NOME_COMPLETO_DIA[diaSelecionado]}`;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -81,17 +108,23 @@ export default function HomeScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-        <Pressable
-          testID="day-banner"
-          style={styles.dayBanner}
-          onPress={() => router.push('/RefeicoesDia')}
-        >
+        {/* Não é mais tocável — confirmar presença é uma ação do aluno, não da instituição. */}
+        <View style={styles.dayBanner} testID="day-banner">
           <View style={{ flex: 1 }}>
             <Text style={styles.dayTitle}>{nomeDiaSemanaPtBR()}</Text>
             <Text style={styles.dayDate}>{dataPorExtensoPtBR()}</Text>
           </View>
           <MaterialCommunityIcons name="food-apple" size={44} color="#fff" />
-        </Pressable>
+        </View>
+
+        {!diaHoje && (
+          <View style={styles.avisoFimDeSemana}>
+            <Ionicons name="calendar-outline" size={16} color={colors.primary} />
+            <Text style={styles.avisoFimDeSemanaText}>
+              Hoje é fim de semana — mostrando a prévia da próxima semana.
+            </Text>
+          </View>
+        )}
 
         <Text style={styles.section}>Ações rápidas</Text>
         <Pressable
@@ -125,7 +158,7 @@ export default function HomeScreen() {
             {carregandoRefeicoes ? (
               <ActivityIndicator color={colors.primary} />
             ) : (
-              <Text style={styles.summaryValue}>{refeicoesHoje.length}</Text>
+              <Text style={styles.summaryValue}>{refeicoesDoDia.length}</Text>
             )}
             <Text style={styles.summaryLabel}>Refeições</Text>
           </View>
@@ -139,25 +172,53 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <Text style={styles.section}>Próximas refeições</Text>
+        <Text style={styles.section}>{tituloSecao}</Text>
+
+        {/* Seletor de dias — sempre visível, então dá pra planejar qualquer dia da semana, não só hoje/fim de semana. */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.diasRow}>
+          {DIAS.map((d) => {
+            const ativo = d === diaSelecionado;
+            const ehHoje = d === diaHoje;
+            return (
+              <Pressable
+                key={d}
+                testID={`home-dia-${d}`}
+                onPress={() => setDiaSelecionado(d)}
+                style={[styles.diaChip, ativo && styles.diaChipAtivo]}
+              >
+                <Text style={[styles.diaChipText, ativo && styles.diaChipTextAtivo]}>{d}</Text>
+                {ehHoje && <View style={[styles.pontoHoje, ativo && styles.pontoHojeAtivo]} />}
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+
         <View style={styles.mealsCard}>
           {carregandoRefeicoes ? (
             <ActivityIndicator color={colors.primary} style={{ padding: 20 }} />
-          ) : !diaHoje ? (
+          ) : refeicoesDoDia.length === 0 ? (
             <Text style={styles.emptyText}>
-              Hoje é fim de semana — sem cardápio cadastrado.
-            </Text>
-          ) : refeicoesHoje.length === 0 ? (
-            <Text style={styles.emptyText}>
-              Nenhuma refeição cadastrada para hoje ainda.
+              Nenhuma refeição cadastrada para {NOME_COMPLETO_DIA[diaSelecionado].toLowerCase()} ainda.
             </Text>
           ) : (
-            refeicoesHoje.map((refeicao, i) => (
-              <React.Fragment key={i}>
-                <MealRow {...refeicao} />
-                {i < refeicoesHoje.length - 1 && <View style={styles.divider} />}
-              </React.Fragment>
-            ))
+            <>
+              <View style={styles.legenda}>
+                <View style={styles.legendaItem}>
+                  <Ionicons name="checkmark-circle" size={13} color="#2E7D32" />
+                  <Text style={styles.legendaText}>Vão comer</Text>
+                </View>
+                <View style={styles.legendaItem}>
+                  <Ionicons name="close-circle" size={13} color="#B3261E" />
+                  <Text style={styles.legendaText}>Não vão</Text>
+                </View>
+              </View>
+              {refeicoesDoDia.map((refeicao, i) => (
+                <React.Fragment key={i}>
+                  <MealRow refeicao={refeicao} contagem={contagemPorRefeicao[i] ?? { sim: 0, nao: 0 }} />
+                  {i < refeicoesDoDia.length - 1 && <View style={styles.divider} />}
+                </React.Fragment>
+              ))}
+            </>
           )}
         </View>
       </ScrollView>
@@ -197,6 +258,14 @@ const styles = StyleSheet.create({
   },
   dayTitle: { color: '#fff', fontSize: 18, fontWeight: '800' },
   dayDate: { color: '#FFE0CE', fontSize: 12, marginTop: 4 },
+  avisoFimDeSemana: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+    paddingHorizontal: 4,
+  },
+  avisoFimDeSemanaText: { fontSize: 12, color: colors.textMuted, flex: 1 },
   section: {
     fontSize: 14,
     fontWeight: '700',
@@ -244,6 +313,32 @@ const styles = StyleSheet.create({
   },
   summaryValue: { fontSize: 22, fontWeight: '800', color: colors.primary },
   summaryLabel: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  diasRow: { gap: 8, paddingBottom: 10 },
+  diaChip: {
+    height: 34,
+    paddingHorizontal: 16,
+    borderRadius: 17,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 5,
+  },
+  diaChipAtivo: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  diaChipText: { color: colors.textDark, fontWeight: '700', fontSize: 13 },
+  diaChipTextAtivo: { color: '#fff' },
+  pontoHoje: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: colors.primary,
+  },
+  pontoHojeAtivo: { backgroundColor: '#fff' },
   mealsCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
@@ -255,20 +350,43 @@ const styles = StyleSheet.create({
     fontSize: 13,
     padding: 20,
   },
+  legenda: {
+    flexDirection: 'row',
+    gap: 16,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  legendaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  legendaText: { fontSize: 11, color: colors.textMuted, fontWeight: '600' },
   mealRow: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
     gap: 12,
   },
-  mealTitle: { fontSize: 15, fontWeight: '700', color: colors.textDark },
-  mealTime: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
   mealIcon: {
-    width: 52,
-    height: 52,
+    width: 48,
+    height: 48,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  mealTitle: { fontSize: 15, fontWeight: '700', color: colors.textDark },
+  mealTime: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  contagens: { flexDirection: 'row', gap: 6 },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    borderRadius: 10,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+  },
+  badgeSim: { backgroundColor: '#E8F5E9' },
+  badgeNao: { backgroundColor: '#FDECEA' },
+  badgeText: { fontSize: 12, fontWeight: '800' },
+  badgeTextSim: { color: '#2E7D32' },
+  badgeTextNao: { color: '#B3261E' },
   divider: { height: 1, backgroundColor: colors.divider, marginHorizontal: 12 },
 });

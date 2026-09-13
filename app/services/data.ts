@@ -16,7 +16,16 @@ export function diaAbreviadoDeHoje(): string | null {
   return DIAS_ABREVIADOS[new Date().getDay()];
 }
 
-/** Nome do dia da semana por extenso, com a primeira letra maiúscula. Ex: "Segunda-feira". */
+/** Nome completo em pt-BR a partir da abreviação usada no app ('Seg'..'Sex'). */
+export const NOME_COMPLETO_DIA: Record<string, string> = {
+  Seg: 'Segunda-feira',
+  Ter: 'Terça-feira',
+  Qua: 'Quarta-feira',
+  Qui: 'Quinta-feira',
+  Sex: 'Sexta-feira',
+};
+
+/** Nome completo do dia de hoje por extenso, com a primeira letra maiúscula. Ex: "Segunda-feira". */
 export function nomeDiaSemanaPtBR(data: Date = new Date()): string {
   const nome = new Intl.DateTimeFormat('pt-BR', { weekday: 'long' }).format(data);
   return nome.charAt(0).toUpperCase() + nome.slice(1);
