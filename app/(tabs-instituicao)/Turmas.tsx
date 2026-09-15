@@ -1,22 +1,33 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { colors } from '../../constants/theme';
-
-const TURMAS = [
-  { name: '1º Ano A', students: 25 },
-  { name: '1º Ano B', students: 24 },
-  { name: '2º Ano A', students: 26 },
-  { name: '2º Ano B', students: 23 },
-  { name: '3º Ano A', students: 27 },
-];
+import { assinarTurmas, Turma } from '../services/turmas';
 
 export default function TurmasScreen() {
   const router = useRouter();
   const [q, setQ] = useState('');
-  const filtered = TURMAS.filter(t => t.name.toLowerCase().includes(q.toLowerCase()));
+  const [turmas, setTurmas] = useState<Turma[]>([]);
+  const [carregando, setCarregando] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = assinarTurmas(
+      (dados) => {
+        setTurmas(dados);
+        setCarregando(false);
+      },
+      () => setCarregando(false)
+    );
+
+    return unsubscribe;
+  }, []);
+
+  const filtered = turmas.filter((t) =>
+    t.nome.toLowerCase().includes(q.toLowerCase())
+  );
+
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.headerWrap}>
@@ -36,15 +47,33 @@ export default function TurmasScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-        {filtered.map((t, i) => (
-          <Pressable key={i} style={styles.card} testID={`turma-${t.name}`}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.name}>{t.name}</Text>
-              <Text style={styles.count}>{t.students} alunos</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-          </Pressable>
-        ))}
+        {carregando ? (
+          <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
+        ) : turmas.length === 0 ? (
+          <Text style={styles.emptyText}>
+            Nenhuma turma cadastrada ainda. Toque em "Adicionar turma" pra criar a primeira.
+          </Text>
+        ) : filtered.length === 0 ? (
+          <Text style={styles.emptyText}>Nenhuma turma encontrada para "{q}".</Text>
+        ) : (
+          filtered.map((t) => (
+            <Pressable
+              key={t.id}
+              style={styles.card}
+              testID={`turma-${t.nome}`}
+              onPress={() => router.push({ pathname: '/NovaTurma', params: { id: t.id } })}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={styles.name}>{t.nome}</Text>
+                <Text style={styles.count}>
+                  {t.alunosIds.length} aluno{t.alunosIds.length !== 1 ? 's' : ''}
+                  {t.periodo ? ` · ${t.periodo}` : ''}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+            </Pressable>
+          ))
+        )}
 
         <Pressable
           testID="add-turma-button"
@@ -84,6 +113,13 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, fontSize: 14, color: colors.textDark, padding: 0 },
   body: { padding: 16, paddingTop: 12, gap: 10 },
+  emptyText: {
+    textAlign: 'center',
+    color: colors.textMuted,
+    fontSize: 13,
+    marginTop: 24,
+    paddingHorizontal: 20,
+  },
   card: {
     backgroundColor: '#fff',
     borderRadius: 14,

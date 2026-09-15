@@ -1,74 +1,622 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ActivityIndicator,
+} from 'react-native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+
 import ScreenHeader from '../components/ScreenHeader';
 import LabeledInput from '../components/LabeledInput';
 import BotaoPrimario from '../components/BotaoPrimario';
 import { colors } from '../constants/theme';
+import { cadastrar } from '../components/auth';
+import {
+  listarTurmas,
+  adicionarAlunoATurma,
+  Turma,
+} from './services/turmas';
 
-function Select({ placeholder, testID }: { placeholder: string; testID?: string }) {
-  return (
-    <Pressable testID={testID} style={styles.select}>
-      <Text style={styles.selectText}>{placeholder}</Text>
-      <Ionicons name="chevron-down" size={18} color={colors.textMuted} />
-    </Pressable>
-  );
-}
+const PERIODOS = [
+  'Manhã',
+  'Tarde',
+  'Integral',
+  'Noite',
+];
+
+// Mapa de erros do Firebase Auth para mensagens amigáveis
+const ERROS_CADASTRO: Record<
+  string,
+  { titulo: string; mensagem: string }
+> = {
+  'auth/email-already-in-use': {
+    titulo: 'E-mail já cadastrado',
+    mensagem:
+      'Já existe uma conta com este e-mail. Tente fazer login.',
+  },
+
+  'auth/invalid-email': {
+    titulo: 'E-mail inválido',
+    mensagem:
+      'Digite um endereço de e-mail válido.',
+  },
+
+  'auth/weak-password': {
+    titulo: 'Senha fraca',
+    mensagem:
+      'A senha precisa ter pelo menos 6 caracteres.',
+  },
+
+  'auth/network-request-failed': {
+    titulo: 'Sem conexão',
+    mensagem:
+      'Verifique sua internet e tente novamente.',
+  },
+
+  'auth/too-many-requests': {
+    titulo: 'Muitas tentativas',
+    mensagem:
+      'Aguarde alguns minutos antes de tentar novamente.',
+  },
+};
 
 export default function CadastroAluno() {
   const router = useRouter();
+
   const [nome, setNome] = useState('');
   const [rm, setRm] = useState('');
   const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
+
+  const [carregando, setCarregando] = useState(false);
+
+  const [turmas, setTurmas] = useState<Turma[]>([]);
+  const [carregandoTurmas, setCarregandoTurmas] =
+    useState(true);
+
+  const [turmaSelecionada, setTurmaSelecionada] =
+    useState<Turma | null>(null);
+
+  const [turmaAberta, setTurmaAberta] =
+    useState(false);
+
+  const [periodo, setPeriodo] = useState('');
+  const [periodoAberto, setPeriodoAberto] =
+    useState(false);
+
+  // Mensagem geral de erro
+  const [erro, setErro] = useState<string | null>(
+    null
+  );
+
+  // Controla o aviso visual da senha
+  const [erroSenha, setErroSenha] = useState(false);
+
+  // Refs para navegação entre campos pelo teclado.
+  const rmInputRef = useRef<TextInput>(null);
+  const emailInputRef = useRef<TextInput>(null);
+  const senhaInputRef = useRef<TextInput>(null);
+
+  // Carrega as turmas cadastradas pela instituição
+  useEffect(() => {
+    listarTurmas()
+      .then(setTurmas)
+      .catch((e) => {
+        console.error(
+          'Erro ao carregar turmas:',
+          e
+        );
+
+        setErro(
+          'Não foi possível carregar a lista de turmas.'
+        );
+      })
+      .finally(() =>
+        setCarregandoTurmas(false)
+      );
+  }, []);
+
+  function selecionarTurma(turma: Turma) {
+    setTurmaSelecionada(turma);
+    setTurmaAberta(false);
+
+    // A turma já tem um período definido.
+    // Pré-preenche o campo.
+    if (turma.periodo) {
+      setPeriodo(turma.periodo);
+    }
+  }
+
+  async function realizarCadastro() {
+    setErro(null);
+
+    const nomeNormalizado = nome.trim();
+    const rmNormalizado = rm.trim();
+    const emailNormalizado = email
+      .trim()
+      .toLowerCase();
+
+    // Verifica campos obrigatórios
+    if (
+      !nomeNormalizado ||
+      !rmNormalizado ||
+      !emailNormalizado ||
+      !senha
+    ) {
+      setErro(
+        'Preencha nome, RM, e-mail e senha.'
+      );
+
+      return;
+    }
+
+    // Verifica o tamanho mínimo da senha
+    if (senha.length < 6) {
+      setErroSenha(true);
+      return;
+    }
+
+    // Senha válida
+    setErroSenha(false);
+
+    if (carregando) return;
+
+    setCarregando(true);
+
+    try {
+      // Turma e período são opcionais
+      const dadosExtras: Record<
+        string,
+        unknown
+      > = {
+        nome: nomeNormalizado,
+        rm: rmNormalizado,
+      };
+
+      if (turmaSelecionada) {
+        dadosExtras.turmaId =
+          turmaSelecionada.id;
+
+        dadosExtras.turmaNome =
+          turmaSelecionada.nome;
+      }
+
+      if (periodo) {
+        dadosExtras.periodo = periodo;
+      }
+
+      // Cria a conta do aluno
+      const resultado = await cadastrar(
+        emailNormalizado,
+        senha,
+        'aluno',
+        dadosExtras
+      );
+
+      // Vincula o aluno à turma escolhida
+      if (turmaSelecionada) {
+        await adicionarAlunoATurma(
+          turmaSelecionada.id,
+          resultado.user.uid
+        );
+      }
+
+      // Cadastro concluído
+      // O Firebase já deixa o aluno autenticado.
+      router.replace(
+        '/(tabs-aluno)/Home'
+      );
+    } catch (error: any) {
+      console.error(
+        'Erro ao cadastrar aluno:',
+        error
+      );
+
+      const erroConhecido =
+        ERROS_CADASTRO[error?.code];
+
+      setErro(
+        erroConhecido?.mensagem ??
+          `Não foi possível cadastrar o aluno. (${
+            error?.code ??
+            'erro desconhecido'
+          })`
+      );
+    } finally {
+      setCarregando(false);
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScreenHeader title="" />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.body}>
-          <View style={styles.avatar}>
-            <Ionicons name="person" size={38} color="#fff" />
-          </View>
-          <Text style={styles.title}>Cadastro de Aluno</Text>
 
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={
+          Platform.OS === 'ios'
+            ? 'padding'
+            : undefined
+        }
+      >
+        <ScrollView
+          contentContainerStyle={styles.body}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Ícone */}
+          <View style={styles.avatar}>
+            <Ionicons
+              name="person"
+              size={38}
+              color="#fff"
+            />
+          </View>
+
+          {/* Título */}
+          <Text style={styles.title}>
+            Cadastro de Aluno
+          </Text>
+
+          {/* Erro geral */}
+          {erro && (
+            <View
+              style={styles.bannerErro}
+              testID="cadastro-aluno-erro"
+            >
+              <Ionicons
+                name="alert-circle"
+                size={18}
+                color="#B3261E"
+              />
+
+              <Text
+                style={styles.bannerErroText}
+              >
+                {erro}
+              </Text>
+            </View>
+          )}
+
+          {/* Nome */}
           <LabeledInput
             testID="aluno-nome-input"
             label="Nome do aluno"
             placeholder="Nome completo"
-            value={nome} onChangeText={setNome}
-            containerStyle={{ marginTop: 16 }}
+            returnKeyType="next"
+            onSubmitEditing={() =>
+              rmInputRef.current?.focus()
+            }
+            blurOnSubmit={false}
+            editable={!carregando}
+            value={nome}
+            onChangeText={setNome}
+            containerStyle={{
+              marginTop: 16,
+            }}
           />
+
+          {/* RM */}
           <LabeledInput
+            ref={rmInputRef}
             testID="aluno-rm-input"
             label="RM"
             placeholder="Número de matrícula"
             keyboardType="number-pad"
-            value={rm} onChangeText={setRm}
-          />
-          <View>
-            <Text style={styles.label}>Turma</Text>
-            <Select placeholder="Selecione a turma" testID="aluno-turma-select" />
-          </View>
-          <View style={{ marginTop: 14 }}>
-            <Text style={styles.label}>Período</Text>
-            <Select placeholder="Selecione o período" testID="aluno-periodo-select" />
-          </View>
-          <LabeledInput
-            testID="aluno-email-input"
-            label="E-mail institucional (opcional)"
-            placeholder="aluno@email.com"
-            autoCapitalize="none"
-            keyboardType="email-address"
-            value={email} onChangeText={setEmail}
-            containerStyle={{ marginTop: 14 }}
+            returnKeyType="next"
+            onSubmitEditing={() =>
+              emailInputRef.current?.focus()
+            }
+            blurOnSubmit={false}
+            editable={!carregando}
+            value={rm}
+            onChangeText={setRm}
           />
 
+          {/* Turma */}
+          <View
+            style={{
+              marginTop: 14,
+            }}
+          >
+            <Text style={styles.label}>
+              Turma (opcional)
+            </Text>
+
+            <Pressable
+              testID="aluno-turma-select"
+              style={styles.select}
+              onPress={() =>
+                setTurmaAberta((v) => !v)
+              }
+              disabled={carregando}
+            >
+              <Text
+                style={[
+                  styles.selectText,
+                  turmaSelecionada &&
+                    styles.selectTextPreenchido,
+                ]}
+              >
+                {turmaSelecionada
+                  ? turmaSelecionada.nome
+                  : 'Selecione a turma'}
+              </Text>
+
+              <Ionicons
+                name={
+                  turmaAberta
+                    ? 'chevron-up'
+                    : 'chevron-down'
+                }
+                size={18}
+                color={colors.textMuted}
+              />
+            </Pressable>
+
+            {turmaAberta && (
+              <View style={styles.dropdown}>
+                {carregandoTurmas ? (
+                  <ActivityIndicator
+                    color={colors.primary}
+                    style={{
+                      padding: 16,
+                    }}
+                  />
+                ) : turmas.length === 0 ? (
+                  <Text
+                    style={
+                      styles.dropdownVazio
+                    }
+                  >
+                    Nenhuma turma cadastrada
+                    ainda. Você pode cadastrar o
+                    aluno e vincular a uma turma
+                    depois.
+                  </Text>
+                ) : (
+                  turmas.map((turma) => (
+                    <Pressable
+                      key={turma.id}
+                      testID={`turma-opcao-${turma.id}`}
+                      style={
+                        styles.dropdownRow
+                      }
+                      onPress={() =>
+                        selecionarTurma(
+                          turma
+                        )
+                      }
+                    >
+                      <View
+                        style={{
+                          flex: 1,
+                        }}
+                      >
+                        <Text
+                          style={
+                            styles.dropdownRowText
+                          }
+                        >
+                          {turma.nome}
+                        </Text>
+
+                        {turma.periodo ? (
+                          <Text
+                            style={
+                              styles.dropdownRowSub
+                            }
+                          >
+                            {turma.periodo}
+                          </Text>
+                        ) : null}
+                      </View>
+
+                      {turmaSelecionada?.id ===
+                        turma.id && (
+                        <Ionicons
+                          name="checkmark"
+                          size={18}
+                          color={
+                            colors.primary
+                          }
+                        />
+                      )}
+                    </Pressable>
+                  ))
+                )}
+              </View>
+            )}
+          </View>
+
+          {/* Período */}
+          <View
+            style={{
+              marginTop: 14,
+            }}
+          >
+            <Text style={styles.label}>
+              Período (opcional)
+            </Text>
+
+            <Pressable
+              testID="aluno-periodo-select"
+              style={styles.select}
+              onPress={() =>
+                setPeriodoAberto((v) => !v)
+              }
+              disabled={carregando}
+            >
+              <Text
+                style={[
+                  styles.selectText,
+                  periodo &&
+                    styles.selectTextPreenchido,
+                ]}
+              >
+                {periodo ||
+                  'Selecione o período'}
+              </Text>
+
+              <Ionicons
+                name={
+                  periodoAberto
+                    ? 'chevron-up'
+                    : 'chevron-down'
+                }
+                size={18}
+                color={colors.textMuted}
+              />
+            </Pressable>
+
+            {periodoAberto && (
+              <View style={styles.dropdown}>
+                {PERIODOS.map((p) => (
+                  <Pressable
+                    key={p}
+                    testID={`periodo-opcao-${p}`}
+                    style={
+                      styles.dropdownRow
+                    }
+                    onPress={() => {
+                      setPeriodo(p);
+                      setPeriodoAberto(
+                        false
+                      );
+                    }}
+                  >
+                    <Text
+                      style={
+                        styles.dropdownRowText
+                      }
+                    >
+                      {p}
+                    </Text>
+
+                    {periodo === p && (
+                      <Ionicons
+                        name="checkmark"
+                        size={18}
+                        color={
+                          colors.primary
+                        }
+                      />
+                    )}
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          </View>
+
+          {/* E-mail */}
+          <LabeledInput
+            ref={emailInputRef}
+            testID="aluno-email-input"
+            label="E-mail institucional"
+            placeholder="aluno@email.com"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            autoComplete="email"
+            textContentType="username"
+            returnKeyType="next"
+            onSubmitEditing={() =>
+              senhaInputRef.current?.focus()
+            }
+            blurOnSubmit={false}
+            editable={!carregando}
+            value={email}
+            onChangeText={setEmail}
+            containerStyle={{
+              marginTop: 14,
+            }}
+          />
+
+          {/* Senha */}
+          <LabeledInput
+            ref={senhaInputRef}
+            testID="aluno-senha-input"
+            label="Senha"
+            placeholder="Digite uma senha"
+            isPassword
+            autoCapitalize="none"
+            autoComplete="password-new"
+            textContentType="newPassword"
+            returnKeyType="done"
+            onSubmitEditing={
+              realizarCadastro
+            }
+            editable={!carregando}
+            value={senha}
+            onChangeText={(texto) => {
+              setSenha(texto);
+
+              // Remove o aviso assim que
+              // a senha atingir 6 caracteres.
+              if (texto.length >= 6) {
+                setErroSenha(false);
+
+                // Se o erro exibido for
+                // somente o da senha, remove.
+                if (
+                  erro ===
+                  'A senha precisa ter pelo menos 6 caracteres.'
+                ) {
+                  setErro(null);
+                }
+              }
+            }}
+            containerStyle={{
+              marginTop: 14,
+            }}
+          />
+
+          {/* Aviso visual da senha */}
+          {senha.length > 0 &&
+            senha.length < 6 && (
+              <View
+                style={styles.avisoSenha}
+                testID="senha-aviso"
+              >
+                <Ionicons
+                  name="information-circle-outline"
+                  size={18}
+                  color="#B3261E"
+                />
+
+                <Text
+                  style={
+                    styles.avisoSenhaTexto
+                  }
+                >
+                  A senha deve ter pelo menos
+                  6 caracteres.
+                </Text>
+              </View>
+            )}
+
+          {/* Botão */}
           <BotaoPrimario
             testID="aluno-submit-button"
-            title="Cadastrar aluno"
-            onPress={() => router.back()}
-            style={{ marginTop: 12 }}
+            title={
+              carregando
+                ? 'Cadastrando...'
+                : 'Cadastrar aluno'
+            }
+            onPress={realizarCadastro}
+            disabled={carregando}
+            style={{
+              marginTop: 12,
+            }}
           />
         </ScrollView>
       </KeyboardAvoidingView>
@@ -77,22 +625,139 @@ export default function CadastroAluno() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.cream },
-  body: { padding: 22, paddingTop: 4 },
+  safe: {
+    flex: 1,
+    backgroundColor: colors.cream,
+  },
+
+  keyboardView: {
+    flex: 1,
+  },
+
+  body: {
+    padding: 22,
+    paddingTop: 4,
+    paddingBottom: 30,
+  },
+
   avatar: {
-    width: 78, height: 78, borderRadius: 39,
+    width: 78,
+    height: 78,
+    borderRadius: 39,
     backgroundColor: colors.primary,
     alignSelf: 'center',
-    alignItems: 'center', justifyContent: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 8,
   },
-  title: { fontSize: 20, fontWeight: '800', color: colors.textDark, textAlign: 'center' },
-  label: { fontSize: 13, color: colors.textDark, fontWeight: '600', marginBottom: 6 },
-  select: {
-    backgroundColor: '#fff', borderRadius: 12,
-    borderWidth: 1, borderColor: colors.inputBorder,
-    height: 48, paddingHorizontal: 14,
-    flexDirection: 'row', alignItems: 'center',
+
+  title: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: colors.textDark,
+    textAlign: 'center',
   },
-  selectText: { flex: 1, color: colors.textLight, fontSize: 14 },
+
+  label: {
+    fontSize: 13,
+    color: colors.textDark,
+    fontWeight: '600',
+    marginBottom: 6,
+  },
+
+  select: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+    height: 48,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  selectText: {
+    flex: 1,
+    color: colors.textLight,
+    fontSize: 14,
+  },
+
+  selectTextPreenchido: {
+    color: colors.textDark,
+    fontWeight: '600',
+  },
+
+  dropdown: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+    marginTop: 8,
+    overflow: 'hidden',
+  },
+
+  dropdownRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+    gap: 10,
+  },
+
+  dropdownRowText: {
+    fontSize: 14,
+    color: colors.textDark,
+    fontWeight: '600',
+  },
+
+  dropdownRowSub: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+
+  dropdownVazio: {
+    padding: 16,
+    textAlign: 'center',
+    fontSize: 13,
+    color: colors.textMuted,
+  },
+
+  // Banner para erros gerais
+  bannerErro: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FDECEA',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 14,
+  },
+
+  bannerErroText: {
+    flex: 1,
+    color: '#B3261E',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  // Aviso específico da senha
+  avisoSenha: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    backgroundColor: '#FDECEA',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    marginTop: 7,
+  },
+
+  avisoSenhaTexto: {
+    flex: 1,
+    color: '#B3261E',
+    fontSize: 12,
+    fontWeight: '600',
+  },
 });

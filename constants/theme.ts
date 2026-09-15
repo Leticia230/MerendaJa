@@ -1,16 +1,16 @@
 export const colors = {
   // Backgrounds
-  splashBg: '#FFC845',
-  cream: '#FFF6E8',
+  splashBg: '#ffffff',
+  cream: '#fdfcf9',
   creamLight: '#FFFAF0',
   white: '#FFFFFF',
   card: '#FFFFFF',
 
   // Brand
-  primary: '#E85D2E',
-  primaryDark: '#D9432E',
+  primary: '#F99033',
+  primaryDark: '#F99033',
   primaryLight: '#F58E5A',
-  yellow: '#FFC845',
+  yellow: '#fcfbf9',
   yellowSoft: '#FFE8A8',
 
   // Text
@@ -27,7 +27,7 @@ export const colors = {
 
   // States
   success: '#3EBB6A',
-  danger: '#E85D2E',
+  danger: '#5e3d32',
 
   // Overlays
   shadow: 'rgba(232, 93, 46, 0.12)',

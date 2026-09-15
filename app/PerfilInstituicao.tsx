@@ -11,6 +11,11 @@ export default function ProfileScreen() {
   const [school, setSchool] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [dietaryRestrictions, setDietaryRestrictions] = useState('');
+  function setText(text: string): void {
+    throw new Error('Function not implemented.');
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScreenHeader title="Perfil" />
@@ -25,6 +30,24 @@ export default function ProfileScreen() {
             placeholder="Nome da escola"
             value={school}
             onChangeText={setSchool}
+          />
+          <LabeledInput
+            testID="profile-dietary-restrictions-input"
+            label="Quantidade de alunos"
+            placeholder="Ex.: 350"
+            autoCapitalize="none"
+            keyboardType="default"
+            value={dietaryRestrictions}
+            onChangeText={setDietaryRestrictions}
+          />
+           <LabeledInput
+            testID="profile-dietary-restrictions-input"
+            label="CNPJ"
+            placeholder="Ex.: 00.000.000/0000-00"
+            autoCapitalize="none"
+            keyboardType="default"
+            value={dietaryRestrictions}
+            onChangeText={setDietaryRestrictions}
           />
           <LabeledInput
             testID="profile-email-input"
@@ -42,6 +65,11 @@ export default function ProfileScreen() {
             isPassword
             value={password}
             onChangeText={setPassword}
+          />
+          <BotaoPrimario
+            testID="profile-save-button"
+            title="Cancelar plano"
+            style={{ marginTop: 16, backgroundColor: '#d64545' }}
           />
           <BotaoPrimario
             testID="profile-save-button"

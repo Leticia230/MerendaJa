@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { forwardRef, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, Pressable, TextInputProps } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/theme';
@@ -11,20 +11,24 @@ type Props = TextInputProps & {
   testID?: string;
 };
 
-export default function LabeledInput({
-  label,
-  isPassword,
-  rightIcon,
-  containerStyle,
-  testID,
-  ...rest
-}: Props) {
+const LabeledInput = forwardRef<TextInput, Props>(function LabeledInput(
+  {
+    label,
+    isPassword,
+    rightIcon,
+    containerStyle,
+    testID,
+    ...rest
+  }: Props,
+  ref
+) {
   const [hide, setHide] = useState(!!isPassword);
   return (
     <View style={[styles.wrap, containerStyle]}>
       <Text style={styles.label}>{label}</Text>
       <View style={styles.inputRow}>
         <TextInput
+          ref={ref}
           testID={testID}
           placeholderTextColor={colors.textLight}
           secureTextEntry={isPassword ? hide : false}
@@ -45,7 +49,9 @@ export default function LabeledInput({
       </View>
     </View>
   );
-}
+});
+
+export default LabeledInput;
 
 const styles = StyleSheet.create({
   wrap: {

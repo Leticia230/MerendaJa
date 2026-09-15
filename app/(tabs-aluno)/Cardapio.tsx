@@ -1,19 +1,27 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../constants/theme';
+import { assinarCardapioDia, Refeicao } from '../services/cardapio';
 
 const DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
 
-const MEALS = [
-  { title: 'Café da manhã', desc: 'Pão de queijo\nLeite com achocolatado', icon: 'bread-slice', color: '#FFD79A' },
-  { title: 'Almoço', desc: 'Arroz, Feijão, Frango grelhado\nSalada de alface e tomate', icon: 'food', color: '#FFB27A' },
-  { title: 'Lanche da tarde', desc: 'Fruta da estação', icon: 'fruit-cherries', color: '#FFC845' },
-];
-
-export default function CardapioScreen() {
+export default function CardapioAlunoScreen() {
   const [day, setDay] = useState('Seg');
+  const [refeicoes, setRefeicoes] = useState<Refeicao[]>([]);
+  const [carregando, setCarregando] = useState(true);
+
+  useEffect(() => {
+    setCarregando(true);
+    const unsubscribe = assinarCardapioDia(day, (dados) => {
+      setRefeicoes(dados);
+      setCarregando(false);
+    });
+
+    return unsubscribe;
+  }, [day]);
+
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.headerWrap}>
@@ -39,21 +47,26 @@ export default function CardapioScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-        {MEALS.map((m, i) => (
-          <View key={i} style={styles.mealCard} testID={`cardapio-meal-${i}`}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.mealTitle}>{m.title}</Text>
-              <Text style={styles.mealDesc}>{m.desc}</Text>
+        {carregando ? (
+          <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
+        ) : refeicoes.length === 0 ? (
+          <Text style={styles.emptyText}>
+            A instituição ainda não cadastrou o cardápio desse dia.
+          </Text>
+        ) : (
+          refeicoes.map((m, i) => (
+            <View key={i} style={styles.mealCard} testID={`cardapio-meal-${i}`}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.mealTitle}>{m.titulo}</Text>
+                <Text style={styles.mealHorario}>{m.horario}</Text>
+                <Text style={styles.mealDesc}>{m.desc}</Text>
+              </View>
+              <View style={[styles.mealIcon, { backgroundColor: m.color }]}>
+                <MaterialCommunityIcons name={m.icon as any} size={26} color="#fff" />
+              </View>
             </View>
-            <View style={[styles.mealIcon, { backgroundColor: m.color }]}>
-              <MaterialCommunityIcons name={m.icon as any} size={26} color="#fff" />
-            </View>
-          </View>
-        ))}
-
-        <Pressable style={styles.addBtn} testID="add-meal-button">
-          <Text style={styles.addBtnText}>Adicionar refeição</Text>
-        </Pressable>
+          ))
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -90,6 +103,12 @@ const styles = StyleSheet.create({
   dayText: { color: colors.textDark, fontWeight: '700', fontSize: 13 },
   dayTextActive: { color: '#fff' },
   body: { padding: 16, paddingBottom: 30, gap: 12 },
+  emptyText: {
+    textAlign: 'center',
+    color: colors.textMuted,
+    fontSize: 13,
+    marginTop: 24,
+  },
   mealCard: {
     backgroundColor: '#fff',
     borderRadius: 14,
@@ -104,6 +123,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   mealTitle: { fontSize: 15, fontWeight: '700', color: colors.textDark, marginBottom: 4 },
+  mealHorario: { fontSize: 12, color: colors.primary, fontWeight: '700', marginBottom: 2 },
   mealDesc: { fontSize: 12, color: colors.textMuted, lineHeight: 17 },
   mealIcon: {
     width: 54,
@@ -112,12 +132,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  addBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: 14,
-    padding: 15,
-    alignItems: 'center',
-    marginTop: 6,
-  },
-  addBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });
