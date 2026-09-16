@@ -65,7 +65,10 @@ export default function PaymentScreen() {
         setPronto(true);
       }
     } catch (erro) {
-      Alert.alert('Erro', erro.message);
+      Alert.alert(
+        'Erro',
+        erro instanceof Error ? erro.message : 'Não foi possível iniciar o pagamento',
+      );
     } finally {
       setLoading(false);
     }
