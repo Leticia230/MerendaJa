@@ -1,8 +1,9 @@
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signOut,
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 import { auth, db } from '../components/firebaseConfig';
 
@@ -33,12 +34,38 @@ export async function cadastrar(
   return usuario;
 }
 
-export async function login(email: string, senha: string) {
+/**
+ * Faz login e confirma que a conta é do tipo esperado
+ * ('aluno' ou 'instituicao'). Se for do tipo errado, ou não tiver
+ * documento em `users`, desloga na hora e lança um erro com `code`
+ * para a tela mostrar a mensagem certa.
+ */
+export async function login(
+  email: string,
+  senha: string,
+  tipoEsperado: TipoUsuario
+) {
   const usuario = await signInWithEmailAndPassword(
     auth,
     email,
     senha
   );
+
+  const snap = await getDoc(doc(db, 'users', usuario.user.uid));
+
+  if (!snap.exists()) {
+    await signOut(auth);
+    throw { code: 'app/sem-perfil' };
+  }
+
+  const tipo = snap.data().tipo as TipoUsuario;
+
+  if (tipo !== tipoEsperado) {
+    // Desloga antes de propagar o erro, senão a pessoa fica
+    // autenticada mesmo tendo entrado na tela errada.
+    await signOut(auth);
+    throw { code: 'app/tipo-incorreto', tipoReal: tipo };
+  }
 
   return usuario;
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import ChefLogo from '../components/ChefLogo';
@@ -7,10 +7,80 @@ import LabeledInput from '../components/LabeledInput';
 import BotaoPrimario from '../components/BotaoPrimario';
 import { colors } from '../constants/theme';
 
+import { login } from '../components/auth';
+
+// Mesmo mapa de erros da tela de instituição, com a mensagem de tipo invertida
+const ERROS_LOGIN: Record<string, { titulo: string; mensagem: string }> = {
+  'auth/user-not-found': {
+    titulo: 'Conta não encontrada',
+    mensagem: 'Não existe uma conta cadastrada com este e-mail.',
+  },
+  'auth/wrong-password': {
+    titulo: 'Senha incorreta',
+    mensagem: 'A senha informada está incorreta.',
+  },
+  'auth/invalid-credential': {
+    titulo: 'Login inválido',
+    mensagem: 'E-mail ou senha incorretos.',
+  },
+  'auth/invalid-email': {
+    titulo: 'E-mail inválido',
+    mensagem: 'Digite um endereço de e-mail válido.',
+  },
+  'auth/network-request-failed': {
+    titulo: 'Sem conexão',
+    mensagem: 'Verifique sua internet e tente novamente.',
+  },
+  'auth/too-many-requests': {
+    titulo: 'Muitas tentativas',
+    mensagem: 'Aguarde alguns minutos antes de tentar novamente.',
+  },
+  'app/tipo-incorreto': {
+    titulo: 'Conta de instituição',
+    mensagem: 'Esta conta foi cadastrada como instituição. Use a tela de login de instituição.',
+  },
+  'app/sem-perfil': {
+    titulo: 'Perfil incompleto',
+    mensagem: 'Não encontramos os dados desta conta. Fale com o suporte.',
+  },
+};
+
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [carregando, setCarregando] = useState(false);
+
+  async function realizarLogin() {
+    const emailNormalizado = email.trim().toLowerCase();
+
+    if (!emailNormalizado || !password) {
+      Alert.alert('Campos obrigatórios', 'Digite seu e-mail e sua senha.');
+      return;
+    }
+
+    if (carregando) return;
+
+    setCarregando(true);
+
+    try {
+      // Confirma que a conta é do tipo 'aluno' — senão lança 'app/tipo-incorreto'.
+      await login(emailNormalizado, password, 'aluno');
+
+      router.replace('/(tabs-aluno)/Home');
+    } catch (error: any) {
+      console.error('Erro no login:', error);
+
+      const erroConhecido = ERROS_LOGIN[error?.code];
+
+      Alert.alert(
+        erroConhecido?.titulo ?? 'Erro no login',
+        erroConhecido?.mensagem ?? 'Não foi possível realizar o login. Tente novamente.'
+      );
+    } finally {
+      setCarregando(false);
+    }
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -29,6 +99,7 @@ export default function LoginScreen() {
               placeholder="seu@email.com"
               autoCapitalize="none"
               keyboardType="email-address"
+              editable={!carregando}
               value={email}
               onChangeText={setEmail}
             />
@@ -37,6 +108,7 @@ export default function LoginScreen() {
               label="Senha"
               placeholder="Digite sua senha"
               isPassword
+              editable={!carregando}
               value={password}
               onChangeText={setPassword}
             />
@@ -46,14 +118,15 @@ export default function LoginScreen() {
 
             <BotaoPrimario
               testID="login-submit-button"
-              title="Entrar"
-              onPress={() => router.replace('/(tabs-aluno)/Home')}
+              title={carregando ? 'Entrando...' : 'Entrar'}
+              onPress={realizarLogin}
+              disabled={carregando}
               style={{ marginTop: 16 }}
             />
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>Não tem uma conta? </Text>
-              <Pressable onPress={() => router.push('/CadastroInstituicao')}>
+              <Pressable onPress={() => router.push('/CadastroAluno')} disabled={carregando}>
                 <Text style={[styles.footerText, styles.footerLink]}>Criar conta</Text>
               </Pressable>
             </View>
