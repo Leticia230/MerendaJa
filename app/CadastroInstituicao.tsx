@@ -170,16 +170,10 @@ export default function RegisterInstitution() {
         mostrarAlerta(
           'Cadastro realizado!',
           'A instituição foi cadastrada com sucesso.',
-          () =>
-            router.replace(
-              '/(tabs-instituicao)/Home'
-            )
+          () => router.replace('/Pagamento')
         );
       } else {
-        // No celular, navega primeiro.
-        router.replace(
-          '/(tabs-instituicao)/Home'
-        );
+        router.replace('/Pagamento');
 
         mostrarAlerta(
           'Cadastro realizado!',

@@ -22,7 +22,7 @@ import { colors } from '../constants/theme';
 
 import { login } from '../components/auth';
 
-// Mapa de erros do Firebase Auth para mensagens amigáveis
+// Mapa de erros do Firebase Auth (e da checagem de tipo) para mensagens amigáveis
 const ERROS_LOGIN: Record<string, { titulo: string; mensagem: string }> = {
   'auth/user-not-found': {
     titulo: 'Conta não encontrada',
@@ -47,6 +47,14 @@ const ERROS_LOGIN: Record<string, { titulo: string; mensagem: string }> = {
   'auth/too-many-requests': {
     titulo: 'Muitas tentativas',
     mensagem: 'Aguarde alguns minutos antes de tentar novamente.',
+  },
+  'app/tipo-incorreto': {
+    titulo: 'Conta de estudante',
+    mensagem: 'Esta conta foi cadastrada como estudante. Use a tela de login de estudante.',
+  },
+  'app/sem-perfil': {
+    titulo: 'Perfil incompleto',
+    mensagem: 'Não encontramos os dados desta conta. Fale com o suporte.',
   },
 };
 
@@ -79,8 +87,9 @@ export default function LoginInstitution() {
     setCarregando(true);
 
     try {
-      // Firebase verifica o e-mail e a senha
-      await login(emailNormalizado, pass);
+      // Firebase verifica o e-mail e a senha, e confirma que a conta
+      // é do tipo 'instituicao' — senão lança 'app/tipo-incorreto'.
+      await login(emailNormalizado, pass, 'instituicao');
 
       // Navega imediatamente após o sucesso — não depende do onPress
       // do Alert, que não dispara de forma confiável no Expo Web.

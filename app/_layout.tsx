@@ -1,11 +1,18 @@
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import React from "react";
 import { useEffect } from "react";
 import { LogBox, StatusBar } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Constants, { ExecutionEnvironment } from "expo-constants";
 import { useFonts } from "expo-font";
+
+import StripeWrapper from "../components/PagamentoScreen.native";
+
+const StripeLayout = StripeWrapper as React.ComponentType<
+  React.PropsWithChildren
+>;
 
 LogBox.ignoreAllLogs(true);
 SplashScreen.preventAutoHideAsync();
@@ -54,11 +61,13 @@ export default function RootLayout() {
   if (!loaded && !error) return null;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <StatusBar barStyle="dark-content" />
-        <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }} />
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <StripeLayout>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <StatusBar barStyle="dark-content" />
+          <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }} />
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </StripeLayout>
   );
 }
