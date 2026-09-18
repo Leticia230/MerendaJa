@@ -8,6 +8,38 @@ import { assinarCardapioDia, Refeicao } from '../services/cardapio';
 
 const DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
 
+function obterDataDaProximaSemana(dia: string): string {
+  const hoje = new Date();
+  const diaSemana = hoje.getDay();
+
+  const diasAteSegunda =
+    diaSemana === 0
+      ? 1
+      : 8 - diaSemana;
+
+  const segunda = new Date(hoje);
+
+  segunda.setDate(
+    hoje.getDate() + diasAteSegunda
+  );
+
+  segunda.setHours(0, 0, 0, 0);
+
+  const indice = DAYS.indexOf(dia);
+
+  const data = new Date(segunda);
+
+  data.setDate(
+    segunda.getDate() + indice
+  );
+
+  const ano = data.getFullYear();
+  const mes = String(data.getMonth() + 1).padStart(2, '0');
+  const diaNumerico = String(data.getDate()).padStart(2, '0');
+
+  return `${ano}-${mes}-${diaNumerico}`;
+}
+
 export default function CardapioScreen() {
   const [day, setDay] = useState('Seg');
   const [refeicoes, setRefeicoes] = useState<Refeicao[]>([]);
@@ -29,6 +61,7 @@ export default function CardapioScreen() {
       pathname: '/AddRefeicao',
       params: {
         dia: day,
+        data: refeicao.data ?? obterDataDaProximaSemana(day),
         index: String(index),
         titulo: refeicao.titulo,
         horario: refeicao.horario,
@@ -93,7 +126,15 @@ export default function CardapioScreen() {
         <Pressable
           testID="add-refeicao"
           style={styles.addBtn}
-          onPress={() => router.push({ pathname: '/AddRefeicao', params: { dia: day } })}
+          onPress={() =>
+            router.push({
+              pathname: '/AddRefeicao',
+              params: {
+                dia: day,
+                data: obterDataDaProximaSemana(day),
+              },
+            })
+          }
         >
           <Text style={styles.addBtnText}>Adicionar refeição</Text>
         </Pressable>

@@ -202,7 +202,7 @@ export default function CadastroAluno() {
 
 
       router.replace(
-        '/(tabs-aluno)/Home'
+        '/(tabs-instituicao)/Home'
       );
     } catch (error: any) {
       console.error(

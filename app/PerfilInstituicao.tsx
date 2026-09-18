@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Alert, } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,6 +6,8 @@ import ScreenHeader from '../components/ScreenHeader';
 import LabeledInput from '../components/LabeledInput';
 import BotaoPrimario from '../components/BotaoPrimario';
 import { colors } from '../constants/theme';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../components/firebaseConfig';
 
 
 export default function ProfileScreen() {
@@ -14,6 +16,47 @@ export default function ProfileScreen() {
   const [password, setPassword] = useState('');
   const [studentCount, setStudentCount] = useState('');
   const [inep, setInep] = useState('');
+
+  useEffect(() => {
+    carregarPerfil();
+  }, []);
+
+  async function carregarPerfil() {
+    try {
+      const instituicaoId = auth.currentUser?.uid;
+
+      if (!instituicaoId) {
+        Alert.alert(
+          'Erro',
+          'Não foi possível identificar a instituição.'
+        );
+        return;
+      }
+
+      const ref = doc(db, 'users', instituicaoId);
+      const snap = await getDoc(ref);
+
+      if (!snap.exists()) {
+        Alert.alert(
+          'Erro',
+          'Perfil da instituição não encontrado.'
+        );
+        return;
+      }
+
+      const dados = snap.data();
+
+      setEmail((dados.email as string) ?? '');
+      setInep((dados.inep as string) ?? '');
+    } catch (error) {
+      console.error('Erro ao carregar perfil da instituição:', error);
+
+      Alert.alert(
+        'Erro',
+        'Não foi possível carregar os dados da instituição.'
+      );
+    }
+  }
 
   function salvarPerfil() {
     Alert.alert(
@@ -64,14 +107,14 @@ export default function ProfileScreen() {
             value={studentCount}
             onChangeText={setStudentCount}
           />
-          <LabeledInput
-            testID="profile-cnpj-input"
-            label="CNPJ"
-            placeholder="Ex.: 00.000.000/0000-00"
-            keyboardType="numeric"
-            value={inep}
-            onChangeText={setInep}
-          />
+        <LabeledInput
+          testID="profile-inep-input"
+          label="Código INEP"
+          placeholder="Ex.: 35012345"
+          keyboardType="numeric"
+          value={inep}
+          onChangeText={setInep}
+        />
           <LabeledInput
             testID="profile-email-input"
             label="E-mail profissional"

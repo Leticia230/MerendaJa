@@ -16,7 +16,13 @@ import ScreenHeader from '../components/ScreenHeader';
 import LabeledInput from '../components/LabeledInput';
 import BotaoPrimario from '../components/BotaoPrimario';
 import { colors } from '../constants/theme';
-import { adicionarRefeicao, assinarCardapioDia, salvarRefeicoesDoDia, Refeicao } from './services/cardapio';
+import {
+  adicionarRefeicao,
+  assinarCardapioDia,
+  salvarRefeicoesDoDia,
+  salvarCardapioPorData,
+  Refeicao,
+} from './services/cardapio';
 
 const DIAS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
 const CORES = ['#FFD79A', '#FFB27A', '#FFC845', '#FF9E7A', '#B7E4C7'];
@@ -26,6 +32,7 @@ export default function AddRefeicao() {
   const router = useRouter();
   const params = useLocalSearchParams<{
     dia?: string;
+    data?: string;
     index?: string;
     titulo?: string;
     horario?: string;
@@ -49,6 +56,7 @@ export default function AddRefeicao() {
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState(false);
 
+
   async function salvar() {
     setErro(null);
     setSucesso(false);
@@ -66,6 +74,11 @@ export default function AddRefeicao() {
       return;
     }
 
+    if (!params.data) {
+      setErro('Não foi possível identificar a data da refeição.');
+      return;
+    }
+
     setSalvando(true);
 
     const refeicao: Refeicao = {
@@ -74,20 +87,29 @@ export default function AddRefeicao() {
       desc: descNormalizado,
       icon,
       color,
+      data: params.data,
     };
 
     try {
+      let refeicoesAtualizadas: Refeicao[] = [];
+
       if (modoEdicao) {
         await new Promise<void>((resolve, reject) => {
           const unsubscribe = assinarCardapioDia(
             dia,
             async (refeicoes) => {
               unsubscribe();
+
               try {
                 const index = Number(params.index);
                 const novaLista = [...refeicoes];
+
                 novaLista[index] = refeicao;
+
                 await salvarRefeicoesDoDia(dia, novaLista);
+
+                refeicoesAtualizadas = novaLista;
+
                 resolve();
               } catch (e) {
                 reject(e);
@@ -98,29 +120,61 @@ export default function AddRefeicao() {
         });
       } else {
         await adicionarRefeicao(dia, refeicao);
+
+        await new Promise<void>((resolve, reject) => {
+          const unsubscribe = assinarCardapioDia(
+            dia,
+            (refeicoes) => {
+              unsubscribe();
+
+              refeicoesAtualizadas = refeicoes;
+              resolve();
+            },
+            reject
+          );
+        });
       }
 
-      console.log('Refeição salva com sucesso no Firestore:', dia, refeicao);
+      await salvarCardapioPorData(
+        params.data,
+        refeicoesAtualizadas
+      );
+
+      console.log(
+        'Refeição salva com sucesso no Firestore:',
+        dia,
+        params.data,
+        refeicao
+      );
+
       setSucesso(true);
 
-     
       setTimeout(() => router.back(), 600);
     } catch (error: any) {
       console.error('Erro ao salvar refeição:', error);
 
       if (error?.code === 'permission-denied') {
         setErro(
-          'Permissão negada pelo Firestore. Verifique as Security Rules do seu projeto Firebase — provavelmente estão bloqueando escrita na coleção "cardapios".'
+          'Permissão negada pelo Firestore. Verifique as Security Rules do seu projeto Firebase — provavelmente estão bloqueando escrita nas coleções "cardapios" ou "historicoCardapios".'
         );
-      } else if (error?.code === 'unavailable' || error?.code === 'network-request-failed') {
-        setErro('Sem conexão com o servidor. Verifique sua internet e tente novamente.');
+      } else if (
+        error?.code === 'unavailable' ||
+        error?.code === 'network-request-failed'
+      ) {
+        setErro(
+          'Sem conexão com o servidor. Verifique sua internet e tente novamente.'
+        );
       } else {
-        setErro(`Não foi possível salvar a refeição. (${error?.code ?? error?.message ?? 'erro desconhecido'})`);
+        setErro(
+          `Não foi possível salvar a refeição. (${error?.code ?? error?.message ?? 'erro desconhecido'})`
+        );
       }
     } finally {
       setSalvando(false);
     }
   }
+
+
 
   return (
     <SafeAreaView style={styles.safe}>

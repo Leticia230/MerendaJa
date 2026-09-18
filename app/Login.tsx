@@ -125,12 +125,6 @@ export default function LoginScreen() {
               style={{ marginTop: 16 }}
             />
 
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>Não tem uma conta? </Text>
-              <Pressable onPress={() => router.push('/CadastroAluno')} disabled={carregando}>
-                <Text style={[styles.footerText, styles.footerLink]}>Criar conta</Text>
-              </Pressable>
-            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -16,8 +16,8 @@ const BACKEND_URL = `${process.env.EXPO_PUBLIC_BACKEND_URL}/create-payment-inten
 const PLANO = {
   nome: 'Plano anual',
   descricao: 'Pagamento do plano anual para ter acesso aos serviços',
-  valor: 150.0,
-  valorEmCentavos: 15000,
+  valor: 124.0,
+  valorEmCentavos: 12400,
 };
 
 export default function PaymentScreen() {

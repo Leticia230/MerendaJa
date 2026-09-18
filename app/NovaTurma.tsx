@@ -19,7 +19,7 @@ import { colors } from '../constants/theme';
 import { listarAlunos, Aluno } from './services/alunos';
 import { criarTurma, buscarTurma, atualizarTurma } from './services/turmas';
 
-const PERIODOS = ['Manhã', 'Tarde', 'Noite'];
+const PERIODOS = ['Manhã', 'Tarde', 'Integral','Noite'];
 
 export default function NovaTurma() {
   const router = useRouter();
@@ -40,7 +40,6 @@ export default function NovaTurma() {
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState(false);
 
-  // Carrega a lista de alunos disponíveis (sempre necessária, criando ou editando)
   useEffect(() => {
     listarAlunos()
       .then(setAlunos)
@@ -51,7 +50,6 @@ export default function NovaTurma() {
       .finally(() => setCarregandoAlunos(false));
   }, []);
 
-  // Modo edição: busca os dados da turma existente e pré-preenche o formulário
   useEffect(() => {
     if (!params.id) return;
 
@@ -180,7 +178,6 @@ export default function NovaTurma() {
             containerStyle={{ marginTop: 16 }}
           />
 
-          {/* Período */}
           <View style={{ marginTop: 16 }}>
             <Text style={styles.label}>Período</Text>
             <Pressable
@@ -221,7 +218,6 @@ export default function NovaTurma() {
             )}
           </View>
 
-          {/* Alunos */}
           <View style={{ marginTop: 16 }}>
             <Text style={styles.label}>Adicione alunos</Text>
             <Pressable

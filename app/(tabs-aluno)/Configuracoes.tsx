@@ -12,7 +12,6 @@ const ITEMS = [
   { icon: 'information-circle', label: 'Sobre', route: '/Sobre', color: '#FFB27A' },
   { icon: 'accessibility', label: 'Acessibilidade', route: '/Acessibilidade', color: '#FFC845' },
   { icon: 'document-text', label: 'Termos de uso', route: '/TermosUso', color: '#FFB27A' },
- { icon: 'stats-chart', label: 'Estatísticas', route: '/Estatisticas', color: '#FFB27A' },
   { icon: 'shield-checkmark', label: 'Segurança e Privacidade', route: '/SegurancaPrivacidade', color: '#FFB27A' },
 ];
 
