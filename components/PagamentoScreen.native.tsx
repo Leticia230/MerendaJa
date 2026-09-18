@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { useRouter } from 'expo-router';
 import {
   View,
   Text,
@@ -10,18 +11,17 @@ import {
 } from 'react-native';
 import { useStripe } from '@stripe/stripe-react-native';
 
-// URL do SEU backend (Cloud Function, Express, etc.) que cria o PaymentIntent
-// usando a secret key do Stripe. Troque pelo endereço real quando tiver.
-const BACKEND_URL = 'https://SEU-BACKEND-AQUI/create-payment-intent';
 
+const BACKEND_URL = `${process.env.EXPO_PUBLIC_BACKEND_URL}/create-payment-intent`;
 const PLANO = {
   nome: 'Plano anual',
   descricao: 'Pagamento do plano anual para ter acesso aos serviços',
-  valor: 2000.0,
-  valorEmCentavos: 200000,
+  valor: 150.0,
+  valorEmCentavos: 15000,
 };
 
 export default function PaymentScreen() {
+  const router = useRouter();
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const [tipoCartao, setTipoCartao] = useState('credito');
   const [loading, setLoading] = useState(false);
@@ -88,8 +88,16 @@ export default function PaymentScreen() {
         Alert.alert('Pagamento não concluído', error.message);
       }
     } else {
-      Alert.alert('Pagamento confirmado', 'Seu plano foi ativado com sucesso.');
-      // Ativação real do plano deve vir de um webhook do Stripe no backend.
+      Alert.alert(
+        'Pagamento confirmado',
+        'Seu plano foi ativado com sucesso.',
+        [
+          {
+            text: 'OK',
+            onPress: () => router.replace('/(tabs-instituicao)/Home'),
+          },
+        ],
+      );
     }
   };
 

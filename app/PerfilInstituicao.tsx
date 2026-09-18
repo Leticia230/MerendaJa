@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Alert, } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenHeader from '../components/ScreenHeader';
@@ -7,13 +7,38 @@ import LabeledInput from '../components/LabeledInput';
 import BotaoPrimario from '../components/BotaoPrimario';
 import { colors } from '../constants/theme';
 
+
 export default function ProfileScreen() {
   const [school, setSchool] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [dietaryRestrictions, setDietaryRestrictions] = useState('');
-  function setText(text: string): void {
-    throw new Error('Function not implemented.');
+  const [studentCount, setStudentCount] = useState('');
+  const [inep, setInep] = useState('');
+
+  function salvarPerfil() {
+    Alert.alert(
+      'Salvar alterações',
+      'As alterações do perfil serão salvas quando a integração com o Firebase estiver configurada.'
+    );
+  }
+
+  function cancelarPlano() {
+    Alert.alert(
+      'Cancelar plano',
+      'Tem certeza que deseja cancelar o plano?',
+      [
+        {
+          text: 'Não',
+          style: 'cancel',
+        },
+        {
+          text: 'Sim',
+          style: 'destructive',
+          onPress: () => {
+          },
+        },
+      ]
+    );
   }
 
   return (
@@ -32,22 +57,20 @@ export default function ProfileScreen() {
             onChangeText={setSchool}
           />
           <LabeledInput
-            testID="profile-dietary-restrictions-input"
+            testID="profile-student-count-input"
             label="Quantidade de alunos"
             placeholder="Ex.: 350"
-            autoCapitalize="none"
-            keyboardType="default"
-            value={dietaryRestrictions}
-            onChangeText={setDietaryRestrictions}
+            keyboardType="numeric"
+            value={studentCount}
+            onChangeText={setStudentCount}
           />
-           <LabeledInput
-            testID="profile-dietary-restrictions-input"
+          <LabeledInput
+            testID="profile-cnpj-input"
             label="CNPJ"
             placeholder="Ex.: 00.000.000/0000-00"
-            autoCapitalize="none"
-            keyboardType="default"
-            value={dietaryRestrictions}
-            onChangeText={setDietaryRestrictions}
+            keyboardType="numeric"
+            value={inep}
+            onChangeText={setInep}
           />
           <LabeledInput
             testID="profile-email-input"
@@ -66,16 +89,22 @@ export default function ProfileScreen() {
             value={password}
             onChangeText={setPassword}
           />
-          <BotaoPrimario
-            testID="profile-save-button"
-            title="Cancelar plano"
-            style={{ marginTop: 16, backgroundColor: '#d64545' }}
-          />
-          <BotaoPrimario
-            testID="profile-save-button"
-            title="Salvar alterações"
-            style={{ marginTop: 16 }}
-          />
+        <BotaoPrimario
+          testID="profile-cancel-plan-button"
+          title="Cancelar plano"
+          onPress={cancelarPlano}
+          style={{
+            marginTop: 16,
+            backgroundColor: '#d64545',
+          }}
+        />
+
+        <BotaoPrimario
+          testID="profile-save-button"
+          title="Salvar alterações"
+          onPress={salvarPerfil}
+          style={{ marginTop: 16 }}
+        />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

@@ -9,7 +9,6 @@ import { colors } from '../constants/theme';
 
 import { login } from '../components/auth';
 
-// Mesmo mapa de erros da tela de instituição, com a mensagem de tipo invertida
 const ERROS_LOGIN: Record<string, { titulo: string; mensagem: string }> = {
   'auth/user-not-found': {
     titulo: 'Conta não encontrada',
@@ -64,7 +63,6 @@ export default function LoginScreen() {
     setCarregando(true);
 
     try {
-      // Confirma que a conta é do tipo 'aluno' — senão lança 'app/tipo-incorreto'.
       await login(emailNormalizado, password, 'aluno');
 
       router.replace('/(tabs-aluno)/Home');
@@ -84,7 +82,10 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >        
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
           <View style={styles.hero}>
             <ChefLogo size={350} />

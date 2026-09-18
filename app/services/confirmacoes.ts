@@ -1,16 +1,12 @@
 import { collection, doc, onSnapshot, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../components/firebaseConfig';
 
-// Cada refeição é identificada pela posição dela no array do dia (0, 1, 2...).
-// Isso é estável enquanto a instituição só adiciona/edita refeições — se um dia
-// vocês adicionarem "remover refeição", essa indexação precisa ser revista.
 
-export type RespostasAluno = Record<number, boolean>; // índice -> vai comer (true/false)
+export type RespostasAluno = Record<number, boolean>; 
 
 const confirmacaoDoAlunoRef = (dia: string, alunoId: string) =>
   doc(db, 'cardapios', dia, 'confirmacoes', alunoId);
 
-/** Escuta em tempo real as respostas do aluno (sim/não por refeição) num dia. */
 export function assinarConfirmacaoAluno(
   dia: string,
   alunoId: string,
@@ -30,10 +26,8 @@ export function assinarConfirmacaoAluno(
   );
 }
 
-/** Define a resposta do aluno (vai comer ou não) pra uma refeição específica. */
 export async function definirConfirmacao(dia: string, alunoId: string, indice: number, vaiComer: boolean) {
-  // setDoc com merge garante que funciona tanto na primeira resposta do
-  // aluno naquele dia (documento ainda não existe) quanto nas seguintes.
+  
   await setDoc(
     confirmacaoDoAlunoRef(dia, alunoId),
     {
@@ -46,11 +40,7 @@ export async function definirConfirmacao(dia: string, alunoId: string, indice: n
 
 export type ContagemRefeicao = { sim: number; nao: number };
 
-/**
- * Escuta em tempo real quantos alunos responderam "vou comer" e quantos
- * responderam "não vou" em cada refeição (por índice) num dia — usado na
- * Home da Instituição. Mostra só os números, sem identificar quem respondeu.
- */
+
 export function assinarContagemConfirmacoes(
   dia: string,
   onChange: (contagemPorIndice: Record<number, ContagemRefeicao>) => void,

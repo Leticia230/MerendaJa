@@ -8,11 +8,8 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Constants, { ExecutionEnvironment } from "expo-constants";
 import { useFonts } from "expo-font";
 
-import StripeWrapper from "../components/PagamentoScreen.native";
+import { StripeProvider } from "@stripe/stripe-react-native";
 
-const StripeLayout = StripeWrapper as React.ComponentType<
-  React.PropsWithChildren
->;
 
 LogBox.ignoreAllLogs(true);
 SplashScreen.preventAutoHideAsync();
@@ -61,13 +58,15 @@ export default function RootLayout() {
   if (!loaded && !error) return null;
 
   return (
-    <StripeLayout>
+    <StripeProvider
+  publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY!}
+>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
           <StatusBar barStyle="dark-content" />
           <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }} />
         </SafeAreaProvider>
       </GestureHandlerRootView>
-    </StripeLayout>
+    </StripeProvider>
   );
 }

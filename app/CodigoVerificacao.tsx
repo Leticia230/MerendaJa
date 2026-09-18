@@ -55,7 +55,7 @@ export default function VerifyCodeScreen() {
         <BotaoPrimario
           testID="otp-verify-button"
           title="Verificar"
-          onPress={() => router.replace('/(tabs)/Home')}
+          onPress={() => router.replace('/(tabs-instituicao)/Home')}
           style={{ marginTop: 24 }}
         />
       </View>

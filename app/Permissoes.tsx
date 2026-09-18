@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenHeader from '../components/ScreenHeader';
 import { colors } from '../constants/theme';
+import * as Notifications from 'expo-notifications';
+import * as Location from 'expo-location';
 
 function Toggle({ value, onChange, testID }: any) {
   return (
@@ -18,8 +20,26 @@ function Toggle({ value, onChange, testID }: any) {
 
 export default function PermissoesScreen() {
   const [notif, setNotif] = useState(true);
-  const [cal, setCal] = useState(true);
   const [loc, setLoc] = useState(false);
+
+  useEffect(() => {
+    async function verificarPermissao() {
+      const { status } = await Notifications.getPermissionsAsync();
+      setNotif(status === 'granted');
+    }
+
+    verificarPermissao();
+  }, []);
+
+  useEffect(() => {
+    async function verificarLocalizacao() {
+      const { status } = await Location.getForegroundPermissionsAsync();
+      setLoc(status === 'granted');
+    }
+
+    verificarLocalizacao();
+  }, []);
+
   return (
 <SafeAreaView
   style={[
@@ -28,19 +48,41 @@ export default function PermissoesScreen() {
       paddingTop: 50,
     },
   ]}
->      <ScreenHeader title="Permissões" />
+>    
+    <ScreenHeader title="Permissões" />
       <View style={styles.body}>
         <View style={styles.card}>
           <Text style={styles.label}>Acesso a notificações</Text>
-          <Toggle testID="toggle-notifications" value={notif} onChange={setNotif} />
+          <Toggle
+            testID="toggle-notifications"
+            value={notif}
+            onChange={async (value: boolean) => {
+              if (value) {
+                const { status } = await Notifications.requestPermissionsAsync();
+                setNotif(status === 'granted');
+              } else {
+                setNotif(false);
+              }
+            }}
+          />
         </View>
-        <View style={styles.card}>
-          <Text style={styles.label}>Acesso ao calendário</Text>
-          <Toggle testID="toggle-calendar" value={cal} onChange={setCal} />
-        </View>
+
         <View style={styles.card}>
           <Text style={styles.label}>Acesso à localização</Text>
-          <Toggle testID="toggle-location" value={loc} onChange={setLoc} />
+          <Toggle
+            testID="toggle-location"
+            value={loc}
+            onChange={async (value: boolean) => {
+              if (value) {
+                const { status } =
+                  await Location.requestForegroundPermissionsAsync();
+
+                setLoc(status === 'granted');
+              } else {
+                setLoc(false);
+              }
+            }}
+          />
         </View>
       </View>
     </SafeAreaView>

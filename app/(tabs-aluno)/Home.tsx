@@ -63,13 +63,40 @@ export default function HomeAlunoScreen() {
         <Pressable
           testID="day-banner"
           style={styles.dayBanner}
-          onPress={() => router.push('/RefeicoesDia')}
         >
           <View style={{ flex: 1 }}>
             <Text style={styles.dayTitle}>{nomeDiaSemanaPtBR()}</Text>
             <Text style={styles.dayDate}>{dataPorExtensoPtBR()}</Text>
           </View>
           <MaterialCommunityIcons name="food-apple" size={44} color="#fff" />
+        </Pressable>
+
+        <Pressable
+          testID="marcar-refeicoes-button"
+          style={styles.marcarRefeicoesButton}
+          onPress={() => router.push('/RefeicoesDia')}
+        >
+          <MaterialCommunityIcons
+            name="silverware-fork-knife"
+            size={24}
+            color="#fff"
+          />
+
+          <View style={{ flex: 1 }}>
+            <Text style={styles.marcarRefeicoesTitle}>
+              Marcar refeições
+            </Text>
+
+            <Text style={styles.marcarRefeicoesSubtitle}>
+              Informe quais refeições você pretende consumir
+            </Text>
+          </View>
+
+          <MaterialCommunityIcons
+            name="chevron-right"
+            size={24}
+            color="#fff"
+          />
         </Pressable>
 
         <Text style={styles.section}>Próximas refeições</Text>
@@ -130,6 +157,27 @@ const styles = StyleSheet.create({
   },
   dayTitle: { color: '#fff', fontSize: 18, fontWeight: '800' },
   dayDate: { color: '#FFE0CE', fontSize: 12, marginTop: 4 },
+  marcarRefeicoesButton: {
+  backgroundColor: colors.primary,
+  borderRadius: 16,
+  padding: 16,
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 12,
+  marginTop: 18,
+},
+
+marcarRefeicoesTitle: {
+  color: '#fff',
+  fontSize: 16,
+  fontWeight: '800',
+},
+
+marcarRefeicoesSubtitle: {
+  color: '#E8F5E9',
+  fontSize: 11,
+  marginTop: 3,
+},
   section: {
     fontSize: 14,
     fontWeight: '700',

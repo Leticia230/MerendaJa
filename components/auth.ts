@@ -21,9 +21,7 @@ export async function cadastrar(
     senha
   );
 
-  // Grava o tipo do usuário (e quaisquer dados extras, como nome e RM)
-  // no Firestore, usado depois pelo AuthContext e por telas como
-  // NovaTurma para listar os alunos cadastrados.
+ 
   await setDoc(doc(db, 'users', usuario.user.uid), {
     email,
     tipo,
@@ -34,12 +32,7 @@ export async function cadastrar(
   return usuario;
 }
 
-/**
- * Faz login e confirma que a conta é do tipo esperado
- * ('aluno' ou 'instituicao'). Se for do tipo errado, ou não tiver
- * documento em `users`, desloga na hora e lança um erro com `code`
- * para a tela mostrar a mensagem certa.
- */
+
 export async function login(
   email: string,
   senha: string,
@@ -61,8 +54,7 @@ export async function login(
   const tipo = snap.data().tipo as TipoUsuario;
 
   if (tipo !== tipoEsperado) {
-    // Desloga antes de propagar o erro, senão a pessoa fica
-    // autenticada mesmo tendo entrado na tela errada.
+   
     await signOut(auth);
     throw { code: 'app/tipo-incorreto', tipoReal: tipo };
   }

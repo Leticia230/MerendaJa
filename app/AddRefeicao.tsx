@@ -36,9 +36,7 @@ export default function AddRefeicao() {
 
   const modoEdicao = params.index !== undefined;
 
-  // O dia agora é escolhido (ou confirmado) direto nessa tela, em vez de
-  // depender só do parâmetro de navegação — assim funciona mesmo que a
-  // tela anterior não passe (ou passe errado) o parâmetro "dia".
+  
   const [dia, setDia] = useState(params.dia && DIAS.includes(params.dia) ? params.dia : '');
   const [titulo, setTitulo] = useState(params.titulo ?? '');
   const [horario, setHorario] = useState(params.horario ?? '');
@@ -47,9 +45,7 @@ export default function AddRefeicao() {
   const [color, setColor] = useState(params.color ?? CORES[0]);
   const [salvando, setSalvando] = useState(false);
 
-  // Feedback na própria tela — não depende de Alert.alert, que não
-  // dispara de forma confiável no Expo Web (mesmo problema que já
-  // corrigimos no login e no cadastro).
+
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState(false);
 
@@ -82,7 +78,6 @@ export default function AddRefeicao() {
 
     try {
       if (modoEdicao) {
-        // Edição: precisamos da lista atual pra substituir só o item certo.
         await new Promise<void>((resolve, reject) => {
           const unsubscribe = assinarCardapioDia(
             dia,
@@ -108,11 +103,9 @@ export default function AddRefeicao() {
       console.log('Refeição salva com sucesso no Firestore:', dia, refeicao);
       setSucesso(true);
 
-      // Pequeno atraso só pra garantir que a pessoa veja a confirmação
-      // antes de voltar pro Cardápio.
+     
       setTimeout(() => router.back(), 600);
     } catch (error: any) {
-      // Isso é o que normalmente ficava "engolido" pelo Alert no web.
       console.error('Erro ao salvar refeição:', error);
 
       if (error?.code === 'permission-denied') {

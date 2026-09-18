@@ -34,7 +34,6 @@ const PERIODOS = [
   'Noite',
 ];
 
-// Mapa de erros do Firebase Auth para mensagens amigáveis
 const ERROS_CADASTRO: Record<
   string,
   { titulo: string; mensagem: string }
@@ -94,20 +93,16 @@ export default function CadastroAluno() {
   const [periodoAberto, setPeriodoAberto] =
     useState(false);
 
-  // Mensagem geral de erro
   const [erro, setErro] = useState<string | null>(
     null
   );
 
-  // Controla o aviso visual da senha
   const [erroSenha, setErroSenha] = useState(false);
 
-  // Refs para navegação entre campos pelo teclado.
   const rmInputRef = useRef<TextInput>(null);
   const emailInputRef = useRef<TextInput>(null);
   const senhaInputRef = useRef<TextInput>(null);
 
-  // Carrega as turmas cadastradas pela instituição
   useEffect(() => {
     listarTurmas()
       .then(setTurmas)
@@ -130,8 +125,7 @@ export default function CadastroAluno() {
     setTurmaSelecionada(turma);
     setTurmaAberta(false);
 
-    // A turma já tem um período definido.
-    // Pré-preenche o campo.
+
     if (turma.periodo) {
       setPeriodo(turma.periodo);
     }
@@ -146,7 +140,6 @@ export default function CadastroAluno() {
       .trim()
       .toLowerCase();
 
-    // Verifica campos obrigatórios
     if (
       !nomeNormalizado ||
       !rmNormalizado ||
@@ -160,13 +153,11 @@ export default function CadastroAluno() {
       return;
     }
 
-    // Verifica o tamanho mínimo da senha
     if (senha.length < 6) {
       setErroSenha(true);
       return;
     }
 
-    // Senha válida
     setErroSenha(false);
 
     if (carregando) return;
@@ -174,7 +165,6 @@ export default function CadastroAluno() {
     setCarregando(true);
 
     try {
-      // Turma e período são opcionais
       const dadosExtras: Record<
         string,
         unknown
@@ -195,7 +185,6 @@ export default function CadastroAluno() {
         dadosExtras.periodo = periodo;
       }
 
-      // Cria a conta do aluno
       const resultado = await cadastrar(
         emailNormalizado,
         senha,
@@ -203,7 +192,7 @@ export default function CadastroAluno() {
         dadosExtras
       );
 
-      // Vincula o aluno à turma escolhida
+  
       if (turmaSelecionada) {
         await adicionarAlunoATurma(
           turmaSelecionada.id,
@@ -211,8 +200,7 @@ export default function CadastroAluno() {
         );
       }
 
-      // Cadastro concluído
-      // O Firebase já deixa o aluno autenticado.
+
       router.replace(
         '/(tabs-aluno)/Home'
       );
@@ -253,7 +241,6 @@ export default function CadastroAluno() {
           contentContainerStyle={styles.body}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Ícone */}
           <View style={styles.avatar}>
             <Ionicons
               name="person"
@@ -262,12 +249,11 @@ export default function CadastroAluno() {
             />
           </View>
 
-          {/* Título */}
           <Text style={styles.title}>
             Cadastro de Aluno
           </Text>
 
-          {/* Erro geral */}
+     
           {erro && (
             <View
               style={styles.bannerErro}
@@ -287,7 +273,7 @@ export default function CadastroAluno() {
             </View>
           )}
 
-          {/* Nome */}
+      
           <LabeledInput
             testID="aluno-nome-input"
             label="Nome do aluno"
@@ -305,7 +291,7 @@ export default function CadastroAluno() {
             }}
           />
 
-          {/* RM */}
+      
           <LabeledInput
             ref={rmInputRef}
             testID="aluno-rm-input"
@@ -322,7 +308,7 @@ export default function CadastroAluno() {
             onChangeText={setRm}
           />
 
-          {/* Turma */}
+       
           <View
             style={{
               marginTop: 14,
@@ -438,7 +424,7 @@ export default function CadastroAluno() {
             )}
           </View>
 
-          {/* Período */}
+    
           <View
             style={{
               marginTop: 14,
@@ -560,13 +546,11 @@ export default function CadastroAluno() {
             onChangeText={(texto) => {
               setSenha(texto);
 
-              // Remove o aviso assim que
-              // a senha atingir 6 caracteres.
+           
               if (texto.length >= 6) {
                 setErroSenha(false);
 
-                // Se o erro exibido for
-                // somente o da senha, remove.
+            
                 if (
                   erro ===
                   'A senha precisa ter pelo menos 6 caracteres.'

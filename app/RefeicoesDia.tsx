@@ -46,13 +46,6 @@ const DIAS_UTEIS: DiaSemana[] = [
   'Sex',
 ];
 
-/**
- * Retorna a segunda-feira da próxima semana.
- *
- * Exemplo:
- * Se hoje for domingo 13/09,
- * retorna segunda-feira 14/09.
- */
 function obterProximaSegunda(): Date {
   const hoje = new Date();
   const diaSemana = hoje.getDay();
@@ -73,9 +66,6 @@ function obterProximaSegunda(): Date {
   return segunda;
 }
 
-/**
- * Cria as datas de segunda a sexta da próxima semana.
- */
 function obterProximaSemana(): DiaCardapio[] {
   const segunda = obterProximaSegunda();
 
@@ -113,9 +103,7 @@ export default function RefeicoesDia() {
   const [salvando, setSalvando] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
-  /**
-   * Escuta o cardápio dos cinco dias.
-   */
+ 
   useEffect(() => {
     setCarregando(true);
 
@@ -158,9 +146,7 @@ export default function RefeicoesDia() {
     };
   }, []);
 
-  /**
-   * Escuta as respostas do aluno para cada dia.
-   */
+ 
   useEffect(() => {
     if (!alunoId) return;
 

@@ -7,12 +7,9 @@ import { colors } from '../../constants/theme';
 
 
 const ITEMS = [
-  { icon: 'person', label: 'Perfil', route: '/PerfilAluno', color: '#FFB27A' },
-  { icon: 'lock-closed', label: 'Permissões', route: '/Permissoes', color: '#FFC845' },
-  { icon: 'information-circle', label: 'Sobre', route: '/Sobre', color: '#FFB27A' },
+  { icon: 'person', label: 'Perfil', route: '/PerfilInstituicao', color: '#FFB27A' },  { icon: 'information-circle', label: 'Sobre', route: '/Sobre', color: '#FFB27A' },
   { icon: 'accessibility', label: 'Acessibilidade', route: '/Acessibilidade', color: '#FFC845' },
   { icon: 'document-text', label: 'Termos de uso', route: '/TermosUso', color: '#FFB27A' },
- { icon: 'stats-chart', label: 'Estatísticas', route: '/Estatisticas', color: '#FFB27A' },
   { icon: 'shield-checkmark', label: 'Segurança e Privacidade', route: '/SegurancaPrivacidade', color: '#FFB27A' },
 ];
 

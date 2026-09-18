@@ -41,10 +41,9 @@ function MealRow({ refeicao, contagem }: { refeicao: Refeicao; contagem: Contage
 export default function HomeScreen() {
   const router = useRouter();
 
-  const diaHoje = diaAbreviadoDeHoje(); // null se for fim de semana
+  const diaHoje = diaAbreviadoDeHoje(); 
 
-  // No fim de semana, já abre mostrando a segunda-feira que vem, pra
-  // instituição se programar com antecedência.
+
   const [diaSelecionado, setDiaSelecionado] = useState(diaHoje ?? 'Seg');
 
   const [totalAlunos, setTotalAlunos] = useState<number | null>(null);
@@ -53,7 +52,6 @@ export default function HomeScreen() {
   const [carregandoRefeicoes, setCarregandoRefeicoes] = useState(true);
   const [contagemPorRefeicao, setContagemPorRefeicao] = useState<Record<number, ContagemRefeicao>>({});
 
-  // Total de alunos e turmas cadastrados — sem relação com o dia selecionado.
   useEffect(() => {
     listarAlunos()
       .then((alunos) => setTotalAlunos(alunos.length))
@@ -108,7 +106,6 @@ export default function HomeScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-        {/* Não é mais tocável — confirmar presença é uma ação do aluno, não da instituição. */}
         <View style={styles.dayBanner} testID="day-banner">
           <View style={{ flex: 1 }}>
             <Text style={styles.dayTitle}>{nomeDiaSemanaPtBR()}</Text>
@@ -126,6 +123,32 @@ export default function HomeScreen() {
           </View>
         )}
 
+        <Pressable
+          testID="estatisticas-button"
+          style={[styles.quickAction, { marginTop: 10 }]}
+          onPress={() => router.push('/Estatisticas')}
+        >
+          <View style={styles.quickActionIcon}>
+            <Ionicons name="stats-chart" size={22} color="#fff" />
+          </View>
+
+          <View style={{ flex: 1 }}>
+            <Text style={styles.quickActionTitle}>
+              Estatísticas
+            </Text>
+
+            <Text style={styles.quickActionSubtitle}>
+              Veja a demanda de refeições dos alunos
+            </Text>
+          </View>
+
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={colors.textMuted}
+          />
+        </Pressable>
+
         <Text style={styles.section}>Ações rápidas</Text>
         <Pressable
           testID="cadastrar-aluno-button"
@@ -142,6 +165,32 @@ export default function HomeScreen() {
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+                </Pressable>
+
+        <Pressable
+          testID="restricoes-alimentares-button"
+          style={[styles.quickAction, { marginTop: 10 }]}
+          onPress={() => router.push('../RestricoesAlimentares')}
+        >
+          <View style={styles.quickActionIcon}>
+            <Ionicons name="warning-outline" size={22} color="#fff" />
+          </View>
+
+          <View style={{ flex: 1 }}>
+            <Text style={styles.quickActionTitle}>
+              Restrições alimentares
+            </Text>
+
+            <Text style={styles.quickActionSubtitle}>
+              Consulte as restrições informadas pelos alunos
+            </Text>
+          </View>
+
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={colors.textMuted}
+          />
         </Pressable>
 
         <Text style={styles.section}>Resumo do dia</Text>
@@ -174,7 +223,6 @@ export default function HomeScreen() {
 
         <Text style={styles.section}>{tituloSecao}</Text>
 
-        {/* Seletor de dias — sempre visível, então dá pra planejar qualquer dia da semana, não só hoje/fim de semana. */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.diasRow}>
           {DIAS.map((d) => {
             const ativo = d === diaSelecionado;

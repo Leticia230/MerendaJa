@@ -12,6 +12,7 @@ export default function InicioScreen() {
 
   const [agreed, setAgreed] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
+  const [cardWidth, setCardWidth] = useState(0);
 
   const handleScroll = (
     event: NativeSyntheticEvent<NativeScrollEvent>
@@ -29,7 +30,6 @@ export default function InicioScreen() {
     <SafeAreaView style={styles.safe}>
       <View style={styles.container} testID="inicio-screen">
 
-        {/* LOGO E TÍTULO */}
         <View style={styles.top}>
           <ChefLogo size={400} />
 
@@ -42,8 +42,12 @@ export default function InicioScreen() {
           </Text>
         </View>
 
-        {/* CARROSSEL */}
-        <View style={styles.card}>
+        <View
+          style={styles.card}
+          onLayout={(event) => {
+            setCardWidth(event.nativeEvent.layout.width);
+          }}
+        >
 
           <ScrollView
             horizontal
@@ -55,8 +59,12 @@ export default function InicioScreen() {
             contentContainerStyle={styles.scrollContent}
           >
 
-            {/* PÁGINA 1 */}
-            <View style={styles.cardPage}>
+            <View
+              style={[
+                styles.cardPage,
+                { width: cardWidth },
+              ]}
+            >
               <Text style={styles.welcome}>
                 Bem-vindo!
               </Text>
@@ -68,8 +76,12 @@ export default function InicioScreen() {
               </Text>
             </View>
 
-            {/* PÁGINA 2 */}
-            <View style={styles.cardPage}>
+            <View
+              style={[
+                styles.cardPage,
+                { width: cardWidth },
+              ]}
+            >
               <Text style={styles.welcome}>
                 Organize suas refeições
               </Text>
@@ -81,8 +93,12 @@ export default function InicioScreen() {
               </Text>
             </View>
 
-            {/* PÁGINA 3 */}
-            <View style={styles.cardPage}>
+            <View
+              style={[
+                styles.cardPage,
+                { width: cardWidth },
+              ]}
+            >
               <Text style={styles.welcome}>
                 Gerencie seus alunos 👩‍🎓
               </Text>
@@ -94,8 +110,12 @@ export default function InicioScreen() {
               </Text>
             </View>
 
-            {/* PÁGINA 4 */}
-            <View style={styles.cardPage}>
+            <View
+              style={[
+                styles.cardPage,
+                { width: cardWidth },
+              ]}
+            >
               <Text style={styles.welcome}>
                 Tudo em um só lugar!
               </Text>
@@ -109,7 +129,6 @@ export default function InicioScreen() {
 
           </ScrollView>
 
-          {/* INDICADORES */}
           <View style={styles.dots}>
             {[0, 1, 2, 3].map((index) => (
               <View
@@ -124,7 +143,6 @@ export default function InicioScreen() {
 
         </View>
 
-        {/* TERMOS DE USO */}
         <Pressable
           testID="terms-checkbox"
           style={styles.termsRow}
@@ -176,7 +194,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
 
-  /* LOGO */
   top: {
     alignItems: 'center',
     marginTop: -10,
@@ -197,17 +214,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  /* CARTÃO */
   card: {
     backgroundColor: '#fff',
     borderRadius: 20,
 
     marginTop: 12,
 
-    /*
-     * Define uma altura confortável para o cartão,
-     * sem deixar ele ocupar a tela inteira.
-     */
     minHeight: 170,
     maxHeight: 200,
 
@@ -224,7 +236,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 
-  /* SCROLL HORIZONTAL */
   scroll: {
     width: '100%',
   },
@@ -233,16 +244,13 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
   },
 
-  /* CADA PÁGINA */
   cardPage: {
-    width: '100%',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
-
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  paddingHorizontal: 20,
+  paddingTop: 20,
+  paddingBottom: 10,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
 
   welcome: {
     fontSize: 20,
@@ -260,7 +268,6 @@ const styles = StyleSheet.create({
     maxWidth: 300,
   },
 
-  /* PONTINHOS */
   dots: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -283,7 +290,6 @@ const styles = StyleSheet.create({
     width: 18,
   },
 
-  /* TERMOS */
   termsRow: {
     flexDirection: 'row',
     alignItems: 'center',
