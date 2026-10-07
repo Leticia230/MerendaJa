@@ -4,24 +4,46 @@ import {
   setDoc,
   arrayUnion,
 } from 'firebase/firestore';
-import { db } from '../../components/firebaseConfig';
+import { db, auth } from '../../components/firebaseConfig';
 
 export type Refeicao = {
   titulo: string;
   desc: string;
-  horario: string; 
-  icon: string; 
-  color: string; 
-  data?: string; 
+  horario: string;
+  icon: string;
+  color: string;
+  data?: string;
 };
 
+// Caminhos agora ficam dentro da instituição:
+// instituicoes/{uid}/cardapios/{dia}
+// instituicoes/{uid}/historicoCardapios/{data}
+function cardapioRef(dia: string, instituicaoId?: string) {
+  const id = instituicaoId ?? auth.currentUser?.uid;
+  if (!id) throw new Error('Usuário não autenticado.');
+  return doc(db, 'instituicoes', id, 'cardapios', dia);
+}
+
+function historicoRef(data: string, instituicaoId?: string) {
+  const id = instituicaoId ?? auth.currentUser?.uid;
+  if (!id) throw new Error('Usuário não autenticado.');
+  return doc(db, 'instituicoes', id, 'historicoCardapios', data);
+}
 
 export function assinarCardapioDia(
   dia: string,
   onChange: (refeicoes: Refeicao[]) => void,
-  onErro?: (erro: unknown) => void
+  onErro?: (erro: unknown) => void,
+  instituicaoId?: string // opcional: o aluno passa o id da instituição dele
 ) {
-  const ref = doc(db, 'cardapios', dia);
+  let ref;
+  try {
+    ref = cardapioRef(dia, instituicaoId);
+  } catch (e) {
+    onChange([]);
+    onErro?.(e);
+    return () => {};
+  }
 
   return onSnapshot(
     ref,
@@ -37,23 +59,17 @@ export function assinarCardapioDia(
 }
 
 export async function adicionarRefeicao(dia: string, refeicao: Refeicao) {
-  const ref = doc(db, 'cardapios', dia);
-  await setDoc(ref, { refeicoes: arrayUnion(refeicao) }, { merge: true });
+  await setDoc(
+    cardapioRef(dia),
+    { refeicoes: arrayUnion(refeicao) },
+    { merge: true }
+  );
 }
 
 export async function salvarRefeicoesDoDia(dia: string, refeicoes: Refeicao[]) {
-  const ref = doc(db, 'cardapios', dia);
-  await setDoc(ref, { refeicoes }, { merge: true });
+  await setDoc(cardapioRef(dia), { refeicoes }, { merge: true });
 }
 
-export async function salvarCardapioPorData(
-  data: string,
-  refeicoes: Refeicao[]
-) {
-  const ref = doc(db, 'historicoCardapios', data);
-
-  await setDoc(ref, {
-    data,
-    refeicoes,
-  }, { merge: true });
+export async function salvarCardapioPorData(data: string, refeicoes: Refeicao[]) {
+  await setDoc(historicoRef(data), { data, refeicoes }, { merge: true });
 }

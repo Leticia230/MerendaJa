@@ -8,7 +8,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 
-import { db } from '../../components/firebaseConfig';
+import { db, auth } from '../../components/firebaseConfig';
 
 export type Aluno = {
   id: string;
@@ -19,65 +19,49 @@ export type Aluno = {
   turmaNome?: string;
   periodo?: string;
   restricoesAlimentares?: string;
+  instituicaoId?: string;
 };
 
-export async function listarAlunos(): Promise<Aluno[]> {
-  const q = query(
-    collection(db, 'users'),
-    where('tipo', '==', 'aluno')
-  );
-
-  const snap = await getDocs(q);
-
-  return snap.docs.map((d) => {
-    const dados = d.data();
-
-    return {
-      id: d.id,
-      nome: (dados.nome as string) ?? dados.email,
-      email: dados.email as string,
-      rm: dados.rm as string | undefined,
-      turmaId: dados.turmaId as string | undefined,
-      turmaNome: dados.turmaNome as string | undefined,
-      periodo: dados.periodo as string | undefined,
-      restricoesAlimentares:
-        dados.restricoesAlimentares as string | undefined,
-    };
-  });
-}
-
-export async function buscarPerfilAluno(
-  alunoId: string
-): Promise<Aluno | null> {
-  const alunoRef = doc(db, 'users', alunoId);
-  const snap = await getDoc(alunoRef);
-
-  if (!snap.exists()) {
-    return null;
-  }
-
-  const dados = snap.data();
-
+function mapearAluno(id: string, dados: any): Aluno {
   return {
-    id: snap.id,
+    id,
     nome: (dados.nome as string) ?? dados.email,
     email: dados.email as string,
     rm: dados.rm as string | undefined,
     turmaId: dados.turmaId as string | undefined,
     turmaNome: dados.turmaNome as string | undefined,
     periodo: dados.periodo as string | undefined,
-    restricoesAlimentares:
-      dados.restricoesAlimentares as string | undefined,
+    restricoesAlimentares: dados.restricoesAlimentares as string | undefined,
+    instituicaoId: dados.instituicaoId as string | undefined,
   };
+}
+
+/** Lista só os alunos da instituição logada (ou da informada). */
+export async function listarAlunos(instituicaoId?: string): Promise<Aluno[]> {
+  const id = instituicaoId ?? auth.currentUser?.uid;
+  if (!id) throw new Error('Usuário não autenticado.');
+
+  const q = query(
+    collection(db, 'users'),
+    where('tipo', '==', 'aluno'),
+    where('instituicaoId', '==', id)
+  );
+
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => mapearAluno(d.id, d.data()));
+}
+
+export async function buscarPerfilAluno(alunoId: string): Promise<Aluno | null> {
+  const snap = await getDoc(doc(db, 'users', alunoId));
+  if (!snap.exists()) return null;
+  return mapearAluno(snap.id, snap.data());
 }
 
 export async function salvarRestricoesAlimentares(
   alunoId: string,
   restricoesAlimentares: string
 ) {
-  const alunoRef = doc(db, 'users', alunoId);
-
-  await updateDoc(alunoRef, {
+  await updateDoc(doc(db, 'users', alunoId), {
     restricoesAlimentares: restricoesAlimentares.trim(),
   });
 }

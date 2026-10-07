@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { colors } from '../../constants/theme';
+import { signOut } from 'firebase/auth';
+import { auth } from '../../components/firebaseConfig';
 
 
 const ITEMS = [
@@ -17,6 +19,15 @@ const ITEMS = [
 
 export default function ConfigScreen() {
   const router = useRouter();
+
+  async function sair() {
+    try {
+      await signOut(auth);
+    } finally {
+      router.replace('/');
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.headerWrap}>
@@ -45,10 +56,10 @@ export default function ConfigScreen() {
         <Pressable
           testID="logout-button"
           style={styles.logout}
-          onPress={() => router.replace('/')}
-        >
+          onPress={sair}        >
           <Text style={styles.logoutText}>Sair da conta</Text>
         </Pressable>
+        
       </ScrollView>
     </SafeAreaView>
   );
