@@ -2,6 +2,7 @@ import { getApp, getApps, initializeApp } from 'firebase/app';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  sendPasswordResetEmail,
   signOut,
   getAuth,
 } from 'firebase/auth';
@@ -51,6 +52,10 @@ export async function login(
   }
 
   return usuario;
+}
+
+export async function recuperarSenha(email: string) {
+  await sendPasswordResetEmail(auth, email.trim().toLowerCase());
 }
 
 /**
