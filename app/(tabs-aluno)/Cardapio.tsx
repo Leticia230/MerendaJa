@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../constants/theme';
 import { assinarCardapioDia, Refeicao } from '../services/cardapio';
+import { useInstituicaoId } from '../services/useInstituicaoId';
 
 const DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
 
@@ -11,16 +12,30 @@ export default function CardapioAlunoScreen() {
   const [day, setDay] = useState('Seg');
   const [refeicoes, setRefeicoes] = useState<Refeicao[]>([]);
   const [carregando, setCarregando] = useState(true);
+  const { instituicaoId, carregando: carregandoInstituicao } = useInstituicaoId();
 
   useEffect(() => {
-    setCarregando(true);
-    const unsubscribe = assinarCardapioDia(day, (dados) => {
-      setRefeicoes(dados);
+    if (carregandoInstituicao) return;
+
+    if (!instituicaoId) {
+      setRefeicoes([]);
       setCarregando(false);
-    });
+      return;
+    }
+
+    setCarregando(true);
+    const unsubscribe = assinarCardapioDia(
+      day,
+      (dados) => {
+        setRefeicoes(dados);
+        setCarregando(false);
+      },
+      () => setCarregando(false),
+      instituicaoId
+    );
 
     return unsubscribe;
-  }, [day]);
+  }, [day, instituicaoId, carregandoInstituicao]);
 
   return (
     <SafeAreaView style={styles.safe}>

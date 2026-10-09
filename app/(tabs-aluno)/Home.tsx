@@ -6,6 +6,8 @@ import { useRouter } from 'expo-router';
 import { colors } from '../../constants/theme';
 import { assinarCardapioDia, Refeicao } from '../services/cardapio';
 import { diaAbreviadoDeHoje, nomeDiaSemanaPtBR, dataPorExtensoPtBR } from '../services/data';
+import { useInstituicaoId } from '../services/useInstituicaoId';
+
 
 function MealRow({ titulo, horario, color, icon }: Refeicao) {
   return (
@@ -29,23 +31,28 @@ export default function HomeAlunoScreen() {
 
   const diaHoje = diaAbreviadoDeHoje(); // null se for fim de semana
 
+  const { instituicaoId, carregando: carregandoInstituicao } = useInstituicaoId();
+
   useEffect(() => {
-    if (!diaHoje) {
+  if (carregandoInstituicao) return;
+
+  if (!diaHoje || !instituicaoId) {
+    setCarregando(false);
+    return;
+  }
+
+  const unsubscribe = assinarCardapioDia(
+    diaHoje,
+    (refeicoes) => {
+      setRefeicoesHoje(refeicoes);
       setCarregando(false);
-      return;
-    }
+    },
+    () => setCarregando(false),
+    instituicaoId
+  );
 
-    const unsubscribe = assinarCardapioDia(
-      diaHoje,
-      (refeicoes) => {
-        setRefeicoesHoje(refeicoes);
-        setCarregando(false);
-      },
-      () => setCarregando(false)
-    );
-
-    return unsubscribe;
-  }, [diaHoje]);
+  return unsubscribe;
+}, [diaHoje, instituicaoId, carregandoInstituicao]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>

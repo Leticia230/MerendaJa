@@ -20,7 +20,7 @@ import ScreenHeader from '../components/ScreenHeader';
 import LabeledInput from '../components/LabeledInput';
 import BotaoPrimario from '../components/BotaoPrimario';
 import { colors } from '../constants/theme';
-import { cadastrar } from '../components/auth';
+import { cadastrarAluno } from '../components/auth';
 import {
   listarTurmas,
   adicionarAlunoATurma,
@@ -185,10 +185,9 @@ export default function CadastroAluno() {
         dadosExtras.periodo = periodo;
       }
 
-      const resultado = await cadastrar(
+      const resultado = await cadastrarAluno(
         emailNormalizado,
         senha,
-        'aluno',
         dadosExtras
       );
 

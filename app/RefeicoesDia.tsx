@@ -25,9 +25,8 @@ import {
   RespostasAluno,
 } from './services/confirmacoes';
 
-import {
-  NOME_COMPLETO_DIA,
-} from './services/data';
+import { NOME_COMPLETO_DIA } from './services/data';
+import { useInstituicaoId } from './services/useInstituicaoId';
 
 type DiaSemana = 'Seg' | 'Ter' | 'Qua' | 'Qui' | 'Sex';
 
@@ -38,29 +37,16 @@ type DiaCardapio = {
   respostas: RespostasAluno;
 };
 
-const DIAS_UTEIS: DiaSemana[] = [
-  'Seg',
-  'Ter',
-  'Qua',
-  'Qui',
-  'Sex',
-];
+const DIAS_UTEIS: DiaSemana[] = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
 
 function obterProximaSegunda(): Date {
   const hoje = new Date();
   const diaSemana = hoje.getDay();
 
-  const diasAteSegunda =
-    diaSemana === 0
-      ? 1
-      : 8 - diaSemana;
+  const diasAteSegunda = diaSemana === 0 ? 1 : 8 - diaSemana;
 
   const segunda = new Date(hoje);
-
-  segunda.setDate(
-    hoje.getDate() + diasAteSegunda
-  );
-
+  segunda.setDate(hoje.getDate() + diasAteSegunda);
   segunda.setHours(0, 0, 0, 0);
 
   return segunda;
@@ -71,10 +57,7 @@ function obterProximaSemana(): DiaCardapio[] {
 
   return DIAS_UTEIS.map((codigo, indice) => {
     const data = new Date(segunda);
-
-    data.setDate(
-      segunda.getDate() + indice
-    );
+    data.setDate(segunda.getDate() + indice);
 
     return {
       codigo,
@@ -94,17 +77,24 @@ function formatarData(data: Date): string {
 
 export default function RefeicoesDia() {
   const alunoId = auth.currentUser?.uid;
+  const { instituicaoId, carregando: carregandoInstituicao } =
+    useInstituicaoId();
 
-  const [dias, setDias] = useState<DiaCardapio[]>(
-    obterProximaSemana()
-  );
+  const [dias, setDias] = useState<DiaCardapio[]>(obterProximaSemana());
 
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
- 
+  // Cardápio da instituição do aluno
   useEffect(() => {
+    if (carregandoInstituicao) return;
+
+    if (!instituicaoId) {
+      setCarregando(false);
+      return;
+    }
+
     setCarregando(true);
 
     const unsubscribeList: (() => void)[] = [];
@@ -115,40 +105,30 @@ export default function RefeicoesDia() {
         (refeicoes) => {
           setDias((atual) =>
             atual.map((dia) =>
-              dia.codigo === codigo
-                ? {
-                    ...dia,
-                    refeicoes,
-                  }
-                : dia
+              dia.codigo === codigo ? { ...dia, refeicoes } : dia
             )
           );
 
           setCarregando(false);
         },
         (erro) => {
-          console.error(
-            `Erro ao carregar cardápio de ${codigo}:`,
-            erro
-          );
-
+          console.error(`Erro ao carregar cardápio de ${codigo}:`, erro);
           setCarregando(false);
-        }
+        },
+        instituicaoId
       );
 
       unsubscribeList.push(unsubscribe);
     });
 
     return () => {
-      unsubscribeList.forEach((unsubscribe) =>
-        unsubscribe()
-      );
+      unsubscribeList.forEach((unsubscribe) => unsubscribe());
     };
-  }, []);
+  }, [instituicaoId, carregandoInstituicao]);
 
- 
+  // Respostas (Vou comer / Não vou) do aluno
   useEffect(() => {
-    if (!alunoId) return;
+    if (!alunoId || !instituicaoId) return;
 
     const unsubscribeList: (() => void)[] = [];
 
@@ -159,42 +139,27 @@ export default function RefeicoesDia() {
         (respostas) => {
           setDias((atual) =>
             atual.map((dia) =>
-              dia.codigo === codigo
-                ? {
-                    ...dia,
-                    respostas,
-                  }
-                : dia
+              dia.codigo === codigo ? { ...dia, respostas } : dia
             )
           );
         },
         (erro) => {
-          console.error(
-            `Erro ao carregar respostas de ${codigo}:`,
-            erro
-          );
-        }
+          console.error(`Erro ao carregar respostas de ${codigo}:`, erro);
+        },
+        instituicaoId
       );
 
       unsubscribeList.push(unsubscribe);
     });
 
     return () => {
-      unsubscribeList.forEach((unsubscribe) =>
-        unsubscribe()
-      );
+      unsubscribeList.forEach((unsubscribe) => unsubscribe());
     };
-  }, [alunoId]);
+  }, [alunoId, instituicaoId]);
 
-  async function escolher(
-    dia: DiaSemana,
-    indice: number,
-    vaiComer: boolean
-  ) {
-    if (!alunoId) {
-      setErro(
-        'Não foi possível identificar seu usuário. Faça login novamente.'
-      );
+  async function escolher(dia: DiaSemana, indice: number, vaiComer: boolean) {
+    if (!alunoId || !instituicaoId) {
+      setErro('Não foi possível identificar seu usuário. Faça login novamente.');
       return;
     }
 
@@ -204,21 +169,10 @@ export default function RefeicoesDia() {
     setSalvando(chave);
 
     try {
-      await definirConfirmacao(
-        dia,
-        alunoId,
-        indice,
-        vaiComer
-      );
+      await definirConfirmacao(dia, alunoId, indice, vaiComer, instituicaoId);
     } catch (e) {
-      console.error(
-        'Erro ao salvar confirmação:',
-        e
-      );
-
-      setErro(
-        'Não foi possível salvar sua escolha. Tente novamente.'
-      );
+      console.error('Erro ao salvar confirmação:', e);
+      setErro('Não foi possível salvar sua escolha. Tente novamente.');
     } finally {
       setSalvando(null);
     }
@@ -238,47 +192,33 @@ export default function RefeicoesDia() {
           </Text>
 
           <Text style={styles.introducaoTexto}>
-            Informe quais refeições você pretende
-            consumir na próxima semana.
+            Informe quais refeições você pretende consumir na próxima semana.
           </Text>
         </View>
 
         {erro && (
-          <View
-            style={styles.bannerErro}
-            testID="refeicoesdia-erro"
-          >
+          <View style={styles.bannerErro} testID="refeicoesdia-erro">
             <MaterialCommunityIcons
               name="alert-circle"
               size={18}
               color="#B3261E"
             />
 
-            <Text style={styles.bannerErroText}>
-              {erro}
-            </Text>
+            <Text style={styles.bannerErroText}>{erro}</Text>
           </View>
         )}
 
         {carregando ? (
-          <ActivityIndicator
-            color={colors.primary}
-            style={{ marginTop: 24 }}
-          />
+          <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />
         ) : (
           dias.map((dia) => (
-            <View
-              key={dia.codigo}
-              style={styles.diaContainer}
-            >
+            <View key={dia.codigo} style={styles.diaContainer}>
               <View style={styles.dateWrap}>
                 <Text style={styles.dateTitle}>
                   {NOME_COMPLETO_DIA[dia.codigo]}
                 </Text>
 
-                <Text style={styles.dateSub}>
-                  {formatarData(dia.data)}
-                </Text>
+                <Text style={styles.dateSub}>{formatarData(dia.data)}</Text>
               </View>
 
               {dia.refeicoes.length === 0 ? (
@@ -295,14 +235,9 @@ export default function RefeicoesDia() {
                 </View>
               ) : (
                 dia.refeicoes.map((refeicao, i) => {
-                  const resposta =
-                    dia.respostas[i];
-
-                  const chave =
-                    `${dia.codigo}-${i}`;
-
-                  const estaSalvando =
-                    salvando === chave;
+                  const resposta = dia.respostas[i];
+                  const chave = `${dia.codigo}-${i}`;
+                  const estaSalvando = salvando === chave;
 
                   return (
                     <View
@@ -314,76 +249,44 @@ export default function RefeicoesDia() {
                         <View
                           style={[
                             styles.icon,
-                            {
-                              backgroundColor:
-                                refeicao.color,
-                            },
+                            { backgroundColor: refeicao.color },
                           ]}
                         >
                           <MaterialCommunityIcons
-                            name={
-                              refeicao.icon as any
-                            }
+                            name={refeicao.icon as any}
                             size={22}
                             color="#fff"
                           />
                         </View>
 
-                        <View
-                          style={{
-                            flex: 1,
-                          }}
-                        >
-                          <Text
-                            style={styles.titulo}
-                          >
-                            {refeicao.titulo}
-                          </Text>
-
-                          <Text
-                            style={styles.horario}
-                          >
-                            {refeicao.horario}
-                          </Text>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.titulo}>{refeicao.titulo}</Text>
+                          <Text style={styles.horario}>{refeicao.horario}</Text>
                         </View>
                       </View>
 
-                      <Text style={styles.desc}>
-                        {refeicao.desc}
-                      </Text>
+                      <Text style={styles.desc}>{refeicao.desc}</Text>
 
                       <View style={styles.opcoes}>
                         <Pressable
                           testID={`refeicao-${dia.codigo}-${i}-sim`}
                           style={[
                             styles.opcaoBtn,
-                            resposta === true &&
-                              styles.opcaoBtnSimAtivo,
+                            resposta === true && styles.opcaoBtnSimAtivo,
                           ]}
-                          onPress={() =>
-                            escolher(
-                              dia.codigo,
-                              i,
-                              true
-                            )
-                          }
+                          onPress={() => escolher(dia.codigo, i, true)}
                           disabled={estaSalvando}
                         >
                           <MaterialCommunityIcons
                             name="check-circle"
                             size={16}
-                            color={
-                              resposta === true
-                                ? '#fff'
-                                : '#2E7D32'
-                            }
+                            color={resposta === true ? '#fff' : '#2E7D32'}
                           />
 
                           <Text
                             style={[
                               styles.opcaoText,
-                              resposta === true &&
-                                styles.opcaoTextAtivo,
+                              resposta === true && styles.opcaoTextAtivo,
                             ]}
                           >
                             Vou comer
@@ -394,33 +297,21 @@ export default function RefeicoesDia() {
                           testID={`refeicao-${dia.codigo}-${i}-nao`}
                           style={[
                             styles.opcaoBtn,
-                            resposta === false &&
-                              styles.opcaoBtnNaoAtivo,
+                            resposta === false && styles.opcaoBtnNaoAtivo,
                           ]}
-                          onPress={() =>
-                            escolher(
-                              dia.codigo,
-                              i,
-                              false
-                            )
-                          }
+                          onPress={() => escolher(dia.codigo, i, false)}
                           disabled={estaSalvando}
                         >
                           <MaterialCommunityIcons
                             name="close-circle"
                             size={16}
-                            color={
-                              resposta === false
-                                ? '#fff'
-                                : '#B3261E'
-                            }
+                            color={resposta === false ? '#fff' : '#B3261E'}
                           />
 
                           <Text
                             style={[
                               styles.opcaoText,
-                              resposta === false &&
-                                styles.opcaoTextAtivo,
+                              resposta === false && styles.opcaoTextAtivo,
                             ]}
                           >
                             Não vou
@@ -429,13 +320,8 @@ export default function RefeicoesDia() {
                       </View>
 
                       {resposta === undefined && (
-                        <Text
-                          style={
-                            styles.pendenteText
-                          }
-                        >
-                          Você ainda não respondeu
-                          essa refeição.
+                        <Text style={styles.pendenteText}>
+                          Você ainda não respondeu essa refeição.
                         </Text>
                       )}
 
@@ -443,9 +329,7 @@ export default function RefeicoesDia() {
                         <ActivityIndicator
                           size="small"
                           color={colors.primary}
-                          style={{
-                            marginTop: 8,
-                          }}
+                          style={{ marginTop: 8 }}
                         />
                       )}
                     </View>
