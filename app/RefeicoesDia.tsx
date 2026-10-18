@@ -178,23 +178,52 @@ export default function RefeicoesDia() {
     }
   }
 
+  const totalRefeicoes = dias.reduce((total, dia) => total + dia.refeicoes.length, 0);
+  const refeicoesRespondidas = dias.reduce(
+    (total, dia) =>
+      total + dia.refeicoes.filter((_, indice) => dia.respostas[indice] !== undefined).length,
+    0
+  );
+  const refeicoesPendentes = totalRefeicoes - refeicoesRespondidas;
+
   return (
     <SafeAreaView style={styles.safe}>
-      <ScreenHeader title="Refeições da próxima semana" />
+      <ScreenHeader title="Planeje suas refeições" />
 
       <ScrollView
         contentContainerStyle={styles.body}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.introducao}>
-          <Text style={styles.introducaoTitulo}>
-            Planeje suas refeições 🍽️
-          </Text>
-
+          <View style={styles.introducaoIcone}>
+            <MaterialCommunityIcons name="calendar-check-outline" size={25} color={colors.primary} />
+          </View>
+          <Text style={styles.introducaoTitulo}>Organize sua semana</Text>
           <Text style={styles.introducaoTexto}>
-            Informe quais refeições você pretende consumir na próxima semana.
+            Confira o cardápio e escolha em cada refeição se você vai comer ou não.
           </Text>
         </View>
+
+        {!carregando && totalRefeicoes > 0 && (
+          <View style={styles.resumo}>
+            <View style={styles.resumoItem}>
+              <Text style={styles.resumoNumero}>{totalRefeicoes}</Text>
+              <Text style={styles.resumoLegenda}>Refeições</Text>
+            </View>
+            <View style={styles.resumoDivisor} />
+            <View style={styles.resumoItem}>
+              <Text style={[styles.resumoNumero, { color: '#2E7D32' }]}>{refeicoesRespondidas}</Text>
+              <Text style={styles.resumoLegenda}>Respondidas</Text>
+            </View>
+            <View style={styles.resumoDivisor} />
+            <View style={styles.resumoItem}>
+              <Text style={[styles.resumoNumero, { color: refeicoesPendentes > 0 ? '#B26A00' : '#2E7D32' }]}>
+                {refeicoesPendentes}
+              </Text>
+              <Text style={styles.resumoLegenda}>Pendentes</Text>
+            </View>
+          </View>
+        )}
 
         {erro && (
           <View style={styles.bannerErro} testID="refeicoesdia-erro">
@@ -214,11 +243,18 @@ export default function RefeicoesDia() {
           dias.map((dia) => (
             <View key={dia.codigo} style={styles.diaContainer}>
               <View style={styles.dateWrap}>
-                <Text style={styles.dateTitle}>
-                  {NOME_COMPLETO_DIA[dia.codigo]}
-                </Text>
-
-                <Text style={styles.dateSub}>{formatarData(dia.data)}</Text>
+                <View style={styles.dateTextos}>
+                  <Text style={styles.dateTitle}>
+                    {NOME_COMPLETO_DIA[dia.codigo]}
+                  </Text>
+                  <Text style={styles.dateSub}>{formatarData(dia.data)}</Text>
+                </View>
+                <View style={styles.contagemDia}>
+                  <Text style={styles.contagemDiaTexto}>
+                    {dia.refeicoes.filter((_, indice) => dia.respostas[indice] !== undefined).length}/{dia.refeicoes.length}
+                  </Text>
+                  <Text style={styles.contagemDiaLegenda}>feitas</Text>
+                </View>
               </View>
 
               {dia.refeicoes.length === 0 ? (
@@ -266,6 +302,15 @@ export default function RefeicoesDia() {
                       </View>
 
                       <Text style={styles.desc}>{refeicao.desc}</Text>
+
+                      <View style={styles.pergunta}>
+                        <MaterialCommunityIcons
+                          name="help-circle-outline"
+                          size={16}
+                          color={colors.textMuted}
+                        />
+                        <Text style={styles.perguntaTexto}>Você vai consumir esta refeição?</Text>
+                      </View>
 
                       <View style={styles.opcoes}>
                         <Pressable
@@ -319,10 +364,22 @@ export default function RefeicoesDia() {
                         </Pressable>
                       </View>
 
-                      {resposta === undefined && (
-                        <Text style={styles.pendenteText}>
-                          Você ainda não respondeu essa refeição.
-                        </Text>
+                      {resposta === undefined ? (
+                        <View style={styles.statusPendente}>
+                          <MaterialCommunityIcons name="clock-outline" size={14} color="#9A6700" />
+                          <Text style={styles.pendenteText}>Aguardando sua resposta</Text>
+                        </View>
+                      ) : (
+                        <View style={styles.statusRespondido}>
+                          <MaterialCommunityIcons
+                            name="check-circle-outline"
+                            size={14}
+                            color={resposta ? '#2E7D32' : '#B3261E'}
+                          />
+                          <Text style={[styles.respondidoText, { color: resposta ? '#2E7D32' : '#B3261E' }]}>
+                            {resposta ? 'Você confirmou que vai comer' : 'Você informou que não vai comer'}
+                          </Text>
+                        </View>
                       )}
 
                       {estaSalvando && (
@@ -351,37 +408,102 @@ const styles = StyleSheet.create({
   },
 
   body: {
-    padding: 18,
+    paddingHorizontal: 18,
+    paddingTop: 16,
     paddingBottom: 40,
   },
 
   introducao: {
-    marginBottom: 20,
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 22,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#F1E8D8',
+  },
+
+  introducaoIcone: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: '#FFF4D6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
   },
 
   introducaoTitulo: {
     fontSize: 20,
     fontWeight: '800',
     color: colors.textDark,
+    textAlign: 'center',
   },
 
   introducaoTexto: {
     fontSize: 13,
     color: colors.textMuted,
-    marginTop: 5,
-    lineHeight: 18,
+    marginTop: 7,
+    lineHeight: 19,
+    textAlign: 'center',
+  },
+
+  resumo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    marginBottom: 22,
+    borderWidth: 1,
+    borderColor: '#F1E8D8',
+  },
+
+  resumoItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+
+  resumoNumero: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: colors.textDark,
+  },
+
+  resumoLegenda: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 3,
+    textAlign: 'center',
+  },
+
+  resumoDivisor: {
+    width: 1,
+    height: 34,
+    backgroundColor: '#EEE5D7',
   },
 
   diaContainer: {
-    marginBottom: 18,
+    marginBottom: 22,
   },
 
   dateWrap: {
-    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    paddingHorizontal: 2,
+  },
+
+  dateTextos: {
+    flex: 1,
   },
 
   dateTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '800',
     color: colors.textDark,
   },
@@ -389,30 +511,57 @@ const styles = StyleSheet.create({
   dateSub: {
     fontSize: 13,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: 3,
+  },
+
+  contagemDia: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 56,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 12,
+    backgroundColor: '#FFF4D6',
+  },
+
+  contagemDiaTexto: {
+    color: colors.textDark,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+
+  contagemDiaLegenda: {
+    color: colors.textMuted,
+    fontSize: 10,
+    marginTop: 1,
   },
 
   semRefeicao: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 18,
+    padding: 20,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
+    borderWidth: 1,
+    borderColor: '#F1E8D8',
   },
 
   semRefeicaoTexto: {
     textAlign: 'center',
     color: colors.textMuted,
     fontSize: 13,
-    marginTop: 7,
+    lineHeight: 19,
+    marginTop: 8,
   },
 
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 15,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#F1E8D8',
   },
 
   cardHeader: {
@@ -422,16 +571,16 @@ const styles = StyleSheet.create({
   },
 
   icon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   titulo: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.textDark,
   },
 
@@ -439,20 +588,34 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.primary,
     fontWeight: '700',
-    marginTop: 2,
+    marginTop: 4,
   },
 
   desc: {
-    fontSize: 12,
+    fontSize: 13,
     color: colors.textMuted,
-    marginTop: 10,
-    lineHeight: 17,
+    marginTop: 12,
+    lineHeight: 19,
+  },
+
+  pergunta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 16,
+    marginBottom: 9,
+  },
+
+  perguntaTexto: {
+    flex: 1,
+    color: colors.textDark,
+    fontSize: 12,
+    fontWeight: '700',
   },
 
   opcoes: {
     flexDirection: 'row',
     gap: 10,
-    marginTop: 14,
   },
 
   opcaoBtn: {
@@ -464,7 +627,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.inputBorder,
-    paddingVertical: 10,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
   },
 
   opcaoBtnSimAtivo: {
@@ -484,14 +649,42 @@ const styles = StyleSheet.create({
   },
 
   opcaoTextAtivo: {
-    color: '#fff',
+    color: '#FFFFFF',
+  },
+
+  statusPendente: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    alignSelf: 'flex-start',
+    marginTop: 11,
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#FFF4D6',
   },
 
   pendenteText: {
     fontSize: 11,
-    color: colors.textMuted,
-    marginTop: 8,
-    fontStyle: 'italic',
+    color: '#8A5A00',
+    fontWeight: '600',
+  },
+
+  statusRespondido: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    alignSelf: 'flex-start',
+    marginTop: 11,
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#F5F7F2',
+  },
+
+  respondidoText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
 
   bannerErro: {
