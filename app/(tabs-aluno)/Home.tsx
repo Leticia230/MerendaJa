@@ -1,5 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  ActivityIndicator,
+  Animated,
+  Easing,
+  AccessibilityInfo,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -7,7 +17,6 @@ import { colors } from '../../constants/theme';
 import { assinarCardapioDia, Refeicao } from '../services/cardapio';
 import { diaAbreviadoDeHoje, nomeDiaSemanaPtBR, dataPorExtensoPtBR } from '../services/data';
 import { useInstituicaoId } from '../services/useInstituicaoId';
-
 
 function MealRow({ titulo, horario, color, icon }: Refeicao) {
   return (
@@ -17,9 +26,114 @@ function MealRow({ titulo, horario, color, icon }: Refeicao) {
         <Text style={styles.mealTime}>{horario}</Text>
       </View>
       <View style={[styles.mealIcon, { backgroundColor: color }]}>
-        <MaterialCommunityIcons name={icon as any} size={24} color="#fff" />
+        <MaterialCommunityIcons name={icon as any} size={24} color="#ffffff" />
       </View>
     </View>
+  );
+}
+
+type MarcarCardProps = {
+  refeicoes: Refeicao[];
+  carregando: boolean;
+  onPress: () => void;
+};
+
+function MarcarRefeicoesCard({ refeicoes, carregando, onPress }: MarcarCardProps) {
+  const pulse = useRef(new Animated.Value(0)).current;
+  const press = useRef(new Animated.Value(1)).current;
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+  }, []);
+
+  useEffect(() => {
+    if (reduceMotion) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 1400,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulse, { toValue: 0, duration: 0, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulse, reduceMotion]);
+
+  const animaPress = (to: number) =>
+    Animated.spring(press, { toValue: to, useNativeDriver: true, speed: 30 }).start();
+
+  const ringScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.7] });
+  const ringOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0] });
+
+  const subtitulo = carregando
+    ? 'Carregando as refeições de hoje...'
+    : refeicoes.length === 0
+    ? 'Sem cardápio hoje, mas você pode conferir as opções'
+    : `${refeicoes.length} ${
+        refeicoes.length === 1 ? 'refeição' : 'refeições'
+      } hoje · escolha as que você vai comer`;
+
+  return (
+    <Animated.View style={{ transform: [{ scale: press }], marginTop: 18 }}>
+      <Pressable
+        testID="marcar-refeicoes-button"
+        style={styles.marcarCard}
+        onPress={onPress}
+        onPressIn={() => animaPress(0.97)}
+        onPressOut={() => animaPress(1)}
+        accessibilityRole="button"
+        accessibilityLabel="Marcar refeições"
+        accessibilityHint="Informe quais refeições você pretende consumir hoje"
+      >
+        <View style={styles.marcarTop}>
+          <View style={styles.marcarIconWrap}>
+            {!reduceMotion && (
+              <Animated.View
+                style={[
+                  styles.marcarRing,
+                  { opacity: ringOpacity, transform: [{ scale: ringScale }] },
+                ]}
+              />
+            )}
+            <View style={styles.marcarIconBubble}>
+              <MaterialCommunityIcons
+                name="clipboard-check-outline"
+                size={26}
+                color={colors.primaryDark}
+              />
+            </View>
+          </View>
+
+          <View style={{ flex: 1 }}>
+            <Text style={styles.marcarRefeicoesTitle}>Marcar refeições</Text>
+            <Text style={styles.marcarRefeicoesSubtitle}>{subtitulo}</Text>
+          </View>
+
+          <View style={styles.marcarCta}>
+            <Text style={styles.marcarCtaText}>Marcar</Text>
+            <MaterialCommunityIcons name="chevron-right" size={18} color={colors.splashBg} />
+          </View>
+        </View>
+
+        {!carregando && refeicoes.length > 0 && (
+          <View style={styles.chipsRow}>
+            {refeicoes.map((r, i) => (
+              <View key={i} style={styles.chip}>
+                <View style={[styles.chipDot, { backgroundColor: r.color }]}>
+                  <MaterialCommunityIcons name={r.icon as any} size={12} color="#ffffff" />
+                </View>
+                <Text style={styles.chipText}>{r.titulo}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -34,25 +148,25 @@ export default function HomeAlunoScreen() {
   const { instituicaoId, carregando: carregandoInstituicao } = useInstituicaoId();
 
   useEffect(() => {
-  if (carregandoInstituicao) return;
+    if (carregandoInstituicao) return;
 
-  if (!diaHoje || !instituicaoId) {
-    setCarregando(false);
-    return;
-  }
-
-  const unsubscribe = assinarCardapioDia(
-    diaHoje,
-    (refeicoes) => {
-      setRefeicoesHoje(refeicoes);
+    if (!diaHoje || !instituicaoId) {
       setCarregando(false);
-    },
-    () => setCarregando(false),
-    instituicaoId
-  );
+      return;
+    }
 
-  return unsubscribe;
-}, [diaHoje, instituicaoId, carregandoInstituicao]);
+    const unsubscribe = assinarCardapioDia(
+      diaHoje,
+      (refeicoes) => {
+        setRefeicoesHoje(refeicoes);
+        setCarregando(false);
+      },
+      () => setCarregando(false),
+      instituicaoId
+    );
+
+    return unsubscribe;
+  }, [diaHoje, instituicaoId, carregandoInstituicao]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -67,10 +181,7 @@ export default function HomeAlunoScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-        <Pressable
-          testID="day-banner"
-          style={styles.dayBanner}
-        >
+        <Pressable testID="day-banner" style={styles.dayBanner}>
           <View style={{ flex: 1 }}>
             <Text style={styles.dayTitle}>{nomeDiaSemanaPtBR()}</Text>
             <Text style={styles.dayDate}>{dataPorExtensoPtBR()}</Text>
@@ -78,33 +189,11 @@ export default function HomeAlunoScreen() {
           <MaterialCommunityIcons name="food-apple" size={44} color="#fff" />
         </Pressable>
 
-        <Pressable
-          testID="marcar-refeicoes-button"
-          style={styles.marcarRefeicoesButton}
+        <MarcarRefeicoesCard
+          refeicoes={refeicoesHoje}
+          carregando={carregando}
           onPress={() => router.push('/RefeicoesDia')}
-        >
-          <MaterialCommunityIcons
-            name="silverware-fork-knife"
-            size={24}
-            color="#fff"
-          />
-
-          <View style={{ flex: 1 }}>
-            <Text style={styles.marcarRefeicoesTitle}>
-              Marcar refeições
-            </Text>
-
-            <Text style={styles.marcarRefeicoesSubtitle}>
-              Informe quais refeições você pretende consumir
-            </Text>
-          </View>
-
-          <MaterialCommunityIcons
-            name="chevron-right"
-            size={24}
-            color="#fff"
-          />
-        </Pressable>
+        />
 
         <Text style={styles.section}>Próximas refeições</Text>
         <View style={styles.mealsCard}>
@@ -164,27 +253,85 @@ const styles = StyleSheet.create({
   },
   dayTitle: { color: '#fff', fontSize: 18, fontWeight: '800' },
   dayDate: { color: '#FFE0CE', fontSize: 12, marginTop: 4 },
-  marcarRefeicoesButton: {
-  backgroundColor: colors.primary,
-  borderRadius: 16,
+
+  // Card "Marcar refeições"
+  
+  marcarTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  marcarIconWrap: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  marcarCard: {
+  backgroundColor: '#fff',
+  borderRadius: 18,
   padding: 16,
+  borderWidth: 1,
+  borderColor: '#FFE0CE',
+  elevation: 4,
+  shadowColor: '#000',
+  shadowOpacity: 0.1,
+  shadowRadius: 8,
+  shadowOffset: { width: 0, height: 3 },
+},
+marcarRing: {
+  position: 'absolute',
+  width: 48,
+  height: 48,
+  borderRadius: 24,
+  backgroundColor: colors.primary,   // anel pulsante laranja
+},
+marcarIconBubble: {
+  width: 48,
+  height: 48,
+  borderRadius: 24,
+  backgroundColor: '#FFE0CE',        // laranja bem claro atrás do ícone
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+marcarRefeicoesTitle: { color: colors.textDark, fontSize: 16, fontWeight: '800' },
+marcarRefeicoesSubtitle: { color: colors.textMuted, fontSize: 11, marginTop: 3 },
+marcarCta: {
   flexDirection: 'row',
   alignItems: 'center',
-  gap: 12,
-  marginTop: 18,
+  backgroundColor: colors.primary,   // botão laranja
+  borderRadius: 20,
+  paddingVertical: 6,
+  paddingLeft: 12,
+  paddingRight: 6,
 },
+marcarCtaText: { color: '#fff', fontWeight: '800', fontSize: 12 },
+chipsRow: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  gap: 8,
+  marginTop: 14,
+  paddingTop: 12,
+  borderTopWidth: 1,
+  borderTopColor: colors.divider,
+},
+chip: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#FFF3EB',        // fundo laranja bem suave
+  borderRadius: 14,
+  paddingVertical: 4,
+  paddingRight: 10,
+  paddingLeft: 4,
+  gap: 6,
+},
+chipDot: {
+  width: 20,
+  height: 20,
+  borderRadius: 10,
+  backgroundColor: '#FFE0CE',
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+chipText: { color: colors.textDark, fontSize: 11, fontWeight: '600' },
 
-marcarRefeicoesTitle: {
-  color: '#fff',
-  fontSize: 16,
-  fontWeight: '800',
-},
-
-marcarRefeicoesSubtitle: {
-  color: '#E8F5E9',
-  fontSize: 11,
-  marginTop: 3,
-},
   section: {
     fontSize: 14,
     fontWeight: '700',
