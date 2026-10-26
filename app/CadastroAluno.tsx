@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 
 import {
   View,
-  Text,
   TextInput,
   StyleSheet,
   ScrollView,
@@ -26,6 +25,7 @@ import {
   adicionarAlunoATurma,
   Turma,
 } from './services/turmas';
+import Text from '../components/AppText';  
 
 const PERIODOS = [
   'Manhã',

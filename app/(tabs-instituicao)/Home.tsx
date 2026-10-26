@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -7,10 +7,42 @@ import { colors } from '../../constants/theme';
 import { listarAlunos } from '../services/alunos';
 import { listarTurmas } from '../services/turmas';
 import { assinarCardapioDia, Refeicao } from '../services/cardapio';
-import { assinarContagemConfirmacoes, ContagemRefeicao } from '../services/confirmacoes';
+import { assinarConfirmacoesPeriodo, ConfirmacaoDatada } from '../services/confirmacoes';
+import { dataISO, nomeTipoRefeicao, intervaloDoPeriodo } from '../services/refeicaoUtils';
 import { diaAbreviadoDeHoje, nomeDiaSemanaPtBR, dataPorExtensoPtBR, NOME_COMPLETO_DIA } from '../services/data';
+import Text from '../../components/AppText';
+import { assinaturaAtiva } from '../services/assinatura'; // ajuste o caminho
 
 const DIAS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
+
+type ContagemRefeicao = { sim: number; nao: number };
+
+// Data (YYYY-MM-DD) do dia da semana escolhido.
+// Em dias úteis é a semana atual; no fim de semana, a próxima semana.
+function dataDoDia(codigo: string): string {
+  const [segundaISO] = intervaloDoPeriodo('semana');
+  const [ano, mes, dia] = segundaISO.split('-').map(Number);
+
+  const deslocamento = Math.max(DIAS.indexOf(codigo), 0);
+
+  return dataISO(new Date(ano, mes - 1, dia + deslocamento));
+}
+
+// Soma "vou comer / não vou" por tipo de refeição
+function contarPorTipo(lista: ConfirmacaoDatada[]): Record<string, ContagemRefeicao> {
+  const contagem: Record<string, ContagemRefeicao> = {};
+
+  lista.forEach((confirmacao) => {
+    Object.entries(confirmacao.respostas).forEach(([tipo, vaiComer]) => {
+      if (!contagem[tipo]) contagem[tipo] = { sim: 0, nao: 0 };
+
+      if (vaiComer) contagem[tipo].sim += 1;
+      else contagem[tipo].nao += 1;
+    });
+  });
+
+  return contagem;
+}
 
 function MealRow({ refeicao, contagem }: { refeicao: Refeicao; contagem: ContagemRefeicao }) {
   return (
@@ -41,8 +73,33 @@ function MealRow({ refeicao, contagem }: { refeicao: Refeicao; contagem: Contage
 export default function HomeScreen() {
   const router = useRouter();
 
-  const diaHoje = diaAbreviadoDeHoje(); 
+  const [verificandoAssinatura, setVerificandoAssinatura] = useState(true);
 
+  useEffect(() => {
+    let montado = true;
+
+    assinaturaAtiva()
+      .then((ativa: boolean) => {
+        if (!montado) return;
+
+        if (ativa) {
+          setVerificandoAssinatura(false);
+        } else {
+          router.replace('/PlanosAssinaturas' as any);
+        }
+      })
+      .catch((e) => {
+        // Falha ao ler (rede, permissão): não manda para a tela de planos por engano
+        console.error('Erro ao verificar assinatura:', e);
+        if (montado) setVerificandoAssinatura(false);
+      });
+
+    return () => {
+      montado = false;
+    };
+  }, [router]);
+
+  const diaHoje = diaAbreviadoDeHoje();
 
   const [diaSelecionado, setDiaSelecionado] = useState(diaHoje ?? 'Seg');
 
@@ -50,7 +107,7 @@ export default function HomeScreen() {
   const [totalTurmas, setTotalTurmas] = useState<number | null>(null);
   const [refeicoesDoDia, setRefeicoesDoDia] = useState<Refeicao[]>([]);
   const [carregandoRefeicoes, setCarregandoRefeicoes] = useState(true);
-  const [contagemPorRefeicao, setContagemPorRefeicao] = useState<Record<number, ContagemRefeicao>>({});
+  const [contagemPorTipo, setContagemPorTipo] = useState<Record<string, ContagemRefeicao>>({});
 
   useEffect(() => {
     listarAlunos()
@@ -70,6 +127,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     setCarregandoRefeicoes(true);
+    setContagemPorTipo({});
 
     const unsubscribeCardapio = assinarCardapioDia(
       diaSelecionado,
@@ -80,13 +138,29 @@ export default function HomeScreen() {
       () => setCarregandoRefeicoes(false)
     );
 
-    const unsubscribeContagem = assinarContagemConfirmacoes(diaSelecionado, setContagemPorRefeicao);
+    // Confirmações apenas da data do dia selecionado
+    const data = dataDoDia(diaSelecionado);
+
+    const unsubscribeContagem = assinarConfirmacoesPeriodo(
+      data,
+      data,
+      (lista) => setContagemPorTipo(contarPorTipo(lista)),
+      (erro) => console.error('Erro ao carregar confirmações do dia:', erro)
+    );
 
     return () => {
       unsubscribeCardapio();
       unsubscribeContagem();
     };
   }, [diaSelecionado]);
+
+  if (verificandoAssinatura) {
+    return (
+      <SafeAreaView style={[styles.safe, { alignItems: 'center', justifyContent: 'center' }]}>
+        <ActivityIndicator color={colors.primary} />
+      </SafeAreaView>
+    );
+  }
 
   const vendoHoje = diaSelecionado === diaHoje;
   const tituloSecao = vendoHoje
@@ -133,23 +207,18 @@ export default function HomeScreen() {
           </View>
 
           <View style={{ flex: 1 }}>
-            <Text style={styles.quickActionTitle}>
-              Estatísticas
-            </Text>
+            <Text style={styles.quickActionTitle}>Estatísticas</Text>
 
             <Text style={styles.quickActionSubtitle}>
               Veja a demanda de refeições dos alunos
             </Text>
           </View>
 
-          <Ionicons
-            name="chevron-forward"
-            size={20}
-            color={colors.textMuted}
-          />
+          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
         </Pressable>
 
         <Text style={styles.section}>Ações rápidas</Text>
+
         <Pressable
           testID="cadastrar-aluno-button"
           style={styles.quickAction}
@@ -158,14 +227,16 @@ export default function HomeScreen() {
           <View style={styles.quickActionIcon}>
             <Ionicons name="person-add" size={22} color="#fff" />
           </View>
+
           <View style={{ flex: 1 }}>
             <Text style={styles.quickActionTitle}>Cadastrar aluno</Text>
             <Text style={styles.quickActionSubtitle}>
               Adicione um novo aluno à instituição
             </Text>
           </View>
+
           <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-                </Pressable>
+        </Pressable>
 
         <Pressable
           testID="restricoes-alimentares-button"
@@ -177,20 +248,14 @@ export default function HomeScreen() {
           </View>
 
           <View style={{ flex: 1 }}>
-            <Text style={styles.quickActionTitle}>
-              Restrições alimentares
-            </Text>
+            <Text style={styles.quickActionTitle}>Restrições alimentares</Text>
 
             <Text style={styles.quickActionSubtitle}>
               Consulte as restrições informadas pelos alunos
             </Text>
           </View>
 
-          <Ionicons
-            name="chevron-forward"
-            size={20}
-            color={colors.textMuted}
-          />
+          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
         </Pressable>
 
         <Text style={styles.section}>Resumo do dia</Text>
@@ -262,7 +327,12 @@ export default function HomeScreen() {
               </View>
               {refeicoesDoDia.map((refeicao, i) => (
                 <React.Fragment key={i}>
-                  <MealRow refeicao={refeicao} contagem={contagemPorRefeicao[i] ?? { sim: 0, nao: 0 }} />
+                  <MealRow
+                    refeicao={refeicao}
+                    contagem={
+                      contagemPorTipo[nomeTipoRefeicao(refeicao.titulo)] ?? { sim: 0, nao: 0 }
+                    }
+                  />
                   {i < refeicoesDoDia.length - 1 && <View style={styles.divider} />}
                 </React.Fragment>
               ))}

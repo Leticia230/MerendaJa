@@ -7,9 +7,8 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Constants, { ExecutionEnvironment } from "expo-constants";
 import { useFonts } from "expo-font";
-
 import { StripeProvider } from "@stripe/stripe-react-native";
-
+import { AccessibilityProvider } from "./AccessibilityContext";
 
 LogBox.ignoreAllLogs(true);
 SplashScreen.preventAutoHideAsync();
@@ -59,12 +58,14 @@ export default function RootLayout() {
 
   return (
     <StripeProvider
-  publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY!}
->
+      publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY!}
+    >
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
-          <StatusBar barStyle="dark-content" />
-          <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }} />
+          <AccessibilityProvider>
+            <StatusBar barStyle="dark-content" />
+            <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }} />
+          </AccessibilityProvider>
         </SafeAreaProvider>
       </GestureHandlerRootView>
     </StripeProvider>

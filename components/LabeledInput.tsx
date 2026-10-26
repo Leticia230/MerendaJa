@@ -1,7 +1,8 @@
 import React, { forwardRef, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Pressable, TextInputProps } from 'react-native';
+import { StyleSheet, Pressable, TextInputProps, View, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/theme';
+import Text from '../components/AppText';
 
 type Props = TextInputProps & {
   label: string;

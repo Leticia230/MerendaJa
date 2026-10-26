@@ -20,6 +20,7 @@ import {
   updatePassword,
 } from 'firebase/auth';
 import { auth, db } from '../components/firebaseConfig';
+import Text from '../components/AppText';
 
 function mensagemDeErroAuth(code?: string) {
   switch (code) {
@@ -147,13 +148,6 @@ export default function ProfileScreen() {
     }
   }
 
-  function cancelarPlano() {
-    Alert.alert('Cancelar plano', 'Tem certeza que deseja cancelar o plano?', [
-      { text: 'Não', style: 'cancel' },
-      { text: 'Sim', style: 'destructive', onPress: () => {} },
-    ]);
-  }
-
   return (
     <SafeAreaView style={styles.safe}>
       <ScreenHeader title="Perfil" />
@@ -202,29 +196,6 @@ export default function ProfileScreen() {
             editable={false}
             value={email}
             onChangeText={setEmail}
-          />
-          <LabeledInput
-            testID="profile-current-password-input"
-            label="Senha atual"
-            placeholder="Preencha só para trocar a senha"
-            isPassword
-            value={senhaAtual}
-            onChangeText={setSenhaAtual}
-          />
-          <LabeledInput
-            testID="profile-password-input"
-            label="Nova senha"
-            placeholder="Deixe em branco para manter"
-            isPassword
-            value={novaSenha}
-            onChangeText={setNovaSenha}
-          />
-
-          <BotaoPrimario
-            testID="profile-cancel-plan-button"
-            title="Cancelar plano"
-            onPress={cancelarPlano}
-            style={{ marginTop: 16, backgroundColor: '#d64545' }}
           />
 
           <BotaoPrimario

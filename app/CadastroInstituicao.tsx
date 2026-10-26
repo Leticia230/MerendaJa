@@ -170,10 +170,10 @@ export default function RegisterInstitution() {
         mostrarAlerta(
           'Cadastro realizado!',
           'A instituição foi cadastrada com sucesso.',
-          () => router.replace('/Pagamento')
+          () => router.replace('/PlanosAssinaturas')
         );
       } else {
-        router.replace('/Pagamento');
+        router.replace('/PlanosAssinaturas');
 
         mostrarAlerta(
           'Cadastro realizado!',

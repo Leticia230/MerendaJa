@@ -1,8 +1,9 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
+import { View, Pressable, StyleSheet, Platform } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../constants/theme';
+import Text from '../../components/AppText';  
 
 // Sem "Turmas" aqui — gerenciar turmas é uma função da Instituição, não do Aluno.
 const TAB_ICONS: Record<string, (focused: boolean) => React.ReactNode> = {

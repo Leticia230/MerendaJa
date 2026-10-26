@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenHeader from '../components/ScreenHeader';
 import { colors } from '../constants/theme';
 import * as Notifications from 'expo-notifications';
 import * as Location from 'expo-location';
+import Text from '../components/AppText';  
 
 function Toggle({ value, onChange, testID }: any) {
   return (

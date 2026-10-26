@@ -1,16 +1,19 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { colors } from '../../constants/theme';
-
+import Text from '../../components/AppText';  
 
 const ITEMS = [
-  { icon: 'person', label: 'Perfil', route: '/PerfilInstituicao', color: '#FFB27A' },  { icon: 'information-circle', label: 'Sobre', route: '/Sobre', color: '#FFB27A' },
+  { icon: 'person', label: 'Perfil', route: '/PerfilInstituicao', color: '#FFB27A' }, 
+  { icon: 'information-circle', label: 'Sobre', route: '/Sobre', color: '#FFC845' },
+  { icon: 'lock-closed', label: 'Permissões', route: '/Permissoes', color: '#FFB27A' }, 
   { icon: 'accessibility', label: 'Acessibilidade', route: '/Acessibilidade', color: '#FFC845' },
   { icon: 'document-text', label: 'Termos de uso', route: '/TermosUso', color: '#FFB27A' },
-  { icon: 'shield-checkmark', label: 'Segurança e Privacidade', route: '/SegurancaPrivacidade', color: '#FFB27A' },
+  { icon: 'shield-checkmark', label: 'Segurança e Privacidade', route: '/SegurancaPrivacidade', color: '#FFC845' },
+  {icon:'card', label: 'Planos e Assinaturas', route: '/PlanosAssinaturas', color: '#FFB27A' },
 ];
 
 export default function ConfigScreen() {

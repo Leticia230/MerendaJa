@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   Dimensions,
@@ -14,56 +13,62 @@ import { BarChart } from 'react-native-chart-kit';
 
 import ScreenHeader from '../components/ScreenHeader';
 import { colors } from '../constants/theme';
+import Text from '../components/AppText';
 
 import {
-  assinarCardapioDia,
-  Refeicao,
-} from './services/cardapio';
-
-import {
-  assinarContagemConfirmacoes,
-  ContagemRefeicao,
+  assinarConfirmacoesPeriodo,
+  ConfirmacaoDatada,
 } from './services/confirmacoes';
 
-type Period = 'semana' | 'mes' | 'ano';
-
-type DiaData = {
-  dia: string;
-  refeicoes: Refeicao[];
-  contagem: Record<number, ContagemRefeicao>;
-};
+import {
+  Period,
+  TIPOS,
+  nomeTipoRefeicao,
+  intervaloDoPeriodo,
+} from './services/refeicaoUtils';
 
 const DIAS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
+const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+const SEMANAS = ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Sem 5'];
+
+const TEXTO_PERIODO: Record<Period, { titulo: string; quando: string; lista: string }> = {
+  semana: {
+    titulo: 'Demanda da semana',
+    quando: 'nesta semana',
+    lista: 'Demanda por dia',
+  },
+  mes: {
+    titulo: 'Demanda do mês',
+    quando: 'neste mês',
+    lista: 'Demanda por semana',
+  },
+  ano: {
+    titulo: 'Demanda do ano',
+    quando: 'neste ano',
+    lista: 'Demanda por mês',
+  },
+};
 
 const screenWidth = Dimensions.get('window').width;
 
-function nomeTipoRefeicao(titulo: string) {
-  const texto = titulo.toLowerCase();
+// Em qual "grupo" da lista inferior a data cai
+function rotuloGrupo(period: Period, dataStr: string): string | undefined {
+  const [ano, mes, dia] = dataStr.split('-').map(Number);
 
-  if (
-    texto.includes('café') ||
-    texto.includes('cafe') ||
-    texto.includes('manhã') ||
-    texto.includes('manha')
-  ) {
-    return 'Café';
-  }
+  if (period === 'ano') return MESES[mes - 1];
+  if (period === 'mes') return SEMANAS[Math.ceil(dia / 7) - 1];
 
-  if (
-    texto.includes('almoço') ||
-    texto.includes('almoco')
-  ) {
-    return 'Almoço';
-  }
+  const dow = new Date(ano, mes - 1, dia).getDay(); // 1..5 = Seg..Sex
+  return DIAS[dow - 1]; // fim de semana → undefined
+}
 
-  if (
-    texto.includes('jantar') ||
-    texto.includes('janta')
-  ) {
-    return 'Jantar';
-  }
+// Proporcional ao maior valor, para servir em semana, mês e ano
+function barColor(valor: number, maior: number) {
+  const proporcao = maior > 0 ? valor / maior : 0;
 
-  return titulo;
+  if (proporcao >= 0.66) return '#2e7d32';
+  if (proporcao >= 0.33) return '#f9a825';
+  return '#c62828';
 }
 
 function iconeRefeicao(titulo: string) {
@@ -78,179 +83,70 @@ function iconeRefeicao(titulo: string) {
 
 export default function StatisticsScreen() {
   const [period, setPeriod] = useState<Period>('semana');
-
-  const [dias, setDias] = useState<DiaData[]>(
-    DIAS.map((dia) => ({
-      dia,
-      refeicoes: [],
-      contagem: {},
-    }))
-  );
-
+  const [confirmacoes, setConfirmacoes] = useState<ConfirmacaoDatada[]>([]);
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
     setCarregando(true);
+    setConfirmacoes([]);
 
-    const unsubscribes: (() => void)[] = [];
+    const [inicio, fim] = intervaloDoPeriodo(period);
 
-    DIAS.forEach((dia) => {
-      const unsubscribeCardapio = assinarCardapioDia(
-        dia,
-        (refeicoes) => {
-          setDias((atual) =>
-            atual.map((item) =>
-              item.dia === dia
-                ? {
-                    ...item,
-                    refeicoes,
-                  }
-                : item
-            )
-          );
+    return assinarConfirmacoesPeriodo(
+      inicio,
+      fim,
+      (lista) => {
+        setConfirmacoes(lista);
+        setCarregando(false);
+      },
+      () => setCarregando(false)
+    );
+  }, [period]);
 
-          setCarregando(false);
-        },
-        (erro) => {
-          console.error(
-            `Erro ao carregar cardápio de ${dia}:`,
-            erro
-          );
+  const { totais, grupos } = useMemo(() => {
+    const totais: Record<string, number> = { Café: 0, Almoço: 0, Jantar: 0 };
+    const grupos: Record<string, number> = {};
 
-          setCarregando(false);
+    confirmacoes.forEach((c) => {
+      const rotulo = rotuloGrupo(period, c.data);
+
+      Object.entries(c.respostas).forEach(([tipo, vaiComer]) => {
+        if (!vaiComer) return;
+
+        totais[tipo] = (totais[tipo] ?? 0) + 1;
+
+        if (rotulo) {
+          grupos[rotulo] = (grupos[rotulo] ?? 0) + 1;
         }
-      );
-
-      unsubscribes.push(unsubscribeCardapio);
-
-      const unsubscribeConfirmacoes =
-        assinarContagemConfirmacoes(
-          dia,
-          (contagem) => {
-            setDias((atual) =>
-              atual.map((item) =>
-                item.dia === dia
-                  ? {
-                      ...item,
-                      contagem,
-                    }
-                  : item
-              )
-            );
-          },
-          (erro) => {
-            console.error(
-              `Erro ao carregar confirmações de ${dia}:`,
-              erro
-            );
-          }
-        );
-
-      unsubscribes.push(unsubscribeConfirmacoes);
-    });
-
-    return () => {
-      unsubscribes.forEach((unsubscribe) =>
-        unsubscribe()
-      );
-    };
-  }, []);
-
-  const dadosRefeicoes = useMemo(() => {
-    const resultado: {
-      dia: string;
-      refeicao: string;
-      tituloOriginal: string;
-      quantidade: number;
-    }[] = [];
-
-    dias.forEach((dia) => {
-      dia.refeicoes.forEach((refeicao, indice) => {
-        const contagem = dia.contagem[indice];
-
-        resultado.push({
-          dia: dia.dia,
-          refeicao: nomeTipoRefeicao(refeicao.titulo),
-          tituloOriginal: refeicao.titulo,
-          quantidade: contagem?.sim ?? 0,
-        });
       });
     });
 
-    return resultado;
-  }, [dias]);
+    return { totais, grupos };
+  }, [confirmacoes, period]);
 
-  const totais = useMemo(() => {
-    const resultado: Record<string, number> = {};
+  const totalGeral = Object.values(totais).reduce((t, v) => t + v, 0);
 
-    dadosRefeicoes.forEach((item) => {
-      resultado[item.refeicao] =
-        (resultado[item.refeicao] ?? 0) +
-        item.quantidade;
-    });
-
-    return resultado;
-  }, [dadosRefeicoes]);
-
-  const totalGeral = Object.values(totais).reduce(
-    (total, valor) => total + valor,
-    0
+  const ordenadas = useMemo(
+    () => Object.entries(totais).sort((a, b) => b[1] - a[1]),
+    [totais]
   );
 
-  const refeicoesOrdenadas = useMemo(() => {
-    return Object.entries(totais).sort(
-      (a, b) => b[1] - a[1]
-    );
-  }, [totais]);
-
-  const maiorDemanda =
-    refeicoesOrdenadas.length > 0
-      ? refeicoesOrdenadas[0]
-      : null;
-
+  const maiorDemanda = ordenadas.length > 0 ? ordenadas[0] : null;
   const menorDemanda =
-    refeicoesOrdenadas.length > 0
-      ? refeicoesOrdenadas[
-          refeicoesOrdenadas.length - 1
-        ]
-      : null;
+    ordenadas.length > 0 ? ordenadas[ordenadas.length - 1] : null;
 
-  const chartData = useMemo(() => {
-    const tipos = ['Café', 'Almoço', 'Jantar'];
+  const chartData = useMemo(
+    () => ({
+      labels: [...TIPOS],
+      datasets: [{ data: TIPOS.map((tipo) => totais[tipo] ?? 0) }],
+    }),
+    [totais]
+  );
 
-    const valores = tipos.map((tipo) =>
-      dias.reduce((total, dia) => {
-        return (
-          total +
-          dia.refeicoes.reduce(
-            (subtotal, refeicao, indice) => {
-              if (
-                nomeTipoRefeicao(refeicao.titulo) !==
-                tipo
-              ) {
-                return subtotal;
-              }
+  const ordemGrupos =
+    period === 'semana' ? DIAS : period === 'mes' ? SEMANAS : MESES;
 
-              return (
-                subtotal +
-                (dia.contagem[indice]?.sim ?? 0)
-              );
-            },
-            0
-          )
-        );
-      }, 0)
-    );
-
-    return {
-      labels: tipos,
-      datasets: [
-        {
-          data: valores,
-        },
-      ],
-    };
-  }, [dias]);
+  const texto = TEXTO_PERIODO[period];
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -260,9 +156,7 @@ export default function StatisticsScreen() {
         contentContainerStyle={styles.body}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.subtitle}>
-          Demanda de refeições dos alunos
-        </Text>
+        <Text style={styles.subtitle}>Demanda de refeições dos alunos</Text>
 
         <View style={styles.periodSelector}>
           <PeriodButton
@@ -287,31 +181,12 @@ export default function StatisticsScreen() {
           />
         </View>
 
-        {period !== 'semana' ? (
-          <View style={styles.avisoPeriodo}>
-            <MaterialCommunityIcons
-              name="information-outline"
-              size={20}
-              color={colors.primary}
-            />
-
-            <Text style={styles.avisoPeriodoText}>
-              O histórico mensal e anual será
-              disponibilizado depois que adicionarmos
-              a data às confirmações.
-            </Text>
-          </View>
-        ) : carregando ? (
-          <ActivityIndicator
-            color={colors.primary}
-            style={{ marginTop: 30 }}
-          />
+        {carregando ? (
+          <ActivityIndicator color={colors.primary} style={{ marginTop: 30 }} />
         ) : (
           <>
             <View style={styles.chartCard}>
-              <Text style={styles.chartTitle}>
-                Demanda desta semana
-              </Text>
+              <Text style={styles.chartTitle}>{texto.titulo}</Text>
 
               <BarChart
                 data={chartData}
@@ -326,10 +201,8 @@ export default function StatisticsScreen() {
                   backgroundGradientFrom: '#fff',
                   backgroundGradientTo: '#fff',
                   decimalPlaces: 0,
-                  color: (opacity = 1) =>
-                    `rgba(90, 150, 90, ${opacity})`,
-                  labelColor: (opacity = 1) =>
-                    `rgba(60, 60, 60, ${opacity})`,
+                  color: (opacity = 1) => `rgba(90, 150, 90, ${opacity})`,
+                  labelColor: (opacity = 1) => `rgba(60, 60, 60, ${opacity})`,
                   barPercentage: 0.6,
                   propsForLabels: {
                     fontSize: 11,
@@ -349,194 +222,106 @@ export default function StatisticsScreen() {
               </View>
 
               <View style={{ flex: 1 }}>
-                <Text style={styles.totalLabel}>
-                  Demanda total
-                </Text>
+                <Text style={styles.totalLabel}>Demanda total</Text>
 
-                <Text style={styles.totalValue}>
-                  {totalGeral} refeições
-                </Text>
+                <Text style={styles.totalValue}>{totalGeral} refeições</Text>
 
                 <Text style={styles.totalDescription}>
-                  Total de alunos que marcaram
-                  “Vou comer” nesta semana
+                  Total de alunos que marcaram “Vou comer” {texto.quando}
                 </Text>
               </View>
             </View>
 
             <View style={styles.highlightsRow}>
-              <View
-                style={[
-                  styles.highlightCard,
-                  styles.highlightGood,
-                ]}
-              >
-                <Ionicons
-                  name="trending-up"
-                  size={20}
-                  color="#2e7d32"
-                />
+              <View style={[styles.highlightCard, styles.highlightGood]}>
+                <Ionicons name="trending-up" size={20} color="#2e7d32" />
 
-                <Text style={styles.highlightLabel}>
-                  Maior demanda
-                </Text>
+                <Text style={styles.highlightLabel}>Maior demanda</Text>
 
                 <Text style={styles.highlightTurma}>
-                  {maiorDemanda
-                    ? maiorDemanda[0]
-                    : '—'}
+                  {maiorDemanda ? maiorDemanda[0] : '—'}
                 </Text>
 
                 <Text style={styles.highlightValue}>
-                  {maiorDemanda
-                    ? maiorDemanda[1]
-                    : 0}
+                  {maiorDemanda ? maiorDemanda[1] : 0}
                 </Text>
               </View>
 
-              <View
-                style={[
-                  styles.highlightCard,
-                  styles.highlightBad,
-                ]}
-              >
-                <Ionicons
-                  name="trending-down"
-                  size={20}
-                  color="#c62828"
-                />
+              <View style={[styles.highlightCard, styles.highlightBad]}>
+                <Ionicons name="trending-down" size={20} color="#c62828" />
 
-                <Text style={styles.highlightLabel}>
-                  Menor demanda
-                </Text>
+                <Text style={styles.highlightLabel}>Menor demanda</Text>
 
                 <Text style={styles.highlightTurma}>
-                  {menorDemanda
-                    ? menorDemanda[0]
-                    : '—'}
+                  {menorDemanda ? menorDemanda[0] : '—'}
                 </Text>
 
                 <Text style={styles.highlightValue}>
-                  {menorDemanda
-                    ? menorDemanda[1]
-                    : 0}
+                  {menorDemanda ? menorDemanda[1] : 0}
                 </Text>
               </View>
             </View>
 
-            <Text style={styles.sectionTitle}>
-              Demanda por refeição
-            </Text>
+            <Text style={styles.sectionTitle}>Demanda por refeição</Text>
 
-            {['Café', 'Almoço', 'Jantar'].map(
-              (tipo) => {
-                const quantidade =
-                  totais[tipo] ?? 0;
+            {TIPOS.map((tipo) => {
+              const quantidade = totais[tipo] ?? 0;
+              const maior = maiorDemanda?.[1] ?? 0;
 
-                const maior =
-                  maiorDemanda?.[1] ?? 0;
-
-                const largura =
-                  maior > 0
-                    ? Math.min(
-                        100,
-                        (quantidade / maior) * 100
-                      )
-                    : 0;
-
-                return (
-                  <View
-                    key={tipo}
-                    style={styles.rankRow}
-                  >
-                    <View style={styles.rankIcon}>
-                      <MaterialCommunityIcons
-                        name={
-                          iconeRefeicao(tipo) as any
-                        }
-                        size={19}
-                        color={colors.primary}
-                      />
-                    </View>
-
-                    <Text style={styles.rankTurma}>
-                      {tipo}
-                    </Text>
-
-                    <View
-                      style={
-                        styles.rankBarBackground
-                      }
-                    >
-                      <View
-                        style={[
-                          styles.rankBarFill,
-                          {
-                            width: `${largura}%`,
-                            backgroundColor:
-                              barColor(quantidade),
-                          },
-                        ]}
-                      />
-                    </View>
-
-                    <Text style={styles.rankValue}>
-                      {quantidade}
-                    </Text>
-                  </View>
-                );
-              }
-            )}
-
-            <Text style={styles.sectionTitle}>
-              Demanda por dia
-            </Text>
-
-            {dias.map((dia) => {
-              const totalDia =
-                dia.refeicoes.reduce(
-                  (total, refeicao, indice) => {
-                    return (
-                      total +
-                      (dia.contagem[indice]?.sim ??
-                        0)
-                    );
-                  },
-                  0
-                );
+              const largura =
+                maior > 0 ? Math.min(100, (quantidade / maior) * 100) : 0;
 
               return (
-                <View
-                  key={dia.dia}
-                  style={styles.dayRow}
-                >
-                  <Text style={styles.dayName}>
-                    {dia.dia}
-                  </Text>
-
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.dayValue}>
-                      {totalDia} refeições
-                    </Text>
-
-                    <Text style={styles.dayDescription}>
-                      confirmações de consumo
-                    </Text>
+                <View key={tipo} style={styles.rankRow}>
+                  <View style={styles.rankIcon}>
+                    <MaterialCommunityIcons
+                      name={iconeRefeicao(tipo) as any}
+                      size={19}
+                      color={colors.primary}
+                    />
                   </View>
+
+                  <Text style={styles.rankTurma}>{tipo}</Text>
+
+                  <View style={styles.rankBarBackground}>
+                    <View
+                      style={[
+                        styles.rankBarFill,
+                        {
+                          width: `${largura}%`,
+                          backgroundColor: barColor(quantidade, maior),
+                        },
+                      ]}
+                    />
+                  </View>
+
+                  <Text style={styles.rankValue}>{quantidade}</Text>
                 </View>
               );
             })}
+
+            <Text style={styles.sectionTitle}>{texto.lista}</Text>
+
+            {ordemGrupos.map((rotulo) => (
+              <View key={rotulo} style={styles.dayRow}>
+                <Text style={styles.dayName}>{rotulo}</Text>
+
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.dayValue}>
+                    {grupos[rotulo] ?? 0} refeições
+                  </Text>
+
+                  <Text style={styles.dayDescription}>
+                    confirmações de consumo
+                  </Text>
+                </View>
+              </View>
+            ))}
           </>
         )}
       </ScrollView>
     </SafeAreaView>
   );
-}
-
-function barColor(value: number) {
-  if (value >= 40) return '#2e7d32';
-  if (value >= 20) return '#f9a825';
-  return '#c62828';
 }
 
 type PeriodButtonProps = {
@@ -546,19 +331,11 @@ type PeriodButtonProps = {
   onPress: () => void;
 };
 
-function PeriodButton({
-  testID,
-  label,
-  active,
-  onPress,
-}: PeriodButtonProps) {
+function PeriodButton({ testID, label, active, onPress }: PeriodButtonProps) {
   return (
     <TouchableOpacity
       testID={testID}
-      style={[
-        styles.periodButton,
-        active && styles.periodButtonActive,
-      ]}
+      style={[styles.periodButton, active && styles.periodButtonActive]}
       onPress={onPress}
     >
       <Text
@@ -617,22 +394,6 @@ const styles = StyleSheet.create({
 
   periodButtonTextActive: {
     color: '#fff',
-  },
-
-  avisoPeriodo: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-
-  avisoPeriodoText: {
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 19,
-    color: '#666',
   },
 
   chartCard: {
@@ -809,7 +570,7 @@ const styles = StyleSheet.create({
   },
 
   dayName: {
-    width: 45,
+    width: 55,
     fontSize: 16,
     fontWeight: '800',
     color: colors.primary,

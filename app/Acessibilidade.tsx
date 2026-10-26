@@ -1,62 +1,60 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Switch } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, Switch, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenHeader from '../components/ScreenHeader';
-import { colors } from '../constants/theme';
+import { useAccessibility, AccessibilitySettings } from './AccessibilityContext';
+
+type OptionConfig = {
+  setting: keyof AccessibilitySettings;
+  testID: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  description: string;
+};
+
+const OPTIONS: OptionConfig[] = [
+  {
+    setting: 'highContrast',
+    testID: 'accessibility-high-contrast',
+    icon: 'contrast',
+    title: 'Alto contraste',
+    description: 'Aumenta o contraste de cores para melhor visualização',
+  },
+  {
+    setting: 'largeText',
+    testID: 'accessibility-large-text',
+    icon: 'text',
+    title: 'Texto grande',
+    description: 'Aumenta o tamanho da fonte em todo o app',
+  },
+];
 
 export default function AccessibilityScreen() {
-  const [highContrast, setHighContrast] = useState(false);
-  const [largeText, setLargeText] = useState(false);
-  const [reduceMotion, setReduceMotion] = useState(false);
-  const [screenReaderHints, setScreenReaderHints] = useState(true);
+  const { settings, setSetting, theme, fs } = useAccessibility();
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]}>
       <ScreenHeader title="Acessibilidade" />
       <ScrollView contentContainerStyle={styles.body}>
-        <AccessibilityOption
-          testID="accessibility-high-contrast"
-          icon="contrast"
-          title="Alto contraste"
-          description="Aumenta o contraste de cores para melhor visualização"
-          value={highContrast}
-          onValueChange={setHighContrast}
-        />
-        <AccessibilityOption
-          testID="accessibility-large-text"
-          icon="text"
-          title="Texto grande"
-          description="Aumenta o tamanho da fonte em todo o app"
-          value={largeText}
-          onValueChange={setLargeText}
-        />
-        <AccessibilityOption
-          testID="accessibility-reduce-motion"
-          icon="pulse"
-          title="Reduzir movimento"
-          description="Diminui animações e transições"
-          value={reduceMotion}
-          onValueChange={setReduceMotion}
-        />
-        <AccessibilityOption
-          testID="accessibility-screen-reader"
-          icon="volume-high"
-          title="Dicas de leitor de tela"
-          description="Ativa descrições faladas para elementos da tela"
-          value={screenReaderHints}
-          onValueChange={setScreenReaderHints}
-        />
+
+        {OPTIONS.map((opt) => (
+          <AccessibilityOption
+            key={opt.testID}
+            testID={opt.testID}
+            icon={opt.icon}
+            title={opt.title}
+            description={opt.description}
+            value={settings[opt.setting]}
+            onValueChange={(v) => setSetting(opt.setting, v)}
+          />
+        ))}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-type OptionProps = {
-  testID: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  title: string;
-  description: string;
+type OptionProps = Omit<OptionConfig, 'setting'> & {
   value: boolean;
   onValueChange: (value: boolean) => void;
 };
@@ -69,33 +67,55 @@ function AccessibilityOption({
   value,
   onValueChange,
 }: OptionProps) {
+  const { theme, fs, hint } = useAccessibility();
+
   return (
-    <View style={styles.option}>
-      <View style={styles.iconWrapper}>
-        <Ionicons name={icon} size={22} color={colors.primary} />
+    <Pressable
+      onPress={() => onValueChange(!value)}
+      accessibilityRole="switch"
+      accessibilityLabel={title}
+      accessibilityState={{ checked: value }}
+      accessibilityHint={hint(description)}
+      style={[
+        styles.option,
+        { backgroundColor: theme.card, borderColor: theme.border, borderWidth: theme.borderWidth },
+      ]}
+    >
+      <View style={[styles.iconWrapper, { backgroundColor: theme.background }]}>
+        <Ionicons name={icon} size={fs(22)} color={theme.primary} />
       </View>
       <View style={styles.optionText}>
-        <Text style={styles.optionTitle}>{title}</Text>
-        <Text style={styles.optionDescription}>{description}</Text>
+        <Text style={[styles.optionTitle, { color: theme.text, fontSize: fs(15) }]}>{title}</Text>
+        <Text style={[styles.optionDescription, { color: theme.textSecondary, fontSize: fs(12) }]}>
+          {description}
+        </Text>
       </View>
       <Switch
         testID={testID}
         value={value}
         onValueChange={onValueChange}
-        trackColor={{ false: '#ccc', true: colors.primary }}
+        trackColor={{ false: '#999', true: theme.primary }}
         thumbColor="#fff"
+        accessible={false}
       />
-    </View>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.cream },
+  safe: { flex: 1 },
   body: { padding: 22 },
+  preview: {
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 20,
+  },
+  previewLabel: { fontWeight: '700', letterSpacing: 0.5, marginBottom: 6 },
+  previewTitle: { fontWeight: '700', marginBottom: 4 },
+  previewText: { lineHeight: 20 },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
     borderRadius: 14,
     padding: 16,
     marginBottom: 14,
@@ -109,12 +129,11 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.cream,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
   optionText: { flex: 1, marginRight: 8 },
-  optionTitle: { fontSize: 15, fontWeight: '600', color: '#333' },
-  optionDescription: { fontSize: 12, color: '#777', marginTop: 2 },
+  optionTitle: { fontWeight: '600' },
+  optionDescription: { marginTop: 2 },
 });

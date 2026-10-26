@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenHeader from '../components/ScreenHeader';
 import ChefLogo from '../components/ChefLogo';
 import { colors } from '../constants/theme';
+import Text from '../components/AppText';  
 
 export default function SobreScreen() {
   return (
@@ -24,17 +25,17 @@ export default function SobreScreen() {
         <Text style={styles.section}>Saiba mais em nosso site:</Text>
         <View style={styles.row}>
           <Ionicons name="globe-outline" size={16} color={colors.primary} />
-          <Text style={styles.rowText}>www.merendaja.com.br</Text>
+          <Text style={styles.rowText} onPress={() => Linking.openURL('https://leticia230.github.io/ClubMeal/')}>Merenda Já - Site Oficial</Text>
         </View>
 
         <Text style={styles.section}>Entre em contato:</Text>
         <View style={styles.row}>
           <Ionicons name="call-outline" size={16} color={colors.primary} />
-          <Text style={styles.rowText}>(11) 99999-9999</Text>
+          <Text style={styles.rowText} onPress={() => Linking.openURL('tel:000')}> (11) 99999-9999</Text>
         </View>
         <View style={styles.row}>
           <Ionicons name="mail-outline" size={16} color={colors.primary} />
-          <Text style={styles.rowText}>contato@merendaja.com.br</Text>
+          <Text style={styles.rowText} onPress={() => Linking.openURL('mailto:clubmeal74@gmail.com')}>clubmeal74@gmail.com</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
