@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   Pressable,
@@ -20,13 +19,15 @@ import {
 } from './services/cardapio';
 
 import {
-  assinarConfirmacaoAluno,
+  assinarConfirmacaoAlunoData,
   definirConfirmacao,
   RespostasAluno,
 } from './services/confirmacoes';
 
+import { dataISO, nomeTipoRefeicao } from './services/refeicaoUtils';
 import { NOME_COMPLETO_DIA } from './services/data';
 import { useInstituicaoId } from './services/useInstituicaoId';
+import Text from '../components/AppText';
 
 type DiaSemana = 'Seg' | 'Ter' | 'Qua' | 'Qui' | 'Sex';
 
@@ -73,6 +74,13 @@ function formatarData(data: Date): string {
     day: 'numeric',
     month: 'long',
   }).format(data);
+}
+
+// Resposta do aluno para a refeição na posição `indice` daquele dia
+function respostaDe(dia: DiaCardapio, indice: number): boolean | undefined {
+  const refeicao = dia.refeicoes[indice];
+  if (!refeicao) return undefined;
+  return dia.respostas[nomeTipoRefeicao(refeicao.titulo)];
 }
 
 export default function RefeicoesDia() {
@@ -126,15 +134,13 @@ export default function RefeicoesDia() {
     };
   }, [instituicaoId, carregandoInstituicao]);
 
-  // Respostas (Vou comer / Não vou) do aluno
+  // Respostas (Vou comer / Não vou) do aluno, uma assinatura por data
   useEffect(() => {
     if (!alunoId || !instituicaoId) return;
 
-    const unsubscribeList: (() => void)[] = [];
-
-    DIAS_UTEIS.forEach((codigo) => {
-      const unsubscribe = assinarConfirmacaoAluno(
-        codigo,
+    const unsubscribeList = obterProximaSemana().map(({ codigo, data }) =>
+      assinarConfirmacaoAlunoData(
+        dataISO(data),
         alunoId,
         (respostas) => {
           setDias((atual) =>
@@ -147,29 +153,36 @@ export default function RefeicoesDia() {
           console.error(`Erro ao carregar respostas de ${codigo}:`, erro);
         },
         instituicaoId
-      );
-
-      unsubscribeList.push(unsubscribe);
-    });
+      )
+    );
 
     return () => {
       unsubscribeList.forEach((unsubscribe) => unsubscribe());
     };
   }, [alunoId, instituicaoId]);
 
-  async function escolher(dia: DiaSemana, indice: number, vaiComer: boolean) {
+  async function escolher(dia: DiaCardapio, indice: number, vaiComer: boolean) {
     if (!alunoId || !instituicaoId) {
       setErro('Não foi possível identificar seu usuário. Faça login novamente.');
       return;
     }
 
-    const chave = `${dia}-${indice}`;
+    const refeicao = dia.refeicoes[indice];
+    if (!refeicao) return;
+
+    const chave = `${dia.codigo}-${indice}`;
 
     setErro(null);
     setSalvando(chave);
 
     try {
-      await definirConfirmacao(dia, alunoId, indice, vaiComer, instituicaoId);
+      await definirConfirmacao(
+        dataISO(dia.data), // data do dia que está sendo marcado
+        alunoId,
+        nomeTipoRefeicao(refeicao.titulo),
+        vaiComer,
+        instituicaoId
+      );
     } catch (e) {
       console.error('Erro ao salvar confirmação:', e);
       setErro('Não foi possível salvar sua escolha. Tente novamente.');
@@ -181,7 +194,7 @@ export default function RefeicoesDia() {
   const totalRefeicoes = dias.reduce((total, dia) => total + dia.refeicoes.length, 0);
   const refeicoesRespondidas = dias.reduce(
     (total, dia) =>
-      total + dia.refeicoes.filter((_, indice) => dia.respostas[indice] !== undefined).length,
+      total + dia.refeicoes.filter((_, indice) => respostaDe(dia, indice) !== undefined).length,
     0
   );
   const refeicoesPendentes = totalRefeicoes - refeicoesRespondidas;
@@ -251,7 +264,7 @@ export default function RefeicoesDia() {
                 </View>
                 <View style={styles.contagemDia}>
                   <Text style={styles.contagemDiaTexto}>
-                    {dia.refeicoes.filter((_, indice) => dia.respostas[indice] !== undefined).length}/{dia.refeicoes.length}
+                    {dia.refeicoes.filter((_, indice) => respostaDe(dia, indice) !== undefined).length}/{dia.refeicoes.length}
                   </Text>
                   <Text style={styles.contagemDiaLegenda}>feitas</Text>
                 </View>
@@ -271,7 +284,7 @@ export default function RefeicoesDia() {
                 </View>
               ) : (
                 dia.refeicoes.map((refeicao, i) => {
-                  const resposta = dia.respostas[i];
+                  const resposta = respostaDe(dia, i);
                   const chave = `${dia.codigo}-${i}`;
                   const estaSalvando = salvando === chave;
 
@@ -319,7 +332,7 @@ export default function RefeicoesDia() {
                             styles.opcaoBtn,
                             resposta === true && styles.opcaoBtnSimAtivo,
                           ]}
-                          onPress={() => escolher(dia.codigo, i, true)}
+                          onPress={() => escolher(dia, i, true)}
                           disabled={estaSalvando}
                         >
                           <MaterialCommunityIcons
@@ -344,7 +357,7 @@ export default function RefeicoesDia() {
                             styles.opcaoBtn,
                             resposta === false && styles.opcaoBtnNaoAtivo,
                           ]}
-                          onPress={() => escolher(dia.codigo, i, false)}
+                          onPress={() => escolher(dia, i, false)}
                           disabled={estaSalvando}
                         >
                           <MaterialCommunityIcons

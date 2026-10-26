@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   FlatList,
   ActivityIndicator,
@@ -14,6 +13,7 @@ import {
   Aluno,
   listarAlunos,
 } from './services/alunos';
+import Text from '../components/AppText';  
 
 export default function RestricoesAlimentares() {
   const [alunos, setAlunos] = useState<Aluno[]>([]);

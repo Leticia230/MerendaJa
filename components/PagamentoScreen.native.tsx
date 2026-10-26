@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   View,
   Text,
@@ -9,19 +9,17 @@ import {
   Alert,
   SafeAreaView,
 } from 'react-native';
-import { useStripe } from '@stripe/stripe-react-native';
 
+import { useStripe } from '@stripe/stripe-react-native';
+import { getPlanoPago } from '../components/planos';
+import { ativarPlano } from '../app/services/assinatura';
 
 const BACKEND_URL = `${process.env.EXPO_PUBLIC_BACKEND_URL}/create-payment-intent`;
-const PLANO = {
-  nome: 'Plano anual',
-  descricao: 'Pagamento do plano anual para ter acesso aos serviços',
-  valor: 124.0,
-  valorEmCentavos: 12400,
-};
 
 export default function PaymentScreen() {
   const router = useRouter();
+  const { plano: planoParam } = useLocalSearchParams<{ plano?: string }>();
+  const PLANO = getPlanoPago(planoParam);
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const [tipoCartao, setTipoCartao] = useState('credito');
   const [loading, setLoading] = useState(false);
@@ -44,7 +42,7 @@ export default function PaymentScreen() {
 
     const dados = await resposta.json();
     return dados.clientSecret;
-  }, []);
+  }, [PLANO.valorEmCentavos]);
 
   const iniciarPaymentSheet = useCallback(async () => {
     try {
@@ -53,10 +51,31 @@ export default function PaymentScreen() {
       const clientSecret = await buscarPaymentIntent();
 
       const { error } = await initPaymentSheet({
-        merchantDisplayName: 'Sua Empresa',
-        paymentIntentClientSecret: clientSecret,
-        defaultBillingDetails: {},
-      });
+      merchantDisplayName: 'Sua Empresa',
+      paymentIntentClientSecret: clientSecret,
+      defaultBillingDetails: {},
+      style: 'alwaysLight',
+      appearance: {
+        colors: {
+          primary: '#F5893C',              // destaque (foco, links)
+          background: '#FFFFFF',           // fundo do painel
+          componentBackground: '#FFFFFF',  // fundo dos campos
+          componentBorder: '#DDDDDD',      // borda dos campos
+          componentDivider: '#DDDDDD',     // linhas entre número, validade e CVC
+          componentText: '#000000',        // texto digitado
+          primaryText: '#000000',          // títulos e textos principais
+          secondaryText: '#555555',        // rótulos ("Número do cartão", "País ou região")
+          placeholderText: '#888888',      // "MM / AA", "CVC"
+          icon: '#000000',                 // seta do país e ícones
+        },
+        primaryButton: {
+          colors: {
+            background: '#F5893C',
+            text: '#FFFFFF',
+          },
+        },
+      },
+    });
 
       if (error) {
         setErroInicial(error.message);
@@ -87,18 +106,22 @@ export default function PaymentScreen() {
       if (error.code !== 'Canceled') {
         Alert.alert('Pagamento não concluído', error.message);
       }
-    } else {
+      return;
+    }
+
+    try {
+      await ativarPlano(PLANO);
+    } catch {
       Alert.alert(
         'Pagamento confirmado',
-        'Seu plano foi ativado com sucesso.',
-        [
-          {
-            text: 'OK',
-            onPress: () => router.replace('/(tabs-instituicao)/Home'),
-          },
-        ],
+        'Recebemos seu pagamento, mas houve um problema ao ativar o plano. Entre em contato com o suporte.'
       );
+      return;
     }
+
+    Alert.alert('Pagamento confirmado', 'Seu plano foi ativado com sucesso.', [
+      { text: 'OK', onPress: () => router.replace('/(tabs-instituicao)/Home') },
+    ]);
   };
 
   return (

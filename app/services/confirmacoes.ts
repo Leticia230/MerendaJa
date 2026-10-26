@@ -1,39 +1,31 @@
-import { collection, doc, onSnapshot, setDoc } from 'firebase/firestore';
+import {
+  collection, doc, onSnapshot, setDoc, query, where,
+} from 'firebase/firestore';
 import { db, auth } from '../../components/firebaseConfig';
 
-export type RespostasAluno = Record<number, boolean>;
+export type RespostasAluno = Record<string, boolean>; // chave = tipo da refeição
 
-// Se não passar o id, usa o da instituição logada.
-// O aluno deve sempre passar o instituicaoId dele.
+export type ConfirmacaoDatada = {
+  data: string;
+  alunoId: string;
+  respostas: RespostasAluno;
+};
+
 function idInstituicao(instituicaoId?: string) {
   const id = instituicaoId ?? auth.currentUser?.uid;
   if (!id) throw new Error('Usuário não autenticado.');
   return id;
 }
 
-const confirmacoesCol = (dia: string, instituicaoId?: string) =>
-  collection(
-    db,
-    'instituicoes',
-    idInstituicao(instituicaoId),
-    'cardapios',
-    dia,
-    'confirmacoes'
-  );
+const confirmacoesCol = (instituicaoId?: string) =>
+  collection(db, 'instituicoes', idInstituicao(instituicaoId), 'confirmacoes');
 
-const confirmacaoDoAlunoRef = (dia: string, alunoId: string, instituicaoId?: string) =>
-  doc(
-    db,
-    'instituicoes',
-    idInstituicao(instituicaoId),
-    'cardapios',
-    dia,
-    'confirmacoes',
-    alunoId
-  );
+const confirmacaoRef = (data: string, alunoId: string, instituicaoId?: string) =>
+  doc(db, 'instituicoes', idInstituicao(instituicaoId), 'confirmacoes', `${data}_${alunoId}`);
 
-export function assinarConfirmacaoAluno(
-  dia: string,
+/** Respostas de um aluno em uma data específica. */
+export function assinarConfirmacaoAlunoData(
+  data: string,
   alunoId: string,
   onChange: (respostas: RespostasAluno) => void,
   onErro?: (erro: unknown) => void,
@@ -41,7 +33,7 @@ export function assinarConfirmacaoAluno(
 ) {
   let ref;
   try {
-    ref = confirmacaoDoAlunoRef(dia, alunoId, instituicaoId);
+    ref = confirmacaoRef(data, alunoId, instituicaoId);
   } catch (e) {
     onChange({});
     onErro?.(e);
@@ -50,10 +42,7 @@ export function assinarConfirmacaoAluno(
 
   return onSnapshot(
     ref,
-    (snap) => {
-      const respostas = (snap.data()?.respostas as RespostasAluno) ?? {};
-      onChange(respostas);
-    },
+    (snap) => onChange((snap.data()?.respostas as RespostasAluno) ?? {}),
     (erro) => {
       console.error('Erro ao assinar confirmação do aluno:', erro);
       onErro?.(erro);
@@ -61,60 +50,60 @@ export function assinarConfirmacaoAluno(
   );
 }
 
+/** Grava "vou comer / não vou" de um tipo de refeição em uma data. */
 export async function definirConfirmacao(
-  dia: string,
+  data: string,
   alunoId: string,
-  indice: number,
+  tipo: string,
   vaiComer: boolean,
   instituicaoId?: string
 ) {
-  const ref = confirmacaoDoAlunoRef(dia, alunoId, instituicaoId);
-  console.log('[confirmacoes] gravando em:', ref.path);
-
   await setDoc(
-    ref,
+    confirmacaoRef(data, alunoId, instituicaoId),
     {
-      respostas: { [indice]: vaiComer },
+      data,
+      alunoId,
+      respostas: { [tipo]: vaiComer },
       atualizadoEm: new Date().toISOString(),
     },
     { merge: true }
   );
 }
-export type ContagemRefeicao = { sim: number; nao: number };
 
-/** Contagem das confirmações da instituição logada (ou da informada). */
-export function assinarContagemConfirmacoes(
-  dia: string,
-  onChange: (contagemPorIndice: Record<number, ContagemRefeicao>) => void,
+/** Todas as confirmações da instituição entre duas datas (inclusive). */
+export function assinarConfirmacoesPeriodo(
+  inicio: string,
+  fim: string,
+  onChange: (lista: ConfirmacaoDatada[]) => void,
   onErro?: (erro: unknown) => void,
   instituicaoId?: string
 ) {
   let col;
   try {
-    col = confirmacoesCol(dia, instituicaoId);
+    col = confirmacoesCol(instituicaoId);
   } catch (e) {
-    onChange({});
+    onChange([]);
     onErro?.(e);
     return () => {};
   }
 
+  const q = query(col, where('data', '>=', inicio), where('data', '<=', fim));
+
   return onSnapshot(
-    col,
-    (snap) => {
-      const contagem: Record<number, ContagemRefeicao> = {};
-      snap.docs.forEach((d) => {
-        const respostas = (d.data().respostas as RespostasAluno) ?? {};
-        Object.entries(respostas).forEach(([indice, vaiComer]) => {
-          const i = Number(indice);
-          if (!contagem[i]) contagem[i] = { sim: 0, nao: 0 };
-          if (vaiComer) contagem[i].sim += 1;
-          else contagem[i].nao += 1;
-        });
-      });
-      onChange(contagem);
-    },
+    q,
+    (snap) =>
+      onChange(
+        snap.docs.map((d) => {
+          const dados = d.data();
+          return {
+            data: dados.data as string,
+            alunoId: dados.alunoId as string,
+            respostas: (dados.respostas ?? {}) as RespostasAluno,
+          };
+        })
+      ),
     (erro) => {
-      console.error('Erro ao assinar contagem de confirmações:', erro);
+      console.error('Erro ao assinar confirmações do período:', erro);
       onErro?.(erro);
     }
   );

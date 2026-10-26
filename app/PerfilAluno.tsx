@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
@@ -23,6 +22,8 @@ import {
 } from './services/alunos';
 
 import { auth } from '../components/firebaseConfig';
+import Text from '../components/AppText';  
+
 
 export default function ProfileScreen() {
   const [nome, setNome] = useState('');
@@ -187,22 +188,6 @@ export default function ProfileScreen() {
           />
 
           <LabeledInput
-            testID="profile-class-input"
-            label="Turma"
-            placeholder="Turma"
-            value={turma}
-            onChangeText={setTurma}
-          />
-
-          <LabeledInput
-            testID="profile-period-input"
-            label="Período"
-            placeholder="Período"
-            value={periodo}
-            onChangeText={setPeriodo}
-          />
-
-          <LabeledInput
             testID="profile-dietary-restrictions-input"
             label="Restrições alimentares"
             placeholder="Ex.: Sem glúten, sem lactose"
@@ -216,15 +201,6 @@ export default function ProfileScreen() {
             Informe alergias, intolerâncias ou outras
             restrições alimentares importantes.
           </Text>
-
-          <LabeledInput
-            testID="profile-password-input"
-            label="Senha"
-            placeholder="Nova senha"
-            isPassword
-            value={password}
-            onChangeText={setPassword}
-          />
 
           <BotaoPrimario
             testID="profile-save-button"

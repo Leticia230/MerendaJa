@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   Pressable,
@@ -17,6 +16,7 @@ import { colors } from '../../constants/theme';
 import { assinarCardapioDia, Refeicao } from '../services/cardapio';
 import { diaAbreviadoDeHoje, nomeDiaSemanaPtBR, dataPorExtensoPtBR } from '../services/data';
 import { useInstituicaoId } from '../services/useInstituicaoId';
+import Text from '../../components/AppText';  
 
 function MealRow({ titulo, horario, color, icon }: Refeicao) {
   return (

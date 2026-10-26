@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
@@ -18,6 +17,7 @@ import BotaoPrimario from '../components/BotaoPrimario';
 import { colors } from '../constants/theme';
 import { listarAlunos, Aluno } from './services/alunos';
 import { criarTurma, buscarTurma, atualizarTurma } from './services/turmas';
+import Text from '../components/AppText';  
 
 const PERIODOS = ['Manhã', 'Tarde', 'Integral','Noite'];
 

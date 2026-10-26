@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { colors } from '../../constants/theme';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../components/firebaseConfig';
+import Text from '../../components/AppText';  
 
 
 const ITEMS = [

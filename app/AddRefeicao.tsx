@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   Pressable,
@@ -23,6 +22,7 @@ import {
   salvarCardapioPorData,
   Refeicao,
 } from './services/cardapio';
+import Text from '../components/AppText';  
 
 const DIAS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
 const CORES = ['#FFD79A', '#FFB27A', '#FFC845', '#FF9E7A', '#B7E4C7'];

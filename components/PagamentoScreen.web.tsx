@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, SafeAreaView } from 'react-native';
 
-const BACKEND_URL = 'https://SEU-BACKEND-AQUI/create-checkout-session';
+const BACKEND_URL = `${process.env.EXPO_PUBLIC_BACKEND_URL}/create-payment-intent`;
 
 const PLANO = {
   nome: 'Plano anual',
