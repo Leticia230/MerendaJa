@@ -71,19 +71,20 @@ export async function definirConfirmacao(
 }
 
 /** Todas as confirmações da instituição entre duas datas (inclusive). */
+/** Todas as confirmações da instituição entre duas datas (inclusive). */
 export function assinarConfirmacoesPeriodo(
   inicio: string,
   fim: string,
-  onChange: (lista: ConfirmacaoDatada[]) => void,
-  onErro?: (erro: unknown) => void,
+  onData: (lista: ConfirmacaoDatada[]) => void,
+  onError?: (e: Error) => void,
   instituicaoId?: string
 ) {
   let col;
   try {
     col = confirmacoesCol(instituicaoId);
   } catch (e) {
-    onChange([]);
-    onErro?.(e);
+    onData([]);
+    onError?.(e as Error);
     return () => {};
   }
 
@@ -92,19 +93,19 @@ export function assinarConfirmacoesPeriodo(
   return onSnapshot(
     q,
     (snap) =>
-      onChange(
+      onData(
         snap.docs.map((d) => {
           const dados = d.data();
           return {
-            data: dados.data as string,
-            alunoId: dados.alunoId as string,
+            data: dados.data,
+            alunoId: dados.alunoId,
             respostas: (dados.respostas ?? {}) as RespostasAluno,
-          };
+          } as ConfirmacaoDatada;
         })
       ),
     (erro) => {
       console.error('Erro ao assinar confirmações do período:', erro);
-      onErro?.(erro);
+      onError?.(erro as Error);
     }
   );
 }

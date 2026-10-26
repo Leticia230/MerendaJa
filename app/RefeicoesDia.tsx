@@ -24,7 +24,7 @@ import {
   RespostasAluno,
 } from './services/confirmacoes';
 
-import { dataISO, nomeTipoRefeicao } from './services/refeicaoUtils';
+import { dataISO, nomeTipoRefeicao, intervaloDoPeriodo } from './services/refeicaoUtils';
 import { NOME_COMPLETO_DIA } from './services/data';
 import { useInstituicaoId } from './services/useInstituicaoId';
 import Text from '../components/AppText';
@@ -40,21 +40,16 @@ type DiaCardapio = {
 
 const DIAS_UTEIS: DiaSemana[] = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
 
-function obterProximaSegunda(): Date {
-  const hoje = new Date();
-  const diaSemana = hoje.getDay();
-
-  const diasAteSegunda = diaSemana === 0 ? 1 : 8 - diaSemana;
-
-  const segunda = new Date(hoje);
-  segunda.setDate(hoje.getDate() + diasAteSegunda);
-  segunda.setHours(0, 0, 0, 0);
-
-  return segunda;
+// Segunda-feira da semana "base" (a mesma usada na Home e nas Estatísticas).
+// Dias úteis: semana atual. Fim de semana: a base passa a ser a próxima semana.
+function obterSegundaDaSemana(): Date {
+  const [segundaISO] = intervaloDoPeriodo('semana');
+  const [ano, mes, dia] = segundaISO.split('-').map(Number);
+  return new Date(ano, mes - 1, dia);
 }
 
-function obterProximaSemana(): DiaCardapio[] {
-  const segunda = obterProximaSegunda();
+function obterSemana(): DiaCardapio[] {
+  const segunda = obterSegundaDaSemana();
 
   return DIAS_UTEIS.map((codigo, indice) => {
     const data = new Date(segunda);
@@ -88,7 +83,7 @@ export default function RefeicoesDia() {
   const { instituicaoId, carregando: carregandoInstituicao } =
     useInstituicaoId();
 
-  const [dias, setDias] = useState<DiaCardapio[]>(obterProximaSemana());
+  const [dias, setDias] = useState<DiaCardapio[]>(obterSemana());
 
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState<string | null>(null);
@@ -138,7 +133,7 @@ export default function RefeicoesDia() {
   useEffect(() => {
     if (!alunoId || !instituicaoId) return;
 
-    const unsubscribeList = obterProximaSemana().map(({ codigo, data }) =>
+    const unsubscribeList = obterSemana().map(({ codigo, data }) =>
       assinarConfirmacaoAlunoData(
         dataISO(data),
         alunoId,

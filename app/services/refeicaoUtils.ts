@@ -2,6 +2,18 @@ export type Period = 'semana' | 'mes' | 'ano';
 
 export const TIPOS = ['Café', 'Almoço', 'Jantar'] as const;
 
+const DIAS_UTEIS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
+
+/** Data (YYYY-MM-DD) do dia da semana na semana ATUAL, contando hoje. */
+export function dataDoDiaDaSemana(dia: string, semanasAFrente = 0): string {
+  const hoje = new Date();
+  const hojeIdx = (hoje.getDay() + 6) % 7; // Seg=0 ... Dom=6
+  const idx = Math.max(DIAS_UTEIS.indexOf(dia), 0);
+  const d = new Date(hoje);
+  d.setDate(hoje.getDate() - hojeIdx + idx + semanasAFrente * 7);
+  return dataISO(d);
+}
+
 export function nomeTipoRefeicao(titulo: string) {
   const texto = titulo.toLowerCase();
 
