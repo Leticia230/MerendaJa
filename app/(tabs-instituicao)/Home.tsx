@@ -1,43 +1,37 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { colors } from '../../constants/theme';
 import { listarAlunos } from '../services/alunos';
 import { listarTurmas } from '../services/turmas';
 import { assinarCardapioDia, Refeicao } from '../services/cardapio';
 import { assinarConfirmacoesPeriodo, ConfirmacaoDatada } from '../services/confirmacoes';
-import { dataISO, nomeTipoRefeicao, intervaloDoPeriodo } from '../services/refeicaoUtils';
+import { nomeTipoRefeicao } from '../services/refeicaoUtils';
+import { dataDoDiaDaSemana } from '../services/semana';
 import { diaAbreviadoDeHoje, nomeDiaSemanaPtBR, dataPorExtensoPtBR, NOME_COMPLETO_DIA } from '../services/data';
 import Text from '../../components/AppText';
-import { assinaturaAtiva } from '../services/assinatura'; // ajuste o caminho
+import { assinaturaAtiva } from '../services/assinatura';
 
 const DIAS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
 
 type ContagemRefeicao = { sim: number; nao: number };
-
-// Data (YYYY-MM-DD) do dia da semana escolhido.
-// Em dias úteis é a semana atual; no fim de semana, a próxima semana.
-function dataDoDia(codigo: string): string {
-  const [segundaISO] = intervaloDoPeriodo('semana');
-  const [ano, mes, dia] = segundaISO.split('-').map(Number);
-
-  const deslocamento = Math.max(DIAS.indexOf(codigo), 0);
-
-  return dataISO(new Date(ano, mes - 1, dia + deslocamento));
-}
 
 // Soma "vou comer / não vou" por tipo de refeição
 function contarPorTipo(lista: ConfirmacaoDatada[]): Record<string, ContagemRefeicao> {
   const contagem: Record<string, ContagemRefeicao> = {};
 
   lista.forEach((confirmacao) => {
-    Object.entries(confirmacao.respostas).forEach(([tipo, vaiComer]) => {
-      if (!contagem[tipo]) contagem[tipo] = { sim: 0, nao: 0 };
+    Object.entries(confirmacao.respostas ?? {}).forEach(([tipo, vaiComer]) => {
+      const tipoNormalizado = nomeTipoRefeicao(tipo);
 
-      if (vaiComer) contagem[tipo].sim += 1;
-      else contagem[tipo].nao += 1;
+      if (!contagem[tipoNormalizado]) {
+        contagem[tipoNormalizado] = { sim: 0, nao: 0 };
+      }
+
+      if (vaiComer) contagem[tipoNormalizado].sim += 1;
+      else contagem[tipoNormalizado].nao += 1;
     });
   });
 
@@ -109,25 +103,39 @@ export default function HomeScreen() {
   const [carregandoRefeicoes, setCarregandoRefeicoes] = useState(true);
   const [contagemPorTipo, setContagemPorTipo] = useState<Record<string, ContagemRefeicao>>({});
 
-  useEffect(() => {
-    listarAlunos()
-      .then((alunos) => setTotalAlunos(alunos.length))
-      .catch((e) => {
-        console.error('Erro ao carregar total de alunos:', e);
-        setTotalAlunos(0);
-      });
+  // Totais de alunos e turmas: recarrega toda vez que a Home ganha foco
+  // (a tela continua montada enquanto você cadastra turma/aluno em outra tela).
+  useFocusEffect(
+    useCallback(() => {
+      let ativo = true;
 
-    listarTurmas()
-      .then((turmas) => setTotalTurmas(turmas.length))
-      .catch((e) => {
-        console.error('Erro ao carregar total de turmas:', e);
-        setTotalTurmas(0);
-      });
-  }, []);
+      listarAlunos()
+        .then((alunos) => {
+          if (ativo) setTotalAlunos(alunos.length);
+        })
+        .catch((e) => {
+          console.error('Erro ao carregar total de alunos:', e);
+          if (ativo) setTotalAlunos(0);
+        });
 
+      listarTurmas()
+        .then((turmas) => {
+          if (ativo) setTotalTurmas(turmas.length);
+        })
+        .catch((e) => {
+          console.error('Erro ao carregar total de turmas:', e);
+          if (ativo) setTotalTurmas(0);
+        });
+
+      return () => {
+        ativo = false;
+      };
+    }, [])
+  );
+
+  // Cardápio do dia (em tempo real)
   useEffect(() => {
     setCarregandoRefeicoes(true);
-    setContagemPorTipo({});
 
     const unsubscribeCardapio = assinarCardapioDia(
       diaSelecionado,
@@ -138,8 +146,26 @@ export default function HomeScreen() {
       () => setCarregandoRefeicoes(false)
     );
 
-    // Confirmações apenas da data do dia selecionado
-    const data = dataDoDia(diaSelecionado);
+    return () => {
+      unsubscribeCardapio();
+    };
+  }, [diaSelecionado]);
+
+  // Confirmações do dia escolhido na PRÓXIMA semana, em tempo real.
+  // Os alunos registram antecipadamente se vão comer na semana seguinte.
+  useEffect(() => {
+    setContagemPorTipo({});
+
+    const dataBase = dataDoDiaDaSemana(diaSelecionado);
+    const [ano, mes, dia] = dataBase.split('-').map(Number);
+    const dataSeguinte = new Date(ano, mes - 1, dia + 7);
+
+    // Formata como YYYY-MM-DD usando a data local, sem conversão UTC.
+    const data = [
+      dataSeguinte.getFullYear(),
+      String(dataSeguinte.getMonth() + 1).padStart(2, '0'),
+      String(dataSeguinte.getDate()).padStart(2, '0'),
+    ].join('-');
 
     const unsubscribeContagem = assinarConfirmacoesPeriodo(
       data,
@@ -149,7 +175,6 @@ export default function HomeScreen() {
     );
 
     return () => {
-      unsubscribeCardapio();
       unsubscribeContagem();
     };
   }, [diaSelecionado]);
@@ -165,7 +190,7 @@ export default function HomeScreen() {
   const vendoHoje = diaSelecionado === diaHoje;
   const tituloSecao = vendoHoje
     ? 'Refeições de hoje'
-    : `Prévia de ${NOME_COMPLETO_DIA[diaSelecionado]}`;
+    : `Refeições de ${NOME_COMPLETO_DIA[diaSelecionado]}`;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -192,7 +217,7 @@ export default function HomeScreen() {
           <View style={styles.avisoFimDeSemana}>
             <Ionicons name="calendar-outline" size={16} color={colors.primary} />
             <Text style={styles.avisoFimDeSemanaText}>
-              Hoje é fim de semana — mostrando a prévia da próxima semana.
+              Hoje é fim de semana — mostrando os dados da semana que passou.
             </Text>
           </View>
         )}
