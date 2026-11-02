@@ -1,68 +1,56 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { colors } from '../../constants/theme';
-import { assinarCardapioDia, Refeicao } from '../services/cardapio';
+import { Refeicao, assinarCardapioData } from '../services/cardapio';
 import Text from '../../components/AppText';  
+import { dataISO, intervaloDoPeriodo } from '../services/refeicaoUtils';
 
 const DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
 
-function obterDataDaProximaSemana(dia: string): string {
-  const hoje = new Date();
-  const diaSemana = hoje.getDay();
+// Datas (AAAA-MM-DD) de Seg a Sex. offset 0 = semana base do app
+// (a mesma usada pelo aluno); 1 = a seguinte, e assim por diante.
+function datasDaSemana(offset: number): string[] {
+  const [segundaISO] = intervaloDoPeriodo('semana');
+  const [a, m, d] = segundaISO.split('-').map(Number);
+  return DAYS.map((_, i) => dataISO(new Date(a, m - 1, d + offset * 7 + i)));
+}
 
-  const diasAteSegunda =
-    diaSemana === 0
-      ? 1
-      : 8 - diaSemana;
-
-  const segunda = new Date(hoje);
-
-  segunda.setDate(
-    hoje.getDate() + diasAteSegunda
-  );
-
-  segunda.setHours(0, 0, 0, 0);
-
-  const indice = DAYS.indexOf(dia);
-
-  const data = new Date(segunda);
-
-  data.setDate(
-    segunda.getDate() + indice
-  );
-
-  const ano = data.getFullYear();
-  const mes = String(data.getMonth() + 1).padStart(2, '0');
-  const diaNumerico = String(data.getDate()).padStart(2, '0');
-
-  return `${ano}-${mes}-${diaNumerico}`;
+function formatarCurto(iso: string) {
+  const [, m, d] = iso.split('-');
+  return `${d}/${m}`;
 }
 
 export default function CardapioScreen() {
-  const [day, setDay] = useState('Seg');
+  const hojeISO = dataISO();
+  const [semana, setSemana] = useState(0);
+  const datas = useMemo(() => datasDaSemana(semana), [semana]);
+  const [indiceDia, setIndiceDia] = useState(() =>
+    Math.max(datasDaSemana(0).indexOf(hojeISO), 0)
+  );
+  const dataSelecionada = datas[indiceDia];
+
   const [refeicoes, setRefeicoes] = useState<Refeicao[]>([]);
   const [carregando, setCarregando] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     setCarregando(true);
-    const unsubscribe = assinarCardapioDia(day, (dados) => {
+    const unsubscribe = assinarCardapioData(dataSelecionada, (dados) => {
       setRefeicoes(dados);
       setCarregando(false);
     });
 
     return unsubscribe;
-  }, [day]);
+  }, [dataSelecionada]);
 
   function abrirEdicao(refeicao: Refeicao, index: number) {
     router.push({
       pathname: '/AddRefeicao',
       params: {
-        dia: day,
-        data: refeicao.data ?? obterDataDaProximaSemana(day),
+        data: dataSelecionada,
         index: String(index),
         titulo: refeicao.titulo,
         horario: refeicao.horario,
@@ -79,18 +67,43 @@ export default function CardapioScreen() {
         <Text style={styles.headerTitle}>Cardápio</Text>
       </View>
 
+      <View style={styles.semanaNav}>
+  <Pressable
+    testID="semana-anterior"
+    onPress={() => setSemana((s) => Math.max(0, s - 1))}
+    disabled={semana === 0}
+    style={[styles.semanaBtn, semana === 0 && { opacity: 0.3 }]}
+  >
+    <MaterialCommunityIcons name="chevron-left" size={22} color={colors.textDark} />
+  </Pressable>
+
+  <Text style={styles.semanaTexto}>
+    {formatarCurto(datas[0])} a {formatarCurto(datas[4])}
+  </Text>
+
+  <Pressable
+    testID="semana-seguinte"
+    onPress={() => setSemana((s) => s + 1)}
+    style={styles.semanaBtn}
+  >
+    <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textDark} />
+  </Pressable>
+</View>
+
       <View style={styles.daysWrap}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.daysRow}>
-          {DAYS.map(d => {
-            const active = d === day;
+          {DAYS.map((d, i) => {
+            const active = i === indiceDia;
             return (
               <Pressable
                 key={d}
                 testID={`day-chip-${d}`}
-                onPress={() => setDay(d)}
+                onPress={() => setIndiceDia(i)}
                 style={[styles.dayChip, active && styles.dayChipActive]}
               >
-                <Text style={[styles.dayText, active && styles.dayTextActive]}>{d}</Text>
+                <Text style={[styles.dayText, active && styles.dayTextActive]}>
+                  {d} {formatarCurto(datas[i])}
+                </Text>
               </Pressable>
             );
           })}
@@ -131,8 +144,8 @@ export default function CardapioScreen() {
             router.push({
               pathname: '/AddRefeicao',
               params: {
-                dia: day,
-                data: obterDataDaProximaSemana(day),
+                // datas passadas não aceitam cadastro; a tela de adicionar pede a data
+                data: dataSelecionada >= hojeISO ? dataSelecionada : '',
               },
             })
           }
@@ -212,4 +225,22 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   addBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  semanaNav: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 12,
+  marginTop: 12,
+  },
+  semanaBtn: {
+  width: 36,
+  height: 36,
+  borderRadius: 18,
+  backgroundColor: '#fff',
+  borderWidth: 1,
+  borderColor: colors.inputBorder,
+  alignItems: 'center',
+  justifyContent: 'center',
+  },
+semanaTexto: { fontSize: 14, fontWeight: '700', color: colors.textDark, minWidth: 120, textAlign: 'center' },
 });

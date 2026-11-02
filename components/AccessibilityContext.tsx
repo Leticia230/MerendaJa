@@ -1,3 +1,4 @@
+
 import React, {
   createContext,
   useCallback,
@@ -33,9 +34,7 @@ type AccessibilityContextValue = {
     key: K,
     value: AccessibilitySettings[K]
   ) => void;
-  /** Multiplica um tamanho de fonte (1.3x quando "Texto grande" está ativo). */
   fs: (size: number) => number;
-  /** Retorna a dica só se "Dicas de leitor de tela" estiver ativo. */
   hint: (text: string) => string | undefined;
   theme: AccessibilityTheme;
 };
@@ -49,86 +48,130 @@ const DEFAULTS: AccessibilitySettings = {
   screenReaderHints: true,
 };
 
+// Tema padrão do aplicativo.
+// As cores não serão mais modificadas pelas opções de acessibilidade.
+const DEFAULT_THEME: AccessibilityTheme = {
+  background: colors.cream,
+  card: '#FFFFFF',
+  text: '#333333',
+  textSecondary: '#777777',
+  primary: colors.primary,
+  border: 'transparent',
+  borderWidth: 0,
+};
+
 const AccessibilityContext = createContext<AccessibilityContextValue | null>(null);
 
-export function AccessibilityProvider({ children }: { children: React.ReactNode }) {
+export function AccessibilityProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [settings, setSettings] = useState<AccessibilitySettings>(DEFAULTS);
   const [loaded, setLoaded] = useState(false);
 
-  // Carrega as preferências salvas (e, na primeira vez, respeita o "reduzir movimento" do sistema)
+  // Carrega as preferências salvas.
   useEffect(() => {
     (async () => {
       try {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
+
         if (raw) {
-          setSettings({ ...DEFAULTS, ...JSON.parse(raw) });
+          const savedSettings = JSON.parse(raw);
+
+          setSettings({
+            ...DEFAULTS,
+            ...savedSettings,
+
+            // Impede que uma configuração antiga reative o alto contraste.
+            highContrast: false,
+          });
         } else {
-          const systemReduceMotion = await AccessibilityInfo.isReduceMotionEnabled();
-          setSettings({ ...DEFAULTS, reduceMotion: systemReduceMotion });
+          const systemReduceMotion =
+            await AccessibilityInfo.isReduceMotionEnabled();
+
+          setSettings({
+            ...DEFAULTS,
+            reduceMotion: systemReduceMotion,
+          });
         }
       } catch {
-        // se falhar, segue com os valores padrão
+        setSettings(DEFAULTS);
       } finally {
         setLoaded(true);
       }
     })();
   }, []);
 
-  // Salva sempre que mudar (depois do carregamento inicial)
+  // Salva as preferências depois do carregamento inicial.
   useEffect(() => {
     if (!loaded) return;
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(settings)).catch(() => {});
+
+    AsyncStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        ...settings,
+        highContrast: false,
+      })
+    ).catch(() => {});
   }, [settings, loaded]);
 
   const setSetting = useCallback(
-    <K extends keyof AccessibilitySettings>(key: K, value: AccessibilitySettings[K]) => {
-      setSettings((prev) => ({ ...prev, [key]: value }));
+    <K extends keyof AccessibilitySettings>(
+      key: K,
+      value: AccessibilitySettings[K]
+    ) => {
+      // Impede a ativação do alto contraste.
+      if (key === 'highContrast') return;
+
+      setSettings((prev) => ({
+        ...prev,
+        [key]: value,
+        highContrast: false,
+      }));
     },
     []
   );
 
   const value = useMemo<AccessibilityContextValue>(() => {
+    // Aumenta a fonte em 30% quando a opção está ativada.
     const scale = settings.largeText ? 1.3 : 1;
 
-    const theme: AccessibilityTheme = settings.highContrast
-      ? {
-          background: '#FFFFFF',
-          card: '#FFFFFF',
-          text: '#000000',
-          textSecondary: '#1A1A1A',
-          primary: '#B34700',
-          border: '#000000',
-          borderWidth: 2,
-        }
-      : {
-          background: colors.cream,
-          card: '#FFFFFF',
-          text: '#333333',
-          textSecondary: '#777777',
-          primary: colors.primary,
-          border: 'transparent',
-          borderWidth: 0,
-        };
-
     return {
-      settings,
+      settings: {
+        ...settings,
+        highContrast: false,
+      },
+
       setSetting,
+
       fs: (size) => Math.round(size * scale),
-      hint: (text) => (settings.screenReaderHints ? text : undefined),
-      theme,
+
+      hint: (text) =>
+        settings.screenReaderHints ? text : undefined,
+
+      // O tema permanece sempre com as cores originais.
+      theme: DEFAULT_THEME,
     };
   }, [settings, setSetting]);
 
-  // Evita um "piscar" com o tema errado enquanto carrega
   if (!loaded) return null;
 
-  return <AccessibilityContext.Provider value={value}>{children}</AccessibilityContext.Provider>;
+  return (
+    <AccessibilityContext.Provider value={value}>
+      {children}
+    </AccessibilityContext.Provider>
+  );
 }
 
 export function useAccessibility() {
   const ctx = useContext(AccessibilityContext);
+
   if (!ctx) {
-    throw new Error('useAccessibility deve ser usado dentro de <AccessibilityProvider>');
+    throw new Error(
+      'useAccessibility deve ser usado dentro de <AccessibilityProvider>'
+    );
   }
+
   return ctx;
 }

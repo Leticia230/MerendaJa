@@ -13,10 +13,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { colors } from '../../constants/theme';
-import { assinarCardapioDia, Refeicao } from '../services/cardapio';
+import { assinarCardapioData, Refeicao } from '../services/cardapio';
 import { diaAbreviadoDeHoje, nomeDiaSemanaPtBR, dataPorExtensoPtBR } from '../services/data';
 import { useInstituicaoId } from '../services/useInstituicaoId';
 import Text from '../../components/AppText';  
+import { dataISO } from '../services/refeicaoUtils';
 
 function MealRow({ titulo, horario, color, icon }: Refeicao) {
   return (
@@ -145,28 +146,30 @@ export default function HomeAlunoScreen() {
 
   const diaHoje = diaAbreviadoDeHoje(); // null se for fim de semana
 
+  const hojeISO = dataISO();
+
   const { instituicaoId, carregando: carregandoInstituicao } = useInstituicaoId();
 
   useEffect(() => {
-    if (carregandoInstituicao) return;
+  if (carregandoInstituicao) return;
 
-    if (!diaHoje || !instituicaoId) {
+  if (!diaHoje || !instituicaoId) {
+    setCarregando(false);
+    return;
+  }
+
+  const unsubscribe = assinarCardapioData(
+    hojeISO,
+    (refeicoes) => {
+      setRefeicoesHoje(refeicoes);
       setCarregando(false);
-      return;
-    }
+    },
+    () => setCarregando(false),
+    instituicaoId
+  );
 
-    const unsubscribe = assinarCardapioDia(
-      diaHoje,
-      (refeicoes) => {
-        setRefeicoesHoje(refeicoes);
-        setCarregando(false);
-      },
-      () => setCarregando(false),
-      instituicaoId
-    );
-
-    return unsubscribe;
-  }, [diaHoje, instituicaoId, carregandoInstituicao]);
+  return unsubscribe;
+  }, [diaHoje, hojeISO, instituicaoId, carregandoInstituicao]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>

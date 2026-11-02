@@ -1,3 +1,4 @@
+
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
@@ -25,61 +26,112 @@ import {
   TIPOS,
   dataISO,
   nomeTipoRefeicao,
-  intervaloDoPeriodo,
 } from './services/refeicaoUtils';
 
 const DIAS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
+
+const DIAS_CALENDARIO = [
+  'Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb',
+];
+
 const MESES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril',
+  'Maio', 'Junho', 'Julho', 'Agosto',
+  'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+];
+
+const MESES_CURTOS = [
   'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
   'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez',
 ];
-const SEMANAS = ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Sem 5'];
+
+const SEMANAS = [
+  'Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Sem 5',
+];
+
+const screenWidth = Dimensions.get('window').width;
 
 const TEXTO_PERIODO: Record<
   Period,
-  { titulo: string; quando: string; lista: string }
+  { titulo: string; lista: string }
 > = {
   semana: {
     titulo: 'Demanda da semana',
-    quando: 'na próxima semana',
     lista: 'Demanda por dia',
   },
   mes: {
     titulo: 'Demanda do mês',
-    quando: 'neste mês',
     lista: 'Demanda por semana',
   },
   ano: {
     titulo: 'Demanda do ano',
-    quando: 'neste ano',
     lista: 'Demanda por mês',
   },
 };
 
-const screenWidth = Dimensions.get('window').width;
+// Converte uma data para YYYY-MM-DD sem utilizar UTC.
+function formatarData(data: Date) {
+  return dataISO(data);
+}
 
-// Calcula o intervalo de segunda a sexta-feira da próxima semana.
-// As confirmações dos alunos são destinadas à semana seguinte.
-function intervaloSemanaDasConfirmacoes(): [string, string] {
-  const hoje = new Date();
-  const diaSemana = hoje.getDay();
+// Calcula o intervalo do período selecionado.
+function calcularIntervalo(
+  period: Period,
+  dataSelecionada: Date
+): [string, string] {
+  const ano = dataSelecionada.getFullYear();
+  const mes = dataSelecionada.getMonth();
+  const dia = dataSelecionada.getDate();
 
-  // Converte domingo (0) para 7 dias até a próxima segunda.
-  const diasDesdeSegunda = diaSemana === 0 ? 6 : diaSemana - 1;
+  if (period === 'semana') {
+    const segunda = new Date(ano, mes, dia);
+    const diaSemana = segunda.getDay();
 
-  const segunda = new Date(
-    hoje.getFullYear(),
-    hoje.getMonth(),
-    hoje.getDate() - diasDesdeSegunda + 7
+    const deslocamento = diaSemana === 0 ? -6 : 1 - diaSemana;
+
+    segunda.setDate(segunda.getDate() + deslocamento);
+
+    const sexta = new Date(segunda);
+    sexta.setDate(segunda.getDate() + 4);
+
+    return [formatarData(segunda), formatarData(sexta)];
+  }
+
+  if (period === 'mes') {
+    const inicio = new Date(ano, mes, 1);
+    const fim = new Date(ano, mes + 1, 0);
+
+    return [formatarData(inicio), formatarData(fim)];
+  }
+
+  return [
+    `${ano}-01-01`,
+    `${ano}-12-31`,
+  ];
+}
+
+// Formata o intervalo para exibição.
+function formatarIntervalo(
+  period: Period,
+  dataSelecionada: Date
+) {
+  const [inicio, fim] = calcularIntervalo(
+    period,
+    dataSelecionada
   );
 
-  const sexta = new Date(
-    segunda.getFullYear(),
-    segunda.getMonth(),
-    segunda.getDate() + 4
-  );
+  if (period === 'ano') {
+    return `${dataSelecionada.getFullYear()}`;
+  }
 
-  return [dataISO(segunda), dataISO(sexta)];
+  if (period === 'mes') {
+    return `${MESES[dataSelecionada.getMonth()]} de ${dataSelecionada.getFullYear()}`;
+  }
+
+  const [ano1, mes1, dia1] = inicio.split('-');
+  const [ano2, mes2, dia2] = fim.split('-');
+
+  return `${dia1}/${mes1}/${ano1} a ${dia2}/${mes2}/${ano2}`;
 }
 
 // Identifica o grupo ao qual cada confirmação pertence.
@@ -90,7 +142,7 @@ function rotuloGrupo(
   const [ano, mes, dia] = dataStr.split('-').map(Number);
 
   if (period === 'ano') {
-    return MESES[mes - 1];
+    return MESES_CURTOS[mes - 1];
   }
 
   if (period === 'mes') {
@@ -99,8 +151,9 @@ function rotuloGrupo(
 
   const dow = new Date(ano, mes - 1, dia).getDay();
 
-  // Segunda a sexta-feira.
-  return dow >= 1 && dow <= 5 ? DIAS[dow - 1] : undefined;
+  return dow >= 1 && dow <= 5
+    ? DIAS[dow - 1]
+    : undefined;
 }
 
 // Define a cor da barra de acordo com a demanda.
@@ -113,7 +166,7 @@ function barColor(valor: number, maior: number) {
   return '#c62828';
 }
 
-// Seleciona o ícone correspondente ao tipo de refeição.
+// Seleciona o ícone correspondente à refeição.
 function iconeRefeicao(titulo: string) {
   const tipo = nomeTipoRefeicao(titulo);
 
@@ -125,7 +178,18 @@ function iconeRefeicao(titulo: string) {
 }
 
 export default function StatisticsScreen() {
+  const hoje = new Date();
+
   const [period, setPeriod] = useState<Period>('semana');
+
+  const [dataSelecionada, setDataSelecionada] = useState(
+    new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate())
+  );
+
+  // Mês que está sendo exibido no calendário.
+  const [mesCalendario, setMesCalendario] = useState(
+    new Date(hoje.getFullYear(), hoje.getMonth(), 1)
+  );
 
   const [confirmacoes, setConfirmacoes] = useState<
     ConfirmacaoDatada[]
@@ -133,16 +197,15 @@ export default function StatisticsScreen() {
 
   const [carregando, setCarregando] = useState(true);
 
+  // Consulta o Firebase de acordo com a data e o período escolhidos.
   useEffect(() => {
     setCarregando(true);
     setConfirmacoes([]);
 
-    // O gráfico semanal consulta as confirmações da próxima semana.
-    // Os filtros mensal e anual usam os intervalos definidos no serviço.
-    const [inicio, fim] =
-      period === 'semana'
-        ? intervaloSemanaDasConfirmacoes()
-        : intervaloDoPeriodo(period);
+    const [inicio, fim] = calcularIntervalo(
+      period,
+      dataSelecionada
+    );
 
     const cancelar = assinarConfirmacoesPeriodo(
       inicio,
@@ -151,41 +214,129 @@ export default function StatisticsScreen() {
         setConfirmacoes(lista);
         setCarregando(false);
       },
-      () => {
+      (erro) => {
+        console.error('Erro ao carregar estatísticas:', erro);
         setCarregando(false);
       }
     );
 
     return cancelar;
-  }, [period]);
+  }, [period, dataSelecionada]);
 
-  // Calcula os totais por refeição e por dia, semana ou mês.
-  const { totais, grupos } = useMemo(() => {
+  // Navegação do calendário.
+  function mudarCalendario(direcao: number) {
+    setMesCalendario((anterior) => {
+      if (period === 'ano') {
+        return new Date(
+          anterior.getFullYear() + direcao,
+          anterior.getMonth(),
+          1
+        );
+      }
+
+      return new Date(
+        anterior.getFullYear(),
+        anterior.getMonth() + direcao,
+        1
+      );
+    });
+  }
+
+  // Seleciona uma data no calendário.
+  function selecionarData(dia: number) {
+    const novaData = new Date(
+      mesCalendario.getFullYear(),
+      mesCalendario.getMonth(),
+      dia
+    );
+
+    setDataSelecionada(novaData);
+  }
+
+  // Calendário mensal com 42 posições.
+  const diasCalendario = useMemo(() => {
+    const ano = mesCalendario.getFullYear();
+    const mes = mesCalendario.getMonth();
+
+    const primeiroDia = new Date(ano, mes, 1).getDay();
+    const quantidadeDias = new Date(ano, mes + 1, 0).getDate();
+
+    return Array.from({ length: 42 }, (_, indice) => {
+      const dia = indice - primeiroDia + 1;
+
+      return dia >= 1 && dia <= quantidadeDias
+        ? dia
+        : null;
+    });
+  }, [mesCalendario]);
+
+  const intervaloSelecionado = calcularIntervalo(
+    period,
+    dataSelecionada
+  );
+
+  const dataSelecionadaISO = formatarData(dataSelecionada);
+
+  // Calcula as quantidades de respostas positivas e negativas.
+  const {
+    totais,
+    recusas,
+    grupos,
+    gruposRecusas,
+  } = useMemo(() => {
     const totais: Record<string, number> = {
       Café: 0,
       Almoço: 0,
       Jantar: 0,
     };
 
+    const recusas: Record<string, number> = {
+      Café: 0,
+      Almoço: 0,
+      Jantar: 0,
+    };
+
     const grupos: Record<string, number> = {};
+    const gruposRecusas: Record<string, number> = {};
 
     confirmacoes.forEach((c) => {
       const rotulo = rotuloGrupo(period, c.data);
 
       Object.entries(c.respostas ?? {}).forEach(
         ([tipo, vaiComer]) => {
-          if (!vaiComer) return;
+          const tipoNormalizado = nomeTipoRefeicao(tipo);
 
-          totais[tipo] = (totais[tipo] ?? 0) + 1;
+          if (!TIPOS.includes(tipoNormalizado as any)) {
+            return;
+          }
 
-          if (rotulo) {
-            grupos[rotulo] = (grupos[rotulo] ?? 0) + 1;
+          if (vaiComer === true) {
+            totais[tipoNormalizado] =
+              (totais[tipoNormalizado] ?? 0) + 1;
+
+            if (rotulo) {
+              grupos[rotulo] =
+                (grupos[rotulo] ?? 0) + 1;
+            }
+          } else if (vaiComer === false) {
+            recusas[tipoNormalizado] =
+              (recusas[tipoNormalizado] ?? 0) + 1;
+
+            if (rotulo) {
+              gruposRecusas[rotulo] =
+                (gruposRecusas[rotulo] ?? 0) + 1;
+            }
           }
         }
       );
     });
 
-    return { totais, grupos };
+    return {
+      totais,
+      recusas,
+      grupos,
+      gruposRecusas,
+    };
   }, [confirmacoes, period]);
 
   const totalGeral = Object.values(totais).reduce(
@@ -198,13 +349,8 @@ export default function StatisticsScreen() {
     [totais]
   );
 
-  const maiorDemanda =
-    ordenadas.length > 0 ? ordenadas[0] : null;
-
-  const menorDemanda =
-    ordenadas.length > 0
-      ? ordenadas[ordenadas.length - 1]
-      : null;
+  const maiorDemanda = ordenadas[0] ?? null;
+  const menorDemanda = ordenadas[ordenadas.length - 1] ?? null;
 
   const chartData = useMemo(
     () => ({
@@ -223,7 +369,7 @@ export default function StatisticsScreen() {
       ? DIAS
       : period === 'mes'
         ? SEMANAS
-        : MESES;
+        : MESES_CURTOS;
 
   const texto = TEXTO_PERIODO[period];
 
@@ -242,30 +388,198 @@ export default function StatisticsScreen() {
         {/* Seleção do período */}
         <View style={styles.periodSelector}>
           <PeriodButton
-            testID="stats-period-semana"
             label="Semana"
             active={period === 'semana'}
             onPress={() => setPeriod('semana')}
           />
 
           <PeriodButton
-            testID="stats-period-mes"
             label="Mês"
             active={period === 'mes'}
             onPress={() => setPeriod('mes')}
           />
 
           <PeriodButton
-            testID="stats-period-ano"
             label="Ano"
             active={period === 'ano'}
             onPress={() => setPeriod('ano')}
           />
         </View>
 
+        {/* Calendário */}
+        <View style={styles.calendarCard}>
+          <View style={styles.calendarHeader}>
+            <View style={styles.calendarHeading}>
+              <Ionicons
+                name="calendar-outline"
+                size={21}
+                color={colors.primary}
+              />
+
+              <Text style={styles.calendarTitle}>
+                Escolher período
+              </Text>
+            </View>
+
+            <Text style={styles.calendarMode}>
+              {period === 'semana'
+                ? 'Selecione um dia'
+                : period === 'mes'
+                  ? 'Selecione um mês'
+                  : 'Selecione um ano'}
+            </Text>
+          </View>
+
+          <View style={styles.calendarNavigation}>
+            <TouchableOpacity
+              style={styles.calendarArrow}
+              onPress={() => mudarCalendario(-1)}
+              accessibilityRole="button"
+              accessibilityLabel="Período anterior"
+            >
+              <Ionicons
+                name="chevron-back"
+                size={21}
+                color={colors.primary}
+              />
+            </TouchableOpacity>
+
+            <Text style={styles.calendarMonthTitle}>
+              {period === 'ano'
+                ? mesCalendario.getFullYear()
+                : `${MESES[mesCalendario.getMonth()]} ${mesCalendario.getFullYear()}`}
+            </Text>
+
+            <TouchableOpacity
+              style={styles.calendarArrow}
+              onPress={() => mudarCalendario(1)}
+              accessibilityRole="button"
+              accessibilityLabel="Próximo período"
+            >
+              <Ionicons
+                name="chevron-forward"
+                size={21}
+                color={colors.primary}
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* Dias da semana */}
+          <View style={styles.calendarGrid}>
+            {DIAS_CALENDARIO.map((dia, index) => (
+              <View key={index} style={styles.calendarCell}>
+                <Text style={styles.calendarDayHeader}>
+                  {dia}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          {/* Dias do mês */}
+          <View style={styles.calendarGrid}>
+            {diasCalendario.map((dia, index) => {
+              if (dia === null) {
+                return (
+                  <View
+                    key={`vazio-${index}`}
+                    style={styles.calendarCell}
+                  />
+                );
+              }
+
+              const dataAtual = new Date(
+                mesCalendario.getFullYear(),
+                mesCalendario.getMonth(),
+                dia
+              );
+
+              const selecionado =
+                formatarData(dataAtual) === dataSelecionadaISO;
+
+              const hojeAtual =
+                formatarData(dataAtual) === formatarData(hoje);
+
+              return (
+                <View
+                  key={`${mesCalendario.getMonth()}-${dia}`}
+                  style={styles.calendarCell}
+                >
+                  <TouchableOpacity
+                    style={[
+                      styles.calendarDay,
+                      selecionado && styles.calendarDaySelected,
+                      !selecionado && hojeAtual && styles.calendarDayToday,
+                    ]}
+                    onPress={() => selecionarData(dia)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Selecionar dia ${dia}`}
+                  >
+                    <Text
+                      style={[
+                        styles.calendarDayText,
+                        selecionado && styles.calendarDayTextSelected,
+                        !selecionado && hojeAtual && styles.calendarDayTextToday,
+                      ]}
+                    >
+                      {dia}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
+          </View>
+
+          <View style={styles.calendarDivider} />
+
+          {/* Período selecionado */}
+          <View style={styles.selectedPeriod}>
+            <View style={styles.selectedPeriodIcon}>
+              <Ionicons
+                name="calendar"
+                size={18}
+                color={colors.primary}
+              />
+            </View>
+
+            <View style={{ flex: 1 }}>
+              <Text style={styles.selectedPeriodLabel}>
+                Período selecionado
+              </Text>
+
+              <Text style={styles.selectedPeriodValue}>
+                {formatarIntervalo(period, dataSelecionada)}
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              onPress={() => {
+                const agora = new Date();
+
+                const hojeAtual = new Date(
+                  agora.getFullYear(),
+                  agora.getMonth(),
+                  agora.getDate()
+                );
+
+                setDataSelecionada(hojeAtual);
+
+                setMesCalendario(
+                  new Date(agora.getFullYear(), agora.getMonth(), 1)
+                );
+              }}
+              style={styles.todayButton}
+            >
+              <Text style={styles.todayButtonText}>
+                Hoje
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {carregando ? (
           <ActivityIndicator
             color={colors.primary}
+            size="large"
             style={{ marginTop: 30 }}
           />
         ) : (
@@ -274,6 +588,10 @@ export default function StatisticsScreen() {
             <View style={styles.chartCard}>
               <Text style={styles.chartTitle}>
                 {texto.titulo}
+              </Text>
+
+              <Text style={styles.chartSubtitle}>
+                Alunos que marcaram "Vou comer"
               </Text>
 
               <BarChart
@@ -302,7 +620,7 @@ export default function StatisticsScreen() {
               />
             </View>
 
-            {/* Total de refeições */}
+            {/* Demanda total */}
             <View style={styles.totalCard}>
               <View style={styles.totalIcon}>
                 <MaterialCommunityIcons
@@ -322,8 +640,7 @@ export default function StatisticsScreen() {
                 </Text>
 
                 <Text style={styles.totalDescription}>
-                  Total de alunos que marcaram “Vou comer”{' '}
-                  {texto.quando}
+                  Total de confirmações positivas no período
                 </Text>
               </View>
             </View>
@@ -381,14 +698,34 @@ export default function StatisticsScreen() {
               </View>
             </View>
 
-            {/* Demanda por tipo de refeição */}
+            {/* Demanda por refeição */}
             <Text style={styles.sectionTitle}>
               Demanda por refeição
             </Text>
 
+            <View style={styles.legendRow}>
+              <View style={styles.legendItem}>
+                <View style={styles.legendGreen} />
+                <Text style={styles.legendText}>
+                  Querem
+                </Text>
+              </View>
+
+              <View style={styles.legendItem}>
+                <View style={styles.legendGray} />
+                <Text style={styles.legendText}>
+                  Não querem
+                </Text>
+              </View>
+            </View>
+
             {TIPOS.map((tipo) => {
               const quantidade = totais[tipo] ?? 0;
-              const maior = maiorDemanda?.[1] ?? 0;
+              const quantidadeRecusa = recusas[tipo] ?? 0;
+
+              const maior = Math.max(
+                ...TIPOS.map((t) => totais[t] ?? 0)
+              );
 
               const largura =
                 maior > 0
@@ -400,59 +737,87 @@ export default function StatisticsScreen() {
                   <View style={styles.rankIcon}>
                     <MaterialCommunityIcons
                       name={iconeRefeicao(tipo) as any}
-                      size={19}
+                      size={21}
                       color={colors.primary}
                     />
                   </View>
 
-                  <Text style={styles.rankTurma}>
-                    {tipo}
-                  </Text>
+                  <View style={styles.rankInfo}>
+                    <Text style={styles.rankTurma}>
+                      {tipo}
+                    </Text>
 
-                  <View style={styles.rankBarBackground}>
-                    <View
-                      style={[
-                        styles.rankBarFill,
-                        {
-                          width: `${largura}%`,
-                          backgroundColor: barColor(
-                            quantidade,
-                            maior
-                          ),
-                        },
-                      ]}
-                    />
+                    <View style={styles.rankNumbers}>
+                      <Text style={styles.rankWant}>
+                        {quantidade} querem
+                      </Text>
+
+                      <Text style={styles.rankSeparator}>
+                        ·
+                      </Text>
+
+                      <Text style={styles.rankRefuse}>
+                        {quantidadeRecusa} não querem
+                      </Text>
+                    </View>
+
+                    <View style={styles.rankBarBackground}>
+                      <View
+                        style={[
+                          styles.rankBarFill,
+                          {
+                            width: `${largura}%`,
+                            backgroundColor: barColor(
+                              quantidade,
+                              maior
+                            ),
+                          },
+                        ]}
+                      />
+                    </View>
                   </View>
-
-                  <Text style={styles.rankValue}>
-                    {quantidade}
-                  </Text>
                 </View>
               );
             })}
 
-            {/* Detalhamento por dia, semana ou mês */}
+            {/* Detalhamento do período */}
             <Text style={styles.sectionTitle}>
               {texto.lista}
             </Text>
 
-            {ordemGrupos.map((rotulo) => (
-              <View key={rotulo} style={styles.dayRow}>
-                <Text style={styles.dayName}>
-                  {rotulo}
-                </Text>
+            {ordemGrupos.map((rotulo) => {
+              const quantidade = grupos[rotulo] ?? 0;
+              const quantidadeRecusa =
+                gruposRecusas[rotulo] ?? 0;
 
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.dayValue}>
-                    {grupos[rotulo] ?? 0} refeições
+              return (
+                <View key={rotulo} style={styles.dayRow}>
+                  <Text style={styles.dayName}>
+                    {rotulo}
                   </Text>
 
-                  <Text style={styles.dayDescription}>
-                    confirmações de consumo
-                  </Text>
+                  <View style={{ flex: 1 }}>
+                    <View style={styles.dayNumbers}>
+                      <Text style={styles.dayValue}>
+                        {quantidade} querem
+                      </Text>
+
+                      <Text style={styles.daySeparator}>
+                        ·
+                      </Text>
+
+                      <Text style={styles.dayRefusal}>
+                        {quantidadeRecusa} não querem
+                      </Text>
+                    </View>
+
+                    <Text style={styles.dayDescription}>
+                      Respostas registradas
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </>
         )}
       </ScrollView>
@@ -461,21 +826,18 @@ export default function StatisticsScreen() {
 }
 
 type PeriodButtonProps = {
-  testID: string;
   label: string;
   active: boolean;
   onPress: () => void;
 };
 
 function PeriodButton({
-  testID,
   label,
   active,
   onPress,
 }: PeriodButtonProps) {
   return (
     <TouchableOpacity
-      testID={testID}
       style={[
         styles.periodButton,
         active && styles.periodButtonActive,
@@ -516,7 +878,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 4,
-    marginBottom: 18,
+    marginBottom: 16,
   },
 
   periodButton: {
@@ -540,6 +902,168 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 
+  // Calendário
+
+  calendarCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+  },
+
+  calendarHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 18,
+  },
+
+  calendarHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+
+  calendarTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#333',
+  },
+
+  calendarMode: {
+    fontSize: 10,
+    color: '#999',
+  },
+
+  calendarNavigation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+
+  calendarArrow: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F2F6F1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  calendarMonthTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: colors.textDark,
+  },
+
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+
+  calendarCell: {
+    width: '14.2857%',
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  calendarDayHeader: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#999',
+  },
+
+  calendarDay: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  calendarDaySelected: {
+    backgroundColor: colors.primary,
+  },
+
+  calendarDayToday: {
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+  },
+
+  calendarDayText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#444',
+  },
+
+  calendarDayTextSelected: {
+    color: '#fff',
+    fontWeight: '800',
+  },
+
+  calendarDayTextToday: {
+    color: colors.primary,
+    fontWeight: '800',
+  },
+
+  calendarDivider: {
+    height: 1,
+    backgroundColor: '#eee',
+    marginVertical: 14,
+  },
+
+  selectedPeriod: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+
+  selectedPeriodIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#EAF4E9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  selectedPeriodLabel: {
+    fontSize: 10,
+    color: '#999',
+  },
+
+  selectedPeriodValue: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#333',
+    marginTop: 3,
+  },
+
+  todayButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 9,
+    backgroundColor: '#EAF4E9',
+  },
+
+  todayButtonText: {
+    color: colors.primary,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+
+  // Gráfico
+
   chartCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
@@ -559,15 +1083,25 @@ const styles = StyleSheet.create({
   chartTitle: {
     alignSelf: 'flex-start',
     marginLeft: 18,
-    marginBottom: 8,
+    marginBottom: 4,
     fontSize: 15,
     fontWeight: '700',
     color: '#333',
   },
 
+  chartSubtitle: {
+    alignSelf: 'flex-start',
+    marginLeft: 18,
+    marginBottom: 8,
+    fontSize: 11,
+    color: '#999',
+  },
+
   chart: {
     borderRadius: 16,
   },
+
+  // Total
 
   totalCard: {
     backgroundColor: colors.primary,
@@ -606,6 +1140,8 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 3,
   },
+
+  // Destaques
 
   highlightsRow: {
     flexDirection: 'row',
@@ -650,6 +1186,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
+  // Demanda por refeição
+
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
@@ -659,34 +1197,96 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
+  legendRow: {
+    flexDirection: 'row',
+    gap: 18,
+    marginBottom: 12,
+  },
+
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+
+  legendGreen: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: '#397A45',
+  },
+
+  legendGray: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: '#9E9E9E',
+  },
+
+  legendText: {
+    fontSize: 11,
+    color: '#777',
+  },
+
   rankRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 12,
+    padding: 13,
     marginBottom: 10,
   },
 
   rankIcon: {
-    width: 32,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#EAF4E9',
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 10,
+  },
+
+  rankInfo: {
+    flex: 1,
   },
 
   rankTurma: {
-    width: 70,
-    fontSize: 12,
+    fontSize: 13,
     color: '#333',
-    fontWeight: '600',
+    fontWeight: '700',
+    marginBottom: 5,
+  },
+
+  rankNumbers: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 5,
+  },
+
+  rankWant: {
+    fontSize: 11,
+    color: '#397A45',
+    fontWeight: '700',
+  },
+
+  rankSeparator: {
+    fontSize: 11,
+    color: '#aaa',
+  },
+
+  rankRefuse: {
+    fontSize: 11,
+    color: '#777',
+    fontWeight: '500',
   },
 
   rankBarBackground: {
-    flex: 1,
-    height: 8,
+    height: 6,
     borderRadius: 4,
     backgroundColor: '#eee',
-    marginHorizontal: 8,
+    marginTop: 9,
     overflow: 'hidden',
   },
 
@@ -695,13 +1295,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
 
-  rankValue: {
-    width: 40,
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#333',
-    textAlign: 'right',
-  },
+  // Detalhamento por período
 
   dayRow: {
     backgroundColor: '#fff',
@@ -715,20 +1309,38 @@ const styles = StyleSheet.create({
 
   dayName: {
     width: 55,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
     color: colors.primary,
   },
 
+  dayNumbers: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 5,
+  },
+
   dayValue: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
-    color: '#333',
+    color: '#397A45',
+  },
+
+  daySeparator: {
+    fontSize: 11,
+    color: '#aaa',
+  },
+
+  dayRefusal: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#777',
   },
 
   dayDescription: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#999',
-    marginTop: 2,
+    marginTop: 4,
   },
 });

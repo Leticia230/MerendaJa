@@ -1,42 +1,58 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { View, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../constants/theme';
-import { assinarCardapioDia, Refeicao } from '../services/cardapio';
 import { useInstituicaoId } from '../services/useInstituicaoId';
 import Text from '../../components/AppText';  
+import { assinarCardapioData, Refeicao } from '../services/cardapio';
+import { dataISO, intervaloDoPeriodo } from '../services/refeicaoUtils';
 
 const DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
 
+function datasDaSemana(): string[] {
+  const [segundaISO] = intervaloDoPeriodo('semana');
+  const [a, m, d] = segundaISO.split('-').map(Number);
+  return DAYS.map((_, i) => dataISO(new Date(a, m - 1, d + i)));
+}
+
+function formatarCurto(iso: string) {
+  const [, m, d] = iso.split('-');
+  return `${d}/${m}`;
+}
+
 export default function CardapioAlunoScreen() {
-  const [day, setDay] = useState('Seg');
-  const [refeicoes, setRefeicoes] = useState<Refeicao[]>([]);
-  const [carregando, setCarregando] = useState(true);
-  const { instituicaoId, carregando: carregandoInstituicao } = useInstituicaoId();
+  const datas = useMemo(() => datasDaSemana(), []);
+const [indiceDia, setIndiceDia] = useState(() =>
+  Math.max(datas.indexOf(dataISO()), 0)
+);
+const dataSelecionada = datas[indiceDia];
+const [refeicoes, setRefeicoes] = useState<Refeicao[]>([]);
+const [carregando, setCarregando] = useState(true);
+const { instituicaoId, carregando: carregandoInstituicao } = useInstituicaoId();
 
-  useEffect(() => {
-    if (carregandoInstituicao) return;
+useEffect(() => {
+  if (carregandoInstituicao) return;
 
-    if (!instituicaoId) {
-      setRefeicoes([]);
+  if (!instituicaoId) {
+    setRefeicoes([]);
+    setCarregando(false);
+    return;
+  }
+
+  setCarregando(true);
+  const unsubscribe = assinarCardapioData(
+    dataSelecionada,
+    (dados) => {
+      setRefeicoes(dados);
       setCarregando(false);
-      return;
-    }
+    },
+    () => setCarregando(false),
+    instituicaoId
+  );
 
-    setCarregando(true);
-    const unsubscribe = assinarCardapioDia(
-      day,
-      (dados) => {
-        setRefeicoes(dados);
-        setCarregando(false);
-      },
-      () => setCarregando(false),
-      instituicaoId
-    );
-
-    return unsubscribe;
-  }, [day, instituicaoId, carregandoInstituicao]);
+  return unsubscribe;
+}, [dataSelecionada, instituicaoId, carregandoInstituicao]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -46,16 +62,18 @@ export default function CardapioAlunoScreen() {
 
       <View style={styles.daysWrap}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.daysRow}>
-          {DAYS.map(d => {
-            const active = d === day;
+          {DAYS.map((d, i) => {
+            const active = i === indiceDia;
             return (
               <Pressable
                 key={d}
                 testID={`day-chip-${d}`}
-                onPress={() => setDay(d)}
+                onPress={() => setIndiceDia(i)}
                 style={[styles.dayChip, active && styles.dayChipActive]}
               >
-                <Text style={[styles.dayText, active && styles.dayTextActive]}>{d}</Text>
+                <Text style={[styles.dayText, active && styles.dayTextActive]}>
+                  {d} {formatarCurto(datas[i])}
+                </Text>
               </Pressable>
             );
           })}

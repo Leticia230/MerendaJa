@@ -8,7 +8,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Constants, { ExecutionEnvironment } from "expo-constants";
 import { useFonts } from "expo-font";
 import { StripeProvider } from "@stripe/stripe-react-native";
-import { AccessibilityProvider } from "./AccessibilityContext";
+import { AccessibilityProvider } from "../components/AccessibilityContext";
 
 LogBox.ignoreAllLogs(true);
 SplashScreen.preventAutoHideAsync();

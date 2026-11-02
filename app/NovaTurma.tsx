@@ -7,6 +7,7 @@ import {
   Platform,
   Pressable,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,7 +17,7 @@ import LabeledInput from '../components/LabeledInput';
 import BotaoPrimario from '../components/BotaoPrimario';
 import { colors } from '../constants/theme';
 import { listarAlunos, Aluno } from './services/alunos';
-import { criarTurma, buscarTurma, atualizarTurma } from './services/turmas';
+import { criarTurma, buscarTurma, atualizarTurma, excluirTurma } from './services/turmas';
 import Text from '../components/AppText';  
 
 const PERIODOS = ['Manhã', 'Tarde', 'Integral','Noite'];
@@ -37,6 +38,7 @@ export default function NovaTurma() {
 
   const [carregandoTurma, setCarregandoTurma] = useState(modoEdicao);
   const [salvando, setSalvando] = useState(false);
+  const [excluindo, setExcluindo] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState(false);
 
@@ -133,6 +135,42 @@ export default function NovaTurma() {
       setSalvando(false);
     }
   }
+
+  async function executarExclusao() {
+  if (!params.id) return;
+
+  setErro(null);
+  setExcluindo(true);
+
+  try {
+    await excluirTurma(params.id);
+    router.back();
+  } catch (error: any) {
+    console.error('Erro ao excluir turma:', error);
+
+    if (error?.code === 'permission-denied') {
+      setErro('Permissão negada pelo Firestore ao excluir a turma. Verifique as Security Rules.');
+    } else {
+      setErro(`Não foi possível excluir a turma. (${error?.code ?? error?.message ?? 'erro desconhecido'})`);
+    }
+    setExcluindo(false);
+  }
+}
+
+function confirmarExclusao() {
+  const mensagem = `Tem certeza que deseja excluir a turma "${nome}"? Essa ação não pode ser desfeita.`;
+
+  // Alert com botões não funciona no web, então usamos confirm()
+  if (Platform.OS === 'web') {
+    if (window.confirm(mensagem)) executarExclusao();
+    return;
+  }
+
+  Alert.alert('Excluir turma', mensagem, [
+    { text: 'Cancelar', style: 'cancel' },
+    { text: 'Excluir', style: 'destructive', onPress: executarExclusao },
+  ]);
+}
 
   if (carregandoTurma) {
     return (
@@ -277,9 +315,28 @@ export default function NovaTurma() {
             testID="turma-save-button"
             title={salvando ? 'Salvando...' : modoEdicao ? 'Salvar alterações' : 'Salvar turma'}
             onPress={salvarTurma}
-            disabled={salvando}
+            disabled={salvando || excluindo}
             style={{ marginTop: 22 }}
           />
+
+          {modoEdicao && (
+            <Pressable
+              testID="turma-delete-button"
+              style={[styles.botaoExcluir, (salvando || excluindo) && { opacity: 0.6 }]}
+              onPress={confirmarExclusao}
+              disabled={salvando || excluindo}
+            >
+              {excluindo ? (
+                <ActivityIndicator color="#B3261E" />
+              ) : (
+                <>
+                  <Ionicons name="trash-outline" size={18} color="#B3261E" />
+                  <Text style={styles.botaoExcluirText}>Excluir turma</Text>
+                </>
+              )}
+            </Pressable>
+          )}
+
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -348,5 +405,18 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 16,
   },
+  botaoExcluir: {
+  marginTop: 12,
+  height: 48,
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: '#B3261E',
+  backgroundColor: '#fff',
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 8,
+ },
+botaoExcluirText: { color: '#B3261E', fontSize: 15, fontWeight: '600' },
   bannerSucessoText: { flex: 1, color: '#2E7D32', fontSize: 13, fontWeight: '600' },
 });

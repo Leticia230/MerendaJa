@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import ScreenHeader from '../components/ScreenHeader';
 import Text from '../components/AppText';
-import { useAccessibility } from './AccessibilityContext';
+import { useAccessibility } from '../components/AccessibilityContext';
 import { PLANOS, PlanoId, formatarValor } from '../components/planos';
 import {
   ativarPlano,

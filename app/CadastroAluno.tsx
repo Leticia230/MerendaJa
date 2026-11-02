@@ -9,6 +9,7 @@ import {
   Platform,
   Pressable,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -192,16 +193,23 @@ export default function CadastroAluno() {
       );
 
   
-      if (turmaSelecionada) {
+            if (turmaSelecionada) {
         await adicionarAlunoATurma(
           turmaSelecionada.id,
           resultado.user.uid
         );
       }
 
-
-      router.replace(
-        '/(tabs-instituicao)/Home'
+      Alert.alert(
+        'Cadastro realizado!',
+        `${nomeNormalizado} foi cadastrado(a) com sucesso.`,
+        [
+          {
+            text: 'OK',
+            onPress: () => router.replace('/(tabs-instituicao)/Home'),
+          },
+        ],
+        { cancelable: false }
       );
     } catch (error: any) {
       console.error(

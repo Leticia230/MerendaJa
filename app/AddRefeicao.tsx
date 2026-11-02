@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef} from 'react';
 import {
   View,
   StyleSheet,
@@ -6,6 +6,8 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
@@ -21,12 +23,37 @@ import {
   salvarRefeicoesDoDia,
   salvarCardapioPorData,
   Refeicao,
+  excluirRefeicao,
+  adicionarRefeicaoNaData,
+  assinarDatasComCardapio,
+  atualizarRefeicaoDaData,
+  excluirRefeicaoDaData,
 } from './services/cardapio';
 import Text from '../components/AppText';  
+import { Calendar, LocaleConfig } from 'react-native-calendars';
+import { dataISO } from './services/refeicaoUtils';
 
-const DIAS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
 const CORES = ['#FFD79A', '#FFB27A', '#FFC845', '#FF9E7A', '#B7E4C7'];
 const ICONES = ['bread-slice', 'food', 'fruit-cherries', 'coffee', 'cup', 'food-apple'];
+
+LocaleConfig.locales['pt-br'] = {
+  monthNames: ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'],
+  monthNamesShort: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],
+  dayNames: ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'],
+  dayNamesShort: ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],
+  today: 'Hoje',
+};
+LocaleConfig.defaultLocale = 'pt-br';
+
+function dataPorExtenso(iso: string) {
+  if (!iso) return '';
+  const [a, m, d] = iso.split('-').map(Number);
+  return new Intl.DateTimeFormat('pt-BR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).format(new Date(a, m - 1, d));
+}
 
 export default function AddRefeicao() {
   const router = useRouter();
@@ -43,137 +70,136 @@ export default function AddRefeicao() {
 
   const modoEdicao = params.index !== undefined;
 
-  
-  const [dia, setDia] = useState(params.dia && DIAS.includes(params.dia) ? params.dia : '');
+  const [data, setData] = useState(params.data || '');
+  const [mesVisivel, setMesVisivel] = useState((params.data || dataISO()).slice(0, 7));
+  const [datasComCardapio, setDatasComCardapio] = useState<string[]>([]);
   const [titulo, setTitulo] = useState(params.titulo ?? '');
   const [horario, setHorario] = useState(params.horario ?? '');
   const [desc, setDesc] = useState(params.desc ?? '');
   const [icon, setIcon] = useState(params.icon ?? ICONES[0]);
   const [color, setColor] = useState(params.color ?? CORES[0]);
   const [salvando, setSalvando] = useState(false);
+  const [excluindo, setExcluindo] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
 
 
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState(false);
 
+  // Pontinhos nos dias que já têm refeição (só no modo de adicionar)
+  useEffect(() => {
+    if (modoEdicao) return;
+    return assinarDatasComCardapio(
+      `${mesVisivel}-01`,
+      `${mesVisivel}-31`, // comparação de texto: '2026-11-31' cobre o mês todo
+      setDatasComCardapio,
+      (e) => console.error('Erro ao carregar datas com cardápio:', e)
+    );
+  }, [mesVisivel, modoEdicao]);
 
-  async function salvar() {
-    setErro(null);
-    setSucesso(false);
-
-    const tituloNormalizado = titulo.trim();
-    const descNormalizado = desc.trim();
-
-    if (!dia) {
-      setErro('Selecione o dia da semana dessa refeição.');
-      return;
-    }
-
-    if (!tituloNormalizado || !descNormalizado || !horario.trim()) {
-      setErro('Preencha o título, o horário e a descrição da refeição.');
-      return;
-    }
-
-    if (!params.data) {
-      setErro('Não foi possível identificar a data da refeição.');
-      return;
-    }
-
-    setSalvando(true);
-
-    const refeicao: Refeicao = {
-      titulo: tituloNormalizado,
-      horario: horario.trim(),
-      desc: descNormalizado,
-      icon,
-      color,
-      data: params.data,
+  const marcados: Record<string, any> = {};
+  datasComCardapio.forEach((d) => {
+    marcados[d] = { marked: true, dotColor: colors.primary };
+  });
+  if (data) {
+    marcados[data] = {
+      ...(marcados[data] ?? {}),
+      selected: true,
+      selectedColor: colors.primary,
     };
-
-    try {
-      let refeicoesAtualizadas: Refeicao[] = [];
-
-      if (modoEdicao) {
-        await new Promise<void>((resolve, reject) => {
-          const unsubscribe = assinarCardapioDia(
-            dia,
-            async (refeicoes) => {
-              unsubscribe();
-
-              try {
-                const index = Number(params.index);
-                const novaLista = [...refeicoes];
-
-                novaLista[index] = refeicao;
-
-                await salvarRefeicoesDoDia(dia, novaLista);
-
-                refeicoesAtualizadas = novaLista;
-
-                resolve();
-              } catch (e) {
-                reject(e);
-              }
-            },
-            reject
-          );
-        });
-      } else {
-        await adicionarRefeicao(dia, refeicao);
-
-        await new Promise<void>((resolve, reject) => {
-          const unsubscribe = assinarCardapioDia(
-            dia,
-            (refeicoes) => {
-              unsubscribe();
-
-              refeicoesAtualizadas = refeicoes;
-              resolve();
-            },
-            reject
-          );
-        });
-      }
-
-      await salvarCardapioPorData(
-        params.data,
-        refeicoesAtualizadas
-      );
-
-      console.log(
-        'Refeição salva com sucesso no Firestore:',
-        dia,
-        params.data,
-        refeicao
-      );
-
-      setSucesso(true);
-
-      setTimeout(() => router.back(), 600);
-    } catch (error: any) {
-      console.error('Erro ao salvar refeição:', error);
-
-      if (error?.code === 'permission-denied') {
-        setErro(
-          'Permissão negada pelo Firestore. Verifique as Security Rules do seu projeto Firebase — provavelmente estão bloqueando escrita nas coleções "cardapios" ou "historicoCardapios".'
-        );
-      } else if (
-        error?.code === 'unavailable' ||
-        error?.code === 'network-request-failed'
-      ) {
-        setErro(
-          'Sem conexão com o servidor. Verifique sua internet e tente novamente.'
-        );
-      } else {
-        setErro(
-          `Não foi possível salvar a refeição. (${error?.code ?? error?.message ?? 'erro desconhecido'})`
-        );
-      }
-    } finally {
-      setSalvando(false);
-    }
   }
 
+  async function salvar() {
+  setErro(null);
+  setSucesso(false);
+
+  const tituloNormalizado = titulo.trim();
+  const descNormalizado = desc.trim();
+
+  if (!data) {
+    setErro('Selecione a data dessa refeição.');
+    return;
+  }
+
+  if (!modoEdicao && data < dataISO()) {
+    setErro('Não é possível cadastrar refeições em datas que já passaram.');
+    return;
+  }
+
+  if (!tituloNormalizado || !descNormalizado || !horario.trim()) {
+    setErro('Preencha o título, o horário e a descrição da refeição.');
+    return;
+  }
+
+  setSalvando(true);
+
+  const refeicao: Refeicao = {
+    titulo: tituloNormalizado,
+    horario: horario.trim(),
+    desc: descNormalizado,
+    icon,
+    color,
+    data,
+  };
+
+  try {
+    if (modoEdicao) {
+      await atualizarRefeicaoDaData(data, Number(params.index), refeicao);
+    } else {
+      await adicionarRefeicaoNaData(data, refeicao);
+    }
+
+    setSucesso(true);
+    setTimeout(() => router.back(), 600);
+  } catch (error: any) {
+    console.error('Erro ao salvar refeição:', error);
+
+    if (error?.code === 'permission-denied') {
+      setErro(
+        'Permissão negada pelo Firestore. Verifique as Security Rules da coleção "cardapios".'
+      );
+    } else if (error?.code === 'unavailable' || error?.code === 'network-request-failed') {
+      setErro('Sem conexão com o servidor. Verifique sua internet e tente novamente.');
+    } else {
+      setErro(
+        `Não foi possível salvar a refeição. (${error?.code ?? error?.message ?? 'erro desconhecido'})`
+      );
+    }
+  } finally {
+    setSalvando(false);
+  }
+}
+
+async function executarExclusao() {
+  setErro(null);
+  setExcluindo(true);
+
+  try {
+    await excluirRefeicaoDaData(data, Number(params.index));
+    router.back();
+  } catch (error: any) {
+    console.error('Erro ao excluir refeição:', error);
+
+    if (error?.code === 'permission-denied') {
+      setErro('Permissão negada pelo Firestore ao excluir a refeição. Verifique as Security Rules.');
+    } else {
+      setErro(`Não foi possível excluir a refeição. (${error?.code ?? error?.message ?? 'erro desconhecido'})`);
+    }
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+    setExcluindo(false);
+  }
+}
+
+function confirmarExclusao() {
+  Alert.alert(
+    'Excluir refeição',
+    `Tem certeza que deseja excluir "${titulo}" de ${dataPorExtenso(data)}? Essa ação não pode ser desfeita.`,
+    [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Excluir', style: 'destructive', onPress: executarExclusao },
+    ]
+  );
+}
 
 
   return (
@@ -199,28 +225,40 @@ export default function AddRefeicao() {
             </View>
           )}
 
-          <Text style={styles.label}>Dia da semana</Text>
-          <View style={styles.row}>
-            {DIAS.map((d) => (
-              <Pressable
-                key={d}
-                testID={`dia-${d}`}
-                onPress={() => setDia(d)}
-                disabled={salvando || modoEdicao}
-                style={[
-                  styles.dayChip,
-                  dia === d && styles.dayChipActive,
-                  modoEdicao && styles.dayChipDisabled,
-                ]}
-              >
-                <Text style={[styles.dayText, dia === d && styles.dayTextActive]}>{d}</Text>
-              </Pressable>
-            ))}
-          </View>
-          {modoEdicao && (
-            <Text style={styles.hint}>
-              Não é possível trocar o dia ao editar uma refeição já existente.
-            </Text>
+          <Text style={styles.label}>Data</Text>
+
+          {modoEdicao ? (
+            <>
+              <View style={styles.dataBox}>
+                <MaterialCommunityIcons name="calendar" size={18} color={colors.primary} />
+                <Text style={styles.dataBoxText}>{dataPorExtenso(data)}</Text>
+              </View>
+              <Text style={styles.hintEdicao}>
+                Não é possível trocar a data ao editar uma refeição já existente.
+              </Text>
+            </>
+          ) : (
+            <>
+              <View style={styles.calendarWrap}>
+                <Calendar
+                  current={data || dataISO()}
+                  minDate={dataISO()}                       // bloqueia datas passadas
+                  disabledDaysIndexes={[0, 6]}              // sem sábado e domingo
+                  disableAllTouchEventsForDisabledDays
+                  onDayPress={(d) => setData(d.dateString)}
+                  onMonthChange={(m) => setMesVisivel(m.dateString.slice(0, 7))}
+                  markedDates={marcados}
+                  theme={{
+                    todayTextColor: colors.primary,
+                    arrowColor: colors.primary,
+                    selectedDayBackgroundColor: colors.primary,
+                  }}
+                />
+              </View>
+              {data ? (
+                <Text style={styles.hint}>Selecionado: {dataPorExtenso(data)}</Text>
+              ) : null}
+            </>
           )}
 
           <LabeledInput
@@ -296,9 +334,27 @@ export default function AddRefeicao() {
             testID="salvar-refeicao-button"
             title={salvando ? 'Salvando...' : modoEdicao ? 'Salvar alterações' : 'Adicionar'}
             onPress={salvar}
-            disabled={salvando}
+            disabled={salvando || excluindo}
             style={{ marginTop: 24 }}
           />
+
+          {modoEdicao && (
+            <Pressable
+              testID="excluir-refeicao-button"
+              style={[styles.botaoExcluir, (salvando || excluindo) && { opacity: 0.6 }]}
+              onPress={confirmarExclusao}
+              disabled={salvando || excluindo}
+            >
+              {excluindo ? (
+                <ActivityIndicator color="#B3261E" />
+              ) : (
+                <>
+                  <Ionicons name="trash-outline" size={18} color="#B3261E" />
+                  <Text style={styles.botaoExcluirText}>Excluir refeição</Text>
+                </>
+              )}
+            </Pressable>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -307,7 +363,9 @@ export default function AddRefeicao() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.cream },
-  body: { padding: 22, paddingBottom: 40 },
+  body: {
+  paddingHorizontal: 22,
+  },
   label: {
     fontSize: 13,
     color: colors.textDark,
@@ -397,4 +455,41 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
+  botaoExcluir: {
+  marginTop: 12,
+  height: 48,
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: '#B3261E',
+  backgroundColor: '#fff',
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 8,
+  },
+  botaoExcluirText: { color: '#B3261E', fontSize: 15, fontWeight: '600' },
+  calendarWrap: {
+  backgroundColor: '#fff',
+  borderRadius: 16,
+  overflow: 'hidden',
+  borderWidth: 1,
+  borderColor: colors.inputBorder,
+},
+dataBox: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 8,
+  backgroundColor: '#fff',
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: colors.inputBorder,
+  padding: 14,
+},
+dataBoxText: { color: colors.textDark, fontSize: 14, fontWeight: '700' },
+hintEdicao: {
+  fontSize: 12,
+  color: colors.textMuted,
+  marginTop: 14,
+  marginBottom: 4,
+},
 });

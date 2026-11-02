@@ -26,7 +26,7 @@ import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import ScreenHeader from '../components/ScreenHeader';
 import Text from '../components/AppText';
 import { colors } from '../constants/theme';
-import { useAccessibility } from './AccessibilityContext';
+import { useAccessibility } from '../components/AccessibilityContext';
 import { auth, db } from '../components/firebaseConfig'; // ajuste para onde você exporta auth e db
 
 type PrivacyField = 'compartilharDados' | 'mostrarAtividade';

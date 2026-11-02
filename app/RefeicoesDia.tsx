@@ -14,7 +14,7 @@ import { colors } from '../constants/theme';
 import { auth } from '../components/firebaseConfig';
 
 import {
-  assinarCardapioDia,
+  assinarCardapioData,
   Refeicao,
 } from './services/cardapio';
 
@@ -90,44 +90,73 @@ export default function RefeicoesDia() {
   const [erro, setErro] = useState<string | null>(null);
 
   // Cardápio da instituição do aluno
-  useEffect(() => {
-    if (carregandoInstituicao) return;
+  // Cardápio da instituição do aluno, organizado por data
+useEffect(() => {
+  if (carregandoInstituicao) return;
 
-    if (!instituicaoId) {
-      setCarregando(false);
-      return;
-    }
+  if (!instituicaoId) {
+    setCarregando(false);
+    return;
+  }
 
-    setCarregando(true);
+  setCarregando(true);
 
-    const unsubscribeList: (() => void)[] = [];
+  // Gera somente os cinco dias úteis da semana correspondente
+  const semana = obterSemana();
 
-    DIAS_UTEIS.forEach((codigo) => {
-      const unsubscribe = assinarCardapioDia(
-        codigo,
-        (refeicoes) => {
-          setDias((atual) =>
-            atual.map((dia) =>
-              dia.codigo === codigo ? { ...dia, refeicoes } : dia
-            )
-          );
+  // Limpa os dados anteriores antes de carregar a nova semana
+  setDias(semana);
 
-          setCarregando(false);
-        },
-        (erro) => {
-          console.error(`Erro ao carregar cardápio de ${codigo}:`, erro);
-          setCarregando(false);
-        },
-        instituicaoId
-      );
+  const unsubscribeList: (() => void)[] = [];
 
-      unsubscribeList.push(unsubscribe);
-    });
+  let pendentes = semana.length;
 
-    return () => {
-      unsubscribeList.forEach((unsubscribe) => unsubscribe());
+  semana.forEach(({ codigo, data }) => {
+    const dataSelecionada = dataISO(data);
+    let primeiraResposta = true;
+
+    const finalizarPrimeiroCarregamento = () => {
+      if (!primeiraResposta) return;
+
+      primeiraResposta = false;
+      pendentes--;
+
+      if (pendentes === 0) {
+        setCarregando(false);
+      }
     };
-  }, [instituicaoId, carregandoInstituicao]);
+
+    const unsubscribe = assinarCardapioData(
+      dataSelecionada,
+      (refeicoes) => {
+        setDias((atual) =>
+          atual.map((dia) =>
+            dia.codigo === codigo
+              ? { ...dia, refeicoes }
+              : dia
+          )
+        );
+
+        finalizarPrimeiroCarregamento();
+      },
+      (erro) => {
+        console.error(
+          `Erro ao carregar cardápio de ${dataSelecionada}:`,
+          erro
+        );
+
+        finalizarPrimeiroCarregamento();
+      },
+      instituicaoId
+    );
+
+    unsubscribeList.push(unsubscribe);
+  });
+
+  return () => {
+    unsubscribeList.forEach((unsubscribe) => unsubscribe());
+  };
+}, [instituicaoId, carregandoInstituicao]);
 
   // Respostas (Vou comer / Não vou) do aluno, uma assinatura por data
   useEffect(() => {
