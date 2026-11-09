@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   View,
@@ -10,6 +10,7 @@ import {
   Pressable,
   ActivityIndicator,
   Alert,
+  Keyboard,
 } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,59 +20,48 @@ import { useRouter } from 'expo-router';
 import ScreenHeader from '../components/ScreenHeader';
 import LabeledInput from '../components/LabeledInput';
 import BotaoPrimario from '../components/BotaoPrimario';
-import { colors } from '../constants/theme';
+import { useAccessibility, AccessibilityTheme } from '../components/AccessibilityContext';
 import { cadastrarAluno } from '../components/auth';
+
 import {
   listarTurmas,
   adicionarAlunoATurma,
   Turma,
 } from './services/turmas';
-import Text from '../components/AppText';  
 
-const PERIODOS = [
-  'Manhã',
-  'Tarde',
-  'Integral',
-  'Noite',
-];
+import Text from '../components/AppText';
 
-const ERROS_CADASTRO: Record<
-  string,
-  { titulo: string; mensagem: string }
-> = {
+const PERIODOS = ['Manhã', 'Tarde', 'Integral', 'Noite'];
+
+const ERROS_CADASTRO: Record<string, { titulo: string; mensagem: string }> = {
   'auth/email-already-in-use': {
     titulo: 'E-mail já cadastrado',
-    mensagem:
-      'Já existe uma conta com este e-mail. Tente fazer login.',
+    mensagem: 'Já existe uma conta com este e-mail. Tente fazer login.',
   },
-
   'auth/invalid-email': {
     titulo: 'E-mail inválido',
-    mensagem:
-      'Digite um endereço de e-mail válido.',
+    mensagem: 'Digite um endereço de e-mail válido.',
   },
-
   'auth/weak-password': {
     titulo: 'Senha fraca',
-    mensagem:
-      'A senha precisa ter pelo menos 6 caracteres.',
+    mensagem: 'A senha precisa ter pelo menos 6 caracteres.',
   },
-
   'auth/network-request-failed': {
     titulo: 'Sem conexão',
-    mensagem:
-      'Verifique sua internet e tente novamente.',
+    mensagem: 'Verifique sua internet e tente novamente.',
   },
-
   'auth/too-many-requests': {
     titulo: 'Muitas tentativas',
-    mensagem:
-      'Aguarde alguns minutos antes de tentar novamente.',
+    mensagem: 'Aguarde alguns minutos antes de tentar novamente.',
   },
 };
 
 export default function CadastroAluno() {
   const router = useRouter();
+  const { theme } = useAccessibility();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
+  const scrollRef = useRef<ScrollView>(null);
 
   const [nome, setNome] = useState('');
   const [rm, setRm] = useState('');
@@ -81,25 +71,17 @@ export default function CadastroAluno() {
   const [carregando, setCarregando] = useState(false);
 
   const [turmas, setTurmas] = useState<Turma[]>([]);
-  const [carregandoTurmas, setCarregandoTurmas] =
-    useState(true);
-
-  const [turmaSelecionada, setTurmaSelecionada] =
-    useState<Turma | null>(null);
-
-  const [turmaAberta, setTurmaAberta] =
-    useState(false);
+  const [carregandoTurmas, setCarregandoTurmas] = useState(true);
+  const [turmaSelecionada, setTurmaSelecionada] = useState<Turma | null>(null);
+  const [turmaAberta, setTurmaAberta] = useState(false);
 
   const [periodo, setPeriodo] = useState('');
-  const [periodoAberto, setPeriodoAberto] =
-    useState(false);
+  const [periodoAberto, setPeriodoAberto] = useState(false);
 
-  const [erro, setErro] = useState<string | null>(
-    null
-  );
-
+  const [erro, setErro] = useState<string | null>(null);
   const [erroSenha, setErroSenha] = useState(false);
 
+  const nomeInputRef = useRef<TextInput>(null);
   const rmInputRef = useRef<TextInput>(null);
   const emailInputRef = useRef<TextInput>(null);
   const senhaInputRef = useRef<TextInput>(null);
@@ -108,24 +90,15 @@ export default function CadastroAluno() {
     listarTurmas()
       .then(setTurmas)
       .catch((e) => {
-        console.error(
-          'Erro ao carregar turmas:',
-          e
-        );
-
-        setErro(
-          'Não foi possível carregar a lista de turmas.'
-        );
+        console.error('Erro ao carregar turmas:', e);
+        setErro('Não foi possível carregar a lista de turmas.');
       })
-      .finally(() =>
-        setCarregandoTurmas(false)
-      );
+      .finally(() => setCarregandoTurmas(false));
   }, []);
 
   function selecionarTurma(turma: Turma) {
     setTurmaSelecionada(turma);
     setTurmaAberta(false);
-
 
     if (turma.periodo) {
       setPeriodo(turma.periodo);
@@ -133,24 +106,15 @@ export default function CadastroAluno() {
   }
 
   async function realizarCadastro() {
+    Keyboard.dismiss();
     setErro(null);
 
     const nomeNormalizado = nome.trim();
     const rmNormalizado = rm.trim();
-    const emailNormalizado = email
-      .trim()
-      .toLowerCase();
+    const emailNormalizado = email.trim().toLowerCase();
 
-    if (
-      !nomeNormalizado ||
-      !rmNormalizado ||
-      !emailNormalizado ||
-      !senha
-    ) {
-      setErro(
-        'Preencha nome, RM, e-mail e senha.'
-      );
-
+    if (!nomeNormalizado || !rmNormalizado || !emailNormalizado || !senha) {
+      setErro('Preencha nome, RM, e-mail e senha.');
       return;
     }
 
@@ -166,38 +130,24 @@ export default function CadastroAluno() {
     setCarregando(true);
 
     try {
-      const dadosExtras: Record<
-        string,
-        unknown
-      > = {
+      const dadosExtras: Record<string, unknown> = {
         nome: nomeNormalizado,
         rm: rmNormalizado,
       };
 
       if (turmaSelecionada) {
-        dadosExtras.turmaId =
-          turmaSelecionada.id;
-
-        dadosExtras.turmaNome =
-          turmaSelecionada.nome;
+        dadosExtras.turmaId = turmaSelecionada.id;
+        dadosExtras.turmaNome = turmaSelecionada.nome;
       }
 
       if (periodo) {
         dadosExtras.periodo = periodo;
       }
 
-      const resultado = await cadastrarAluno(
-        emailNormalizado,
-        senha,
-        dadosExtras
-      );
+      const resultado = await cadastrarAluno(emailNormalizado, senha, dadosExtras);
 
-  
-            if (turmaSelecionada) {
-        await adicionarAlunoATurma(
-          turmaSelecionada.id,
-          resultado.user.uid
-        );
+      if (turmaSelecionada) {
+        await adicionarAlunoATurma(turmaSelecionada.id, resultado.user.uid);
       }
 
       Alert.alert(
@@ -212,20 +162,13 @@ export default function CadastroAluno() {
         { cancelable: false }
       );
     } catch (error: any) {
-      console.error(
-        'Erro ao cadastrar aluno:',
-        error
-      );
+      console.error('Erro ao cadastrar aluno:', error);
 
-      const erroConhecido =
-        ERROS_CADASTRO[error?.code];
+      const erroConhecido = ERROS_CADASTRO[error?.code];
 
       setErro(
         erroConhecido?.mensagem ??
-          `Não foi possível cadastrar o aluno. (${
-            error?.code ??
-            'erro desconhecido'
-          })`
+          `Não foi possível cadastrar o aluno. (${error?.code ?? 'erro desconhecido'})`
       );
     } finally {
       setCarregando(false);
@@ -238,67 +181,49 @@ export default function CadastroAluno() {
 
       <KeyboardAvoidingView
         style={styles.keyboardView}
-        behavior={
-          Platform.OS === 'ios'
-            ? 'padding'
-            : undefined
-        }
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         <ScrollView
+          ref={scrollRef}
+          style={styles.scroll}
           contentContainerStyle={styles.body}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+          showsVerticalScrollIndicator={false}
+          automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
         >
           <View style={styles.avatar}>
-            <Ionicons
-              name="person"
-              size={38}
-              color="#fff"
-            />
+            <Ionicons name="person" size={38} color={theme.onPrimary} />
           </View>
 
-          <Text style={styles.title}>
-            Cadastro de Aluno
+          <Text style={styles.title}>Cadastro de Aluno</Text>
+
+          <Text style={styles.subtitle}>
+            Preencha os dados para adicionar um novo aluno.
           </Text>
 
-     
           {erro && (
-            <View
-              style={styles.bannerErro}
-              testID="cadastro-aluno-erro"
-            >
-              <Ionicons
-                name="alert-circle"
-                size={18}
-                color="#B3261E"
-              />
-
-              <Text
-                style={styles.bannerErroText}
-              >
-                {erro}
-              </Text>
+            <View style={styles.bannerErro}>
+              <Ionicons name="alert-circle" size={18} color={theme.error} />
+              <Text style={styles.bannerErroText}>{erro}</Text>
             </View>
           )}
 
-      
           <LabeledInput
+            ref={nomeInputRef}
             testID="aluno-nome-input"
             label="Nome do aluno"
             placeholder="Nome completo"
             returnKeyType="next"
-            onSubmitEditing={() =>
-              rmInputRef.current?.focus()
-            }
+            onSubmitEditing={() => rmInputRef.current?.focus()}
             blurOnSubmit={false}
             editable={!carregando}
             value={nome}
             onChangeText={setNome}
-            containerStyle={{
-              marginTop: 16,
-            }}
+            containerStyle={{ marginTop: 20 }}
           />
 
-      
           <LabeledInput
             ref={rmInputRef}
             testID="aluno-rm-input"
@@ -306,123 +231,69 @@ export default function CadastroAluno() {
             placeholder="Número de matrícula"
             keyboardType="number-pad"
             returnKeyType="next"
-            onSubmitEditing={() =>
-              emailInputRef.current?.focus()
-            }
+            onSubmitEditing={() => emailInputRef.current?.focus()}
             blurOnSubmit={false}
             editable={!carregando}
             value={rm}
             onChangeText={setRm}
           />
 
-       
-          <View
-            style={{
-              marginTop: 14,
-            }}
-          >
-            <Text style={styles.label}>
-              Turma (opcional)
-            </Text>
+          <View style={styles.fieldContainer}>
+            <Text style={styles.label}>Turma (opcional)</Text>
 
             <Pressable
               testID="aluno-turma-select"
               style={styles.select}
-              onPress={() =>
-                setTurmaAberta((v) => !v)
-              }
+              onPress={() => {
+                Keyboard.dismiss();
+                setTurmaAberta((v) => !v);
+                setPeriodoAberto(false);
+              }}
               disabled={carregando}
             >
               <Text
                 style={[
                   styles.selectText,
-                  turmaSelecionada &&
-                    styles.selectTextPreenchido,
+                  turmaSelecionada && styles.selectTextPreenchido,
                 ]}
               >
-                {turmaSelecionada
-                  ? turmaSelecionada.nome
-                  : 'Selecione a turma'}
+                {turmaSelecionada ? turmaSelecionada.nome : 'Selecione a turma'}
               </Text>
 
               <Ionicons
-                name={
-                  turmaAberta
-                    ? 'chevron-up'
-                    : 'chevron-down'
-                }
+                name={turmaAberta ? 'chevron-up' : 'chevron-down'}
                 size={18}
-                color={colors.textMuted}
+                color={theme.textMuted}
               />
             </Pressable>
 
             {turmaAberta && (
               <View style={styles.dropdown}>
                 {carregandoTurmas ? (
-                  <ActivityIndicator
-                    color={colors.primary}
-                    style={{
-                      padding: 16,
-                    }}
-                  />
+                  <ActivityIndicator color={theme.primary} style={{ padding: 16 }} />
                 ) : turmas.length === 0 ? (
-                  <Text
-                    style={
-                      styles.dropdownVazio
-                    }
-                  >
-                    Nenhuma turma cadastrada
-                    ainda. Você pode cadastrar o
-                    aluno e vincular a uma turma
-                    depois.
+                  <Text style={styles.dropdownVazio}>
+                    Nenhuma turma cadastrada ainda. Você pode
+                    cadastrar o aluno e vinculá-lo depois.
                   </Text>
                 ) : (
                   turmas.map((turma) => (
                     <Pressable
                       key={turma.id}
                       testID={`turma-opcao-${turma.id}`}
-                      style={
-                        styles.dropdownRow
-                      }
-                      onPress={() =>
-                        selecionarTurma(
-                          turma
-                        )
-                      }
+                      style={styles.dropdownRow}
+                      onPress={() => selecionarTurma(turma)}
                     >
-                      <View
-                        style={{
-                          flex: 1,
-                        }}
-                      >
-                        <Text
-                          style={
-                            styles.dropdownRowText
-                          }
-                        >
-                          {turma.nome}
-                        </Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.dropdownRowText}>{turma.nome}</Text>
 
                         {turma.periodo ? (
-                          <Text
-                            style={
-                              styles.dropdownRowSub
-                            }
-                          >
-                            {turma.periodo}
-                          </Text>
+                          <Text style={styles.dropdownRowSub}>{turma.periodo}</Text>
                         ) : null}
                       </View>
 
-                      {turmaSelecionada?.id ===
-                        turma.id && (
-                        <Ionicons
-                          name="checkmark"
-                          size={18}
-                          color={
-                            colors.primary
-                          }
-                        />
+                      {turmaSelecionada?.id === turma.id && (
+                        <Ionicons name="checkmark" size={18} color={theme.primary} />
                       )}
                     </Pressable>
                   ))
@@ -431,43 +302,27 @@ export default function CadastroAluno() {
             )}
           </View>
 
-    
-          <View
-            style={{
-              marginTop: 14,
-            }}
-          >
-            <Text style={styles.label}>
-              Período (opcional)
-            </Text>
+          <View style={styles.fieldContainer}>
+            <Text style={styles.label}>Período (opcional)</Text>
 
             <Pressable
               testID="aluno-periodo-select"
               style={styles.select}
-              onPress={() =>
-                setPeriodoAberto((v) => !v)
-              }
+              onPress={() => {
+                Keyboard.dismiss();
+                setPeriodoAberto((v) => !v);
+                setTurmaAberta(false);
+              }}
               disabled={carregando}
             >
-              <Text
-                style={[
-                  styles.selectText,
-                  periodo &&
-                    styles.selectTextPreenchido,
-                ]}
-              >
-                {periodo ||
-                  'Selecione o período'}
+              <Text style={[styles.selectText, periodo && styles.selectTextPreenchido]}>
+                {periodo || 'Selecione o período'}
               </Text>
 
               <Ionicons
-                name={
-                  periodoAberto
-                    ? 'chevron-up'
-                    : 'chevron-down'
-                }
+                name={periodoAberto ? 'chevron-up' : 'chevron-down'}
                 size={18}
-                color={colors.textMuted}
+                color={theme.textMuted}
               />
             </Pressable>
 
@@ -477,32 +332,16 @@ export default function CadastroAluno() {
                   <Pressable
                     key={p}
                     testID={`periodo-opcao-${p}`}
-                    style={
-                      styles.dropdownRow
-                    }
+                    style={styles.dropdownRow}
                     onPress={() => {
                       setPeriodo(p);
-                      setPeriodoAberto(
-                        false
-                      );
+                      setPeriodoAberto(false);
                     }}
                   >
-                    <Text
-                      style={
-                        styles.dropdownRowText
-                      }
-                    >
-                      {p}
-                    </Text>
+                    <Text style={styles.dropdownRowText}>{p}</Text>
 
                     {periodo === p && (
-                      <Ionicons
-                        name="checkmark"
-                        size={18}
-                        color={
-                          colors.primary
-                        }
-                      />
+                      <Ionicons name="checkmark" size={18} color={theme.primary} />
                     )}
                   </Pressable>
                 ))}
@@ -510,7 +349,6 @@ export default function CadastroAluno() {
             )}
           </View>
 
-          {/* E-mail */}
           <LabeledInput
             ref={emailInputRef}
             testID="aluno-email-input"
@@ -522,19 +360,14 @@ export default function CadastroAluno() {
             autoComplete="email"
             textContentType="username"
             returnKeyType="next"
-            onSubmitEditing={() =>
-              senhaInputRef.current?.focus()
-            }
+            onSubmitEditing={() => senhaInputRef.current?.focus()}
             blurOnSubmit={false}
             editable={!carregando}
             value={email}
             onChangeText={setEmail}
-            containerStyle={{
-              marginTop: 14,
-            }}
+            containerStyle={{ marginTop: 14 }}
           />
 
-          {/* Senha */}
           <LabeledInput
             ref={senhaInputRef}
             testID="aluno-senha-input"
@@ -542,213 +375,159 @@ export default function CadastroAluno() {
             placeholder="Digite uma senha"
             isPassword
             autoCapitalize="none"
-            autoComplete="password-new"
+            autoCorrect={false}
+            autoComplete="new-password"
             textContentType="newPassword"
             returnKeyType="done"
-            onSubmitEditing={
-              realizarCadastro
-            }
+            onSubmitEditing={realizarCadastro}
             editable={!carregando}
             value={senha}
             onChangeText={(texto) => {
               setSenha(texto);
 
-           
               if (texto.length >= 6) {
                 setErroSenha(false);
 
-            
-                if (
-                  erro ===
-                  'A senha precisa ter pelo menos 6 caracteres.'
-                ) {
+                if (erro === 'A senha precisa ter pelo menos 6 caracteres.') {
                   setErro(null);
                 }
               }
             }}
-            containerStyle={{
-              marginTop: 14,
-            }}
+            containerStyle={{ marginTop: 14 }}
           />
 
-          {/* Aviso visual da senha */}
-          {senha.length > 0 &&
-            senha.length < 6 && (
-              <View
-                style={styles.avisoSenha}
-                testID="senha-aviso"
-              >
-                <Ionicons
-                  name="information-circle-outline"
-                  size={18}
-                  color="#B3261E"
-                />
+          {senha.length > 0 && senha.length < 6 && (
+            <View style={styles.avisoSenha}>
+              <Ionicons name="information-circle-outline" size={18} color={theme.error} />
+              <Text style={styles.avisoSenhaTexto}>
+                A senha deve ter pelo menos 6 caracteres.
+              </Text>
+            </View>
+          )}
 
-                <Text
-                  style={
-                    styles.avisoSenhaTexto
-                  }
-                >
-                  A senha deve ter pelo menos
-                  6 caracteres.
-                </Text>
-              </View>
-            )}
-
-          {/* Botão */}
           <BotaoPrimario
             testID="aluno-submit-button"
-            title={
-              carregando
-                ? 'Cadastrando...'
-                : 'Cadastrar aluno'
-            }
+            title={carregando ? 'Cadastrando...' : 'Cadastrar aluno'}
             onPress={realizarCadastro}
             disabled={carregando}
-            style={{
-              marginTop: 12,
-            }}
+            style={{ marginTop: 22 }}
           />
+
+          <View style={styles.bottomSpace} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.cream,
-  },
-
-  keyboardView: {
-    flex: 1,
-  },
-
-  body: {
-    padding: 22,
-    paddingTop: 4,
-    paddingBottom: 30,
-  },
-
-  avatar: {
-    width: 78,
-    height: 78,
-    borderRadius: 39,
-    backgroundColor: colors.primary,
-    alignSelf: 'center',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-
-  title: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: colors.textDark,
-    textAlign: 'center',
-  },
-
-  label: {
-    fontSize: 13,
-    color: colors.textDark,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-
-  select: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.inputBorder,
-    height: 48,
-    paddingHorizontal: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  selectText: {
-    flex: 1,
-    color: colors.textLight,
-    fontSize: 14,
-  },
-
-  selectTextPreenchido: {
-    color: colors.textDark,
-    fontWeight: '600',
-  },
-
-  dropdown: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.inputBorder,
-    marginTop: 8,
-    overflow: 'hidden',
-  },
-
-  dropdownRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
-    gap: 10,
-  },
-
-  dropdownRowText: {
-    fontSize: 14,
-    color: colors.textDark,
-    fontWeight: '600',
-  },
-
-  dropdownRowSub: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-
-  dropdownVazio: {
-    padding: 16,
-    textAlign: 'center',
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-
-  // Banner para erros gerais
-  bannerErro: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#FDECEA',
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 14,
-  },
-
-  bannerErroText: {
-    flex: 1,
-    color: '#B3261E',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-
-  // Aviso específico da senha
-  avisoSenha: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    backgroundColor: '#FDECEA',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    marginTop: 7,
-  },
-
-  avisoSenhaTexto: {
-    flex: 1,
-    color: '#B3261E',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-});
+const createStyles = (theme: AccessibilityTheme) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: theme.background },
+    keyboardView: { flex: 1 },
+    scroll: { flex: 1 },
+    body: {
+      paddingHorizontal: 22,
+      paddingTop: 8,
+      paddingBottom: 24,
+      flexGrow: 1,
+    },
+    avatar: {
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      backgroundColor: theme.primary,
+      alignSelf: 'center',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 10,
+    },
+    title: {
+      fontSize: 21,
+      fontWeight: '800',
+      color: theme.text,
+      textAlign: 'center',
+    },
+    subtitle: {
+      fontSize: 13,
+      color: theme.textMuted,
+      textAlign: 'center',
+      marginTop: 5,
+      marginBottom: 4,
+    },
+    label: {
+      fontSize: 13,
+      color: theme.text,
+      fontWeight: '600',
+      marginBottom: 7,
+    },
+    fieldContainer: { marginTop: 16 },
+    select: {
+      backgroundColor: theme.card,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme.inputBorder,
+      minHeight: 50,
+      paddingHorizontal: 14,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    selectText: { flex: 1, color: theme.placeholder, fontSize: 14 },
+    selectTextPreenchido: { color: theme.text, fontWeight: '600' },
+    dropdown: {
+      backgroundColor: theme.card,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme.inputBorder,
+      marginTop: 8,
+      overflow: 'hidden',
+    },
+    dropdownRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 14,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.divider,
+      gap: 10,
+      minHeight: 50,
+    },
+    dropdownRowText: { fontSize: 14, color: theme.text, fontWeight: '600' },
+    dropdownRowSub: { fontSize: 12, color: theme.textMuted, marginTop: 3 },
+    dropdownVazio: {
+      padding: 16,
+      textAlign: 'center',
+      fontSize: 13,
+      color: theme.textMuted,
+    },
+    bannerErro: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      backgroundColor: theme.errorBg,
+      borderRadius: 12,
+      padding: 12,
+      marginTop: 14,
+    },
+    bannerErroText: {
+      flex: 1,
+      color: theme.error,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    avisoSenha: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 7,
+      backgroundColor: theme.errorBg,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      marginTop: 8,
+    },
+    avisoSenhaTexto: {
+      flex: 1,
+      color: theme.error,
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    bottomSpace: { height: 220 },
+  });

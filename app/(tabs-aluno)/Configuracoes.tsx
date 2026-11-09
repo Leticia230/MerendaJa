@@ -1,17 +1,18 @@
+
 import React from 'react';
 import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { colors } from '../../constants/theme';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../components/firebaseConfig';
-import Text from '../../components/AppText';  
+import Text from '../../components/AppText';
+import { useAccessibility } from '../../components/AccessibilityContext';
 
 const ITEMS = [
-  { icon: 'person', label: 'Perfil', route: '/PerfilAluno', color: '#FFB27A' }, 
+  { icon: 'person', label: 'Perfil', route: '/PerfilAluno', color: '#FFB27A' },
   { icon: 'information-circle', label: 'Sobre', route: '/Sobre', color: '#FFC845' },
-  { icon: 'lock-closed', label: 'Permissões', route: '/Permissoes', color: '#FFB27A' }, 
+  { icon: 'lock-closed', label: 'Permissões', route: '/Permissoes', color: '#FFB27A' },
   { icon: 'accessibility', label: 'Acessibilidade', route: '/Acessibilidade', color: '#FFC845' },
   { icon: 'document-text', label: 'Termos de uso', route: '/TermosUso', color: '#FFB27A' },
   { icon: 'shield-checkmark', label: 'Segurança e Privacidade', route: '/SegurancaPrivacidade', color: '#FFC845' },
@@ -19,6 +20,8 @@ const ITEMS = [
 
 export default function ConfigScreen() {
   const router = useRouter();
+  const { theme } = useAccessibility();
+  const styles = createStyles(theme);
 
   async function sair() {
     try {
@@ -32,23 +35,44 @@ export default function ConfigScreen() {
     <SafeAreaView style={styles.safe}>
       <View style={styles.headerWrap}>
         <Text style={styles.headerTitle}>Configurações</Text>
-        <Ionicons name="settings-outline" size={20} color={colors.textDark} />
+
+        <Ionicons
+          name="settings-outline"
+          size={20}
+          color={theme.text}
+        />
       </View>
 
-      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.body}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.card}>
           {ITEMS.map((it, i) => (
             <Pressable
               key={it.label}
               testID={`config-${it.label}`}
               onPress={() => it.route && router.push(it.route as any)}
-              style={[styles.row, i < ITEMS.length - 1 && styles.rowBorder]}
+              style={[
+                styles.row,
+                i < ITEMS.length - 1 && styles.rowBorder,
+              ]}
             >
               <View style={[styles.iconWrap, { backgroundColor: it.color }]}>
-                <Ionicons name={it.icon as any} size={18} color="#fff" />
+                <Ionicons
+                  name={it.icon as any}
+                  size={18}
+                  color="#fff"
+                />
               </View>
+
               <Text style={styles.label}>{it.label}</Text>
-              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={theme.textMuted}
+              />
             </Pressable>
           ))}
         </View>
@@ -56,19 +80,23 @@ export default function ConfigScreen() {
         <Pressable
           testID="logout-button"
           style={styles.logout}
-          onPress={sair}        >
+          onPress={sair}
+        >
           <Text style={styles.logoutText}>Sair da conta</Text>
         </Pressable>
-        
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.cream },
+const createStyles = (theme: any) => StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: theme.background,
+  },
+
   headerWrap: {
-    backgroundColor: colors.yellow,
+    backgroundColor: theme.header,
     paddingTop: 20,
     paddingBottom: 18,
     paddingHorizontal: 20,
@@ -77,23 +105,39 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  headerTitle: { flex: 1, fontSize: 20, fontWeight: '800', color: colors.textDark },
-  body: { padding: 16, paddingBottom: 40 },
+
+  headerTitle: {
+    flex: 1,
+    fontSize: 20,
+    fontWeight: '800',
+    color: theme.text,
+  },
+
+  body: {
+    padding: 16,
+    paddingBottom: 40,
+  },
+
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.card,
     borderRadius: 16,
     overflow: 'hidden',
+    borderWidth: theme.borderWidth,
+    borderColor: theme.border,
   },
+
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 14,
     gap: 12,
   },
+
   rowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
+    borderBottomColor: theme.divider,
   },
+
   iconWrap: {
     width: 34,
     height: 34,
@@ -101,13 +145,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  label: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.textDark },
+
+  label: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.text,
+  },
+
   logout: {
-    backgroundColor: colors.primary,
+    backgroundColor: theme.primary,
     borderRadius: 14,
     padding: 15,
     alignItems: 'center',
     marginTop: 20,
   },
-  logoutText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+
+  logoutText: {
+    color: theme.onPrimary,
+    fontWeight: '700',
+    fontSize: 15,
+  },
 });

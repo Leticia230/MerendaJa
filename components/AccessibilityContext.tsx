@@ -1,4 +1,3 @@
-
 import React, {
   createContext,
   useCallback,
@@ -7,25 +6,23 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, Appearance } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { colors } from '../constants/theme';
+import {
+  LIGHT_THEME,
+  DARK_THEME,
+  type AccessibilityTheme,
+} from '../constants/theme';
+
+// Reexporta o tipo para telas que o importam daqui.
+export type { AccessibilityTheme };
 
 export type AccessibilitySettings = {
   highContrast: boolean;
   largeText: boolean;
   reduceMotion: boolean;
   screenReaderHints: boolean;
-};
-
-type AccessibilityTheme = {
-  background: string;
-  card: string;
-  text: string;
-  textSecondary: string;
-  primary: string;
-  border: string;
-  borderWidth: number;
+  darkMode: boolean;
 };
 
 type AccessibilityContextValue = {
@@ -37,6 +34,7 @@ type AccessibilityContextValue = {
   fs: (size: number) => number;
   hint: (text: string) => string | undefined;
   theme: AccessibilityTheme;
+  isDark: boolean;
 };
 
 const STORAGE_KEY = '@merendaja:accessibility';
@@ -46,18 +44,7 @@ const DEFAULTS: AccessibilitySettings = {
   largeText: false,
   reduceMotion: false,
   screenReaderHints: true,
-};
-
-// Tema padrão do aplicativo.
-// As cores não serão mais modificadas pelas opções de acessibilidade.
-const DEFAULT_THEME: AccessibilityTheme = {
-  background: colors.cream,
-  card: '#FFFFFF',
-  text: '#333333',
-  textSecondary: '#777777',
-  primary: colors.primary,
-  border: 'transparent',
-  borderWidth: 0,
+  darkMode: false,
 };
 
 const AccessibilityContext = createContext<AccessibilityContextValue | null>(null);
@@ -75,12 +62,15 @@ export function AccessibilityProvider({
     (async () => {
       try {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
+        const systemDark = Appearance.getColorScheme() === 'dark';
 
         if (raw) {
           const savedSettings = JSON.parse(raw);
 
           setSettings({
             ...DEFAULTS,
+            // Quem já usava o app e nunca escolheu o tema segue o do celular.
+            darkMode: systemDark,
             ...savedSettings,
 
             // Impede que uma configuração antiga reative o alto contraste.
@@ -93,6 +83,7 @@ export function AccessibilityProvider({
           setSettings({
             ...DEFAULTS,
             reduceMotion: systemReduceMotion,
+            darkMode: systemDark,
           });
         }
       } catch {
@@ -150,8 +141,8 @@ export function AccessibilityProvider({
       hint: (text) =>
         settings.screenReaderHints ? text : undefined,
 
-      // O tema permanece sempre com as cores originais.
-      theme: DEFAULT_THEME,
+      theme: settings.darkMode ? DARK_THEME : LIGHT_THEME,
+      isDark: settings.darkMode,
     };
   }, [settings, setSetting]);
 

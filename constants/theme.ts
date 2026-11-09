@@ -58,3 +58,77 @@ export const fonts = {
   semibold: 'System',
   bold: 'System',
 };
+
+export type AccessibilityTheme = {
+  background: string;
+  card: string;
+  text: string;
+  textSecondary: string;
+  primary: string;
+  border: string;
+  borderWidth: number;
+  header: string; // cabeçalhos das telas (colors.yellow)
+  primaryDark: string;
+  textMuted: string;
+  placeholder: string; // placeholder de inputs (colors.textLight)
+  inputBorder: string;
+  divider: string;
+  onPrimary: string; // texto/ícone sobre botão colorido
+  soft: string; // fundos laranja suaves (#FFE0CE, #FFE8DA, #FFF3EB)
+  success: string;
+  successBg: string;
+  error: string;
+  errorBg: string;
+  warning: string;
+  warningBg: string;
+};
+
+// Tema claro: mantém exatamente as cores que o app já usava.
+export const LIGHT_THEME: AccessibilityTheme = {
+  background: colors.cream,
+  card: colors.card,
+  text: colors.textDark,
+  textSecondary: '#777777',
+  primary: colors.primary,
+  border: 'transparent',
+  borderWidth: 0,
+  header: colors.yellow,
+  primaryDark: colors.primaryDark,
+  textMuted: colors.textMuted,
+  placeholder: colors.textLight,
+  inputBorder: colors.inputBorder,
+  divider: colors.divider,
+  onPrimary: '#FFFFFF',
+  soft: '#FFE0CE',
+  success: '#2E7D32',
+  successBg: '#E8F5E9',
+  error: '#B3261E',
+  errorBg: '#FDECEA',
+  warning: '#B26A00',
+  warningBg: '#FFF4D6',
+};
+
+// Sombras quase não aparecem no escuro, então os cards ganham uma borda fina.
+export const DARK_THEME: AccessibilityTheme = {
+  background: '#16130F',
+  card: '#26221D',
+  text: '#F2EEE8',
+  textSecondary: '#B3ABA0',
+  primary: colors.primary,
+  border: '#3A352E',
+  borderWidth: 1,
+  header: '#2A2112',
+  primaryDark: '#FFB27A',
+  textMuted: '#A39B90',
+  placeholder: '#8C847A',
+  inputBorder: '#4A443B',
+  divider: '#3A352E',
+  onPrimary: '#FFFFFF',
+  soft: '#3A2A20',
+  success: '#6FCF8A',
+  successBg: '#1F3326',
+  error: '#FF8A80',
+  errorBg: '#3A1F1D',
+  warning: '#F2B84B',
+  warningBg: '#3A2E12',
+};

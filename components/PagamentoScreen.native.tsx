@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
@@ -11,6 +12,7 @@ import {
 } from 'react-native';
 
 import { useStripe } from '@stripe/stripe-react-native';
+import { useAccessibility } from '../components/AccessibilityContext';
 import { getPlanoPago } from '../components/planos';
 import { ativarPlano } from '../app/services/assinatura';
 
@@ -18,6 +20,9 @@ const BACKEND_URL = `${process.env.EXPO_PUBLIC_BACKEND_URL}/create-payment-inten
 
 export default function PaymentScreen() {
   const router = useRouter();
+  const { theme } = useAccessibility();
+  const styles = createStyles(theme);
+
   const { plano: planoParam } = useLocalSearchParams<{ plano?: string }>();
   const PLANO = getPlanoPago(planoParam);
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
@@ -51,31 +56,31 @@ export default function PaymentScreen() {
       const clientSecret = await buscarPaymentIntent();
 
       const { error } = await initPaymentSheet({
-      merchantDisplayName: 'Sua Empresa',
-      paymentIntentClientSecret: clientSecret,
-      defaultBillingDetails: {},
-      style: 'alwaysLight',
-      appearance: {
-        colors: {
-          primary: '#F5893C',              // destaque (foco, links)
-          background: '#FFFFFF',           // fundo do painel
-          componentBackground: '#FFFFFF',  // fundo dos campos
-          componentBorder: '#DDDDDD',      // borda dos campos
-          componentDivider: '#DDDDDD',     // linhas entre número, validade e CVC
-          componentText: '#000000',        // texto digitado
-          primaryText: '#000000',          // títulos e textos principais
-          secondaryText: '#555555',        // rótulos ("Número do cartão", "País ou região")
-          placeholderText: '#888888',      // "MM / AA", "CVC"
-          icon: '#000000',                 // seta do país e ícones
-        },
-        primaryButton: {
+        merchantDisplayName: 'Sua Empresa',
+        paymentIntentClientSecret: clientSecret,
+        defaultBillingDetails: {},
+        style: 'alwaysLight',
+        appearance: {
           colors: {
-            background: '#F5893C',
-            text: '#FFFFFF',
+            primary: '#F5893C',              // destaque (foco, links)
+            background: '#FFFFFF',           // fundo do painel
+            componentBackground: '#FFFFFF',  // fundo dos campos
+            componentBorder: '#DDDDDD',      // borda dos campos
+            componentDivider: '#DDDDDD',     // linhas entre número, validade e CVC
+            componentText: '#000000',        // texto digitado
+            primaryText: '#000000',          // títulos e textos principais
+            secondaryText: '#555555',        // rótulos ("Número do cartão", "País ou região")
+            placeholderText: '#888888',      // "MM / AA", "CVC"
+            icon: '#000000',                 // seta do país e ícones
+          },
+          primaryButton: {
+            colors: {
+              background: '#F5893C',
+              text: '#FFFFFF',
+            },
           },
         },
-      },
-    });
+      });
 
       if (error) {
         setErroInicial(error.message);
@@ -179,22 +184,112 @@ export default function PaymentScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F5F5', padding: 20, justifyContent: 'center' },
-  titulo: { fontSize: 18, fontWeight: '600', marginBottom: 16, textAlign: 'center' },
-  card: { backgroundColor: '#fff', borderRadius: 20, padding: 24 },
-  marca: { fontSize: 20, fontWeight: '700', textAlign: 'center', marginBottom: 20 },
-  seletor: { flexDirection: 'row', borderWidth: 1, borderColor: '#DDD', borderRadius: 24, overflow: 'hidden', marginBottom: 20 },
-  opcao: { flex: 1, paddingVertical: 10, alignItems: 'center' },
-  opcaoAtiva: { backgroundColor: '#EDEAFB' },
-  opcaoTexto: { color: '#888', fontWeight: '600' },
-  opcaoTextoAtivo: { color: '#5B4FE8' },
-  descricao: { fontSize: 14, color: '#333', marginBottom: 16 },
-  linhaValor: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-  merchant: { color: '#888', fontSize: 13 },
-  valor: { fontSize: 20, fontWeight: '700' },
-  erro: { color: '#C0392B', fontSize: 13, marginBottom: 16, textAlign: 'center' },
-  botaoPagar: { backgroundColor: '#F5893C', borderRadius: 30, paddingVertical: 16, alignItems: 'center' },
-  botaoDesabilitado: { opacity: 0.5 },
-  botaoTexto: { color: '#fff', fontSize: 16, fontWeight: '700' },
-});
+const createStyles = (theme: any) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+      padding: 20,
+      justifyContent: 'center',
+    },
+
+    titulo: {
+      fontSize: 18,
+      fontWeight: '600',
+      marginBottom: 16,
+      textAlign: 'center',
+      color: theme.text,
+    },
+
+    card: {
+      backgroundColor: theme.card,
+      borderRadius: 20,
+      padding: 24,
+      borderWidth: theme.borderWidth,
+      borderColor: theme.border,
+    },
+
+    marca: {
+      fontSize: 20,
+      fontWeight: '700',
+      textAlign: 'center',
+      marginBottom: 20,
+      color: theme.text,
+    },
+
+    seletor: {
+      flexDirection: 'row',
+      borderWidth: 1,
+      borderColor: theme.inputBorder,
+      borderRadius: 24,
+      overflow: 'hidden',
+      marginBottom: 20,
+    },
+
+    opcao: {
+      flex: 1,
+      paddingVertical: 10,
+      alignItems: 'center',
+    },
+
+    opcaoAtiva: {
+      backgroundColor: theme.soft,
+    },
+
+    opcaoTexto: {
+      color: theme.textMuted,
+      fontWeight: '600',
+    },
+
+    opcaoTextoAtivo: {
+      color: theme.primaryDark,
+    },
+
+    descricao: {
+      fontSize: 14,
+      color: theme.textSecondary,
+      marginBottom: 16,
+    },
+
+    linhaValor: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 24,
+    },
+
+    merchant: {
+      color: theme.textMuted,
+      fontSize: 13,
+    },
+
+    valor: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: theme.text,
+    },
+
+    erro: {
+      color: theme.error,
+      fontSize: 13,
+      marginBottom: 16,
+      textAlign: 'center',
+    },
+
+    botaoPagar: {
+      backgroundColor: theme.primary,
+      borderRadius: 30,
+      paddingVertical: 16,
+      alignItems: 'center',
+    },
+
+    botaoDesabilitado: {
+      opacity: 0.5,
+    },
+
+    botaoTexto: {
+      color: theme.onPrimary,
+      fontSize: 16,
+      fontWeight: '700',
+    },
+  });

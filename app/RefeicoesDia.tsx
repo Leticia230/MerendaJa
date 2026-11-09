@@ -10,8 +10,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import ScreenHeader from '../components/ScreenHeader';
-import { colors } from '../constants/theme';
 import { auth } from '../components/firebaseConfig';
+import { useAccessibility } from '../components/AccessibilityContext';
 
 import {
   assinarCardapioData,
@@ -79,6 +79,9 @@ function respostaDe(dia: DiaCardapio, indice: number): boolean | undefined {
 }
 
 export default function RefeicoesDia() {
+  const { theme } = useAccessibility();
+  const styles = createStyles(theme);
+
   const alunoId = auth.currentUser?.uid;
   const { instituicaoId, carregando: carregandoInstituicao } =
     useInstituicaoId();
@@ -91,72 +94,72 @@ export default function RefeicoesDia() {
 
   // Cardápio da instituição do aluno
   // Cardápio da instituição do aluno, organizado por data
-useEffect(() => {
-  if (carregandoInstituicao) return;
+  useEffect(() => {
+    if (carregandoInstituicao) return;
 
-  if (!instituicaoId) {
-    setCarregando(false);
-    return;
-  }
+    if (!instituicaoId) {
+      setCarregando(false);
+      return;
+    }
 
-  setCarregando(true);
+    setCarregando(true);
 
-  // Gera somente os cinco dias úteis da semana correspondente
-  const semana = obterSemana();
+    // Gera somente os cinco dias úteis da semana correspondente
+    const semana = obterSemana();
 
-  // Limpa os dados anteriores antes de carregar a nova semana
-  setDias(semana);
+    // Limpa os dados anteriores antes de carregar a nova semana
+    setDias(semana);
 
-  const unsubscribeList: (() => void)[] = [];
+    const unsubscribeList: (() => void)[] = [];
 
-  let pendentes = semana.length;
+    let pendentes = semana.length;
 
-  semana.forEach(({ codigo, data }) => {
-    const dataSelecionada = dataISO(data);
-    let primeiraResposta = true;
+    semana.forEach(({ codigo, data }) => {
+      const dataSelecionada = dataISO(data);
+      let primeiraResposta = true;
 
-    const finalizarPrimeiroCarregamento = () => {
-      if (!primeiraResposta) return;
+      const finalizarPrimeiroCarregamento = () => {
+        if (!primeiraResposta) return;
 
-      primeiraResposta = false;
-      pendentes--;
+        primeiraResposta = false;
+        pendentes--;
 
-      if (pendentes === 0) {
-        setCarregando(false);
-      }
+        if (pendentes === 0) {
+          setCarregando(false);
+        }
+      };
+
+      const unsubscribe = assinarCardapioData(
+        dataSelecionada,
+        (refeicoes) => {
+          setDias((atual) =>
+            atual.map((dia) =>
+              dia.codigo === codigo
+                ? { ...dia, refeicoes }
+                : dia
+            )
+          );
+
+          finalizarPrimeiroCarregamento();
+        },
+        (erro) => {
+          console.error(
+            `Erro ao carregar cardápio de ${dataSelecionada}:`,
+            erro
+          );
+
+          finalizarPrimeiroCarregamento();
+        },
+        instituicaoId
+      );
+
+      unsubscribeList.push(unsubscribe);
+    });
+
+    return () => {
+      unsubscribeList.forEach((unsubscribe) => unsubscribe());
     };
-
-    const unsubscribe = assinarCardapioData(
-      dataSelecionada,
-      (refeicoes) => {
-        setDias((atual) =>
-          atual.map((dia) =>
-            dia.codigo === codigo
-              ? { ...dia, refeicoes }
-              : dia
-          )
-        );
-
-        finalizarPrimeiroCarregamento();
-      },
-      (erro) => {
-        console.error(
-          `Erro ao carregar cardápio de ${dataSelecionada}:`,
-          erro
-        );
-
-        finalizarPrimeiroCarregamento();
-      },
-      instituicaoId
-    );
-
-    unsubscribeList.push(unsubscribe);
-  });
-
-  return () => {
-    unsubscribeList.forEach((unsubscribe) => unsubscribe());
-  };
-}, [instituicaoId, carregandoInstituicao]);
+  }, [instituicaoId, carregandoInstituicao]);
 
   // Respostas (Vou comer / Não vou) do aluno, uma assinatura por data
   useEffect(() => {
@@ -216,11 +219,13 @@ useEffect(() => {
   }
 
   const totalRefeicoes = dias.reduce((total, dia) => total + dia.refeicoes.length, 0);
+
   const refeicoesRespondidas = dias.reduce(
     (total, dia) =>
       total + dia.refeicoes.filter((_, indice) => respostaDe(dia, indice) !== undefined).length,
     0
   );
+
   const refeicoesPendentes = totalRefeicoes - refeicoesRespondidas;
 
   return (
@@ -233,9 +238,15 @@ useEffect(() => {
       >
         <View style={styles.introducao}>
           <View style={styles.introducaoIcone}>
-            <MaterialCommunityIcons name="calendar-check-outline" size={25} color={colors.primary} />
+            <MaterialCommunityIcons
+              name="calendar-check-outline"
+              size={25}
+              color={theme.primary}
+            />
           </View>
+
           <Text style={styles.introducaoTitulo}>Organize sua semana</Text>
+
           <Text style={styles.introducaoTexto}>
             Confira o cardápio e escolha em cada refeição se você vai comer ou não.
           </Text>
@@ -247,14 +258,29 @@ useEffect(() => {
               <Text style={styles.resumoNumero}>{totalRefeicoes}</Text>
               <Text style={styles.resumoLegenda}>Refeições</Text>
             </View>
+
             <View style={styles.resumoDivisor} />
+
             <View style={styles.resumoItem}>
-              <Text style={[styles.resumoNumero, { color: '#2E7D32' }]}>{refeicoesRespondidas}</Text>
+              <Text style={[styles.resumoNumero, { color: theme.success }]}>
+                {refeicoesRespondidas}
+              </Text>
               <Text style={styles.resumoLegenda}>Respondidas</Text>
             </View>
+
             <View style={styles.resumoDivisor} />
+
             <View style={styles.resumoItem}>
-              <Text style={[styles.resumoNumero, { color: refeicoesPendentes > 0 ? '#B26A00' : '#2E7D32' }]}>
+              <Text
+                style={[
+                  styles.resumoNumero,
+                  {
+                    color: refeicoesPendentes > 0
+                      ? theme.warning
+                      : theme.success,
+                  },
+                ]}
+              >
                 {refeicoesPendentes}
               </Text>
               <Text style={styles.resumoLegenda}>Pendentes</Text>
@@ -267,7 +293,7 @@ useEffect(() => {
             <MaterialCommunityIcons
               name="alert-circle"
               size={18}
-              color="#B3261E"
+              color={theme.error}
             />
 
             <Text style={styles.bannerErroText}>{erro}</Text>
@@ -275,7 +301,10 @@ useEffect(() => {
         )}
 
         {carregando ? (
-          <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />
+          <ActivityIndicator
+            color={theme.primary}
+            style={{ marginTop: 24 }}
+          />
         ) : (
           dias.map((dia) => (
             <View key={dia.codigo} style={styles.diaContainer}>
@@ -284,12 +313,17 @@ useEffect(() => {
                   <Text style={styles.dateTitle}>
                     {NOME_COMPLETO_DIA[dia.codigo]}
                   </Text>
-                  <Text style={styles.dateSub}>{formatarData(dia.data)}</Text>
+
+                  <Text style={styles.dateSub}>
+                    {formatarData(dia.data)}
+                  </Text>
                 </View>
+
                 <View style={styles.contagemDia}>
                   <Text style={styles.contagemDiaTexto}>
                     {dia.refeicoes.filter((_, indice) => respostaDe(dia, indice) !== undefined).length}/{dia.refeicoes.length}
                   </Text>
+
                   <Text style={styles.contagemDiaLegenda}>feitas</Text>
                 </View>
               </View>
@@ -299,7 +333,7 @@ useEffect(() => {
                   <MaterialCommunityIcons
                     name="calendar-blank-outline"
                     size={22}
-                    color={colors.textMuted}
+                    color={theme.textMuted}
                   />
 
                   <Text style={styles.semRefeicaoTexto}>
@@ -344,9 +378,12 @@ useEffect(() => {
                         <MaterialCommunityIcons
                           name="help-circle-outline"
                           size={16}
-                          color={colors.textMuted}
+                          color={theme.textMuted}
                         />
-                        <Text style={styles.perguntaTexto}>Você vai consumir esta refeição?</Text>
+
+                        <Text style={styles.perguntaTexto}>
+                          Você vai consumir esta refeição?
+                        </Text>
                       </View>
 
                       <View style={styles.opcoes}>
@@ -362,7 +399,7 @@ useEffect(() => {
                           <MaterialCommunityIcons
                             name="check-circle"
                             size={16}
-                            color={resposta === true ? '#fff' : '#2E7D32'}
+                            color={resposta === true ? '#fff' : theme.success}
                           />
 
                           <Text
@@ -387,7 +424,7 @@ useEffect(() => {
                           <MaterialCommunityIcons
                             name="close-circle"
                             size={16}
-                            color={resposta === false ? '#fff' : '#B3261E'}
+                            color={resposta === false ? '#fff' : theme.error}
                           />
 
                           <Text
@@ -403,18 +440,35 @@ useEffect(() => {
 
                       {resposta === undefined ? (
                         <View style={styles.statusPendente}>
-                          <MaterialCommunityIcons name="clock-outline" size={14} color="#9A6700" />
-                          <Text style={styles.pendenteText}>Aguardando sua resposta</Text>
+                          <MaterialCommunityIcons
+                            name="clock-outline"
+                            size={14}
+                            color={theme.warning}
+                          />
+
+                          <Text style={styles.pendenteText}>
+                            Aguardando sua resposta
+                          </Text>
                         </View>
                       ) : (
                         <View style={styles.statusRespondido}>
                           <MaterialCommunityIcons
                             name="check-circle-outline"
                             size={14}
-                            color={resposta ? '#2E7D32' : '#B3261E'}
+                            color={resposta ? theme.success : theme.error}
                           />
-                          <Text style={[styles.respondidoText, { color: resposta ? '#2E7D32' : '#B3261E' }]}>
-                            {resposta ? 'Você confirmou que vai comer' : 'Você informou que não vai comer'}
+
+                          <Text
+                            style={[
+                              styles.respondidoText,
+                              {
+                                color: resposta ? theme.success : theme.error,
+                              },
+                            ]}
+                          >
+                            {resposta
+                              ? 'Você confirmou que vai comer'
+                              : 'Você informou que não vai comer'}
                           </Text>
                         </View>
                       )}
@@ -422,7 +476,7 @@ useEffect(() => {
                       {estaSalvando && (
                         <ActivityIndicator
                           size="small"
-                          color={colors.primary}
+                          color={theme.primary}
                           style={{ marginTop: 8 }}
                         />
                       )}
@@ -438,306 +492,307 @@ useEffect(() => {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.cream,
-  },
+const createStyles = (theme: any) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
 
-  body: {
-    paddingHorizontal: 18,
-    paddingTop: 16,
-    paddingBottom: 40,
-  },
+    body: {
+      paddingHorizontal: 18,
+      paddingTop: 16,
+      paddingBottom: 40,
+    },
 
-  introducao: {
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    paddingHorizontal: 20,
-    paddingVertical: 22,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: '#F1E8D8',
-  },
+    introducao: {
+      alignItems: 'center',
+      backgroundColor: theme.card,
+      borderRadius: 20,
+      paddingHorizontal: 20,
+      paddingVertical: 22,
+      marginBottom: 14,
+      borderWidth: theme.borderWidth,
+      borderColor: theme.border,
+    },
 
-  introducaoIcone: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: '#FFF4D6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-  },
+    introducaoIcone: {
+      width: 48,
+      height: 48,
+      borderRadius: 16,
+      backgroundColor: theme.warningBg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 10,
+    },
 
-  introducaoTitulo: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: colors.textDark,
-    textAlign: 'center',
-  },
+    introducaoTitulo: {
+      fontSize: 20,
+      fontWeight: '800',
+      color: theme.text,
+      textAlign: 'center',
+    },
 
-  introducaoTexto: {
-    fontSize: 13,
-    color: colors.textMuted,
-    marginTop: 7,
-    lineHeight: 19,
-    textAlign: 'center',
-  },
+    introducaoTexto: {
+      fontSize: 13,
+      color: theme.textMuted,
+      marginTop: 7,
+      lineHeight: 19,
+      textAlign: 'center',
+    },
 
-  resumo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 8,
-    marginBottom: 22,
-    borderWidth: 1,
-    borderColor: '#F1E8D8',
-  },
+    resumo: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-around',
+      backgroundColor: theme.card,
+      borderRadius: 16,
+      paddingVertical: 14,
+      paddingHorizontal: 8,
+      marginBottom: 22,
+      borderWidth: theme.borderWidth,
+      borderColor: theme.border,
+    },
 
-  resumoItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
+    resumoItem: {
+      flex: 1,
+      alignItems: 'center',
+    },
 
-  resumoNumero: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: colors.textDark,
-  },
+    resumoNumero: {
+      fontSize: 20,
+      fontWeight: '800',
+      color: theme.text,
+    },
 
-  resumoLegenda: {
-    fontSize: 11,
-    color: colors.textMuted,
-    marginTop: 3,
-    textAlign: 'center',
-  },
+    resumoLegenda: {
+      fontSize: 11,
+      color: theme.textMuted,
+      marginTop: 3,
+      textAlign: 'center',
+    },
 
-  resumoDivisor: {
-    width: 1,
-    height: 34,
-    backgroundColor: '#EEE5D7',
-  },
+    resumoDivisor: {
+      width: 1,
+      height: 34,
+      backgroundColor: theme.divider,
+    },
 
-  diaContainer: {
-    marginBottom: 22,
-  },
+    diaContainer: {
+      marginBottom: 22,
+    },
 
-  dateWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-    paddingHorizontal: 2,
-  },
+    dateWrap: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+      paddingHorizontal: 2,
+    },
 
-  dateTextos: {
-    flex: 1,
-  },
+    dateTextos: {
+      flex: 1,
+    },
 
-  dateTitle: {
-    fontSize: 19,
-    fontWeight: '800',
-    color: colors.textDark,
-  },
+    dateTitle: {
+      fontSize: 19,
+      fontWeight: '800',
+      color: theme.text,
+    },
 
-  dateSub: {
-    fontSize: 13,
-    color: colors.textMuted,
-    marginTop: 3,
-  },
+    dateSub: {
+      fontSize: 13,
+      color: theme.textMuted,
+      marginTop: 3,
+    },
 
-  contagemDia: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 56,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 12,
-    backgroundColor: '#FFF4D6',
-  },
+    contagemDia: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      minWidth: 56,
+      paddingHorizontal: 10,
+      paddingVertical: 7,
+      borderRadius: 12,
+      backgroundColor: theme.warningBg,
+    },
 
-  contagemDiaTexto: {
-    color: colors.textDark,
-    fontSize: 14,
-    fontWeight: '800',
-  },
+    contagemDiaTexto: {
+      color: theme.text,
+      fontSize: 14,
+      fontWeight: '800',
+    },
 
-  contagemDiaLegenda: {
-    color: colors.textMuted,
-    fontSize: 10,
-    marginTop: 1,
-  },
+    contagemDiaLegenda: {
+      color: theme.textMuted,
+      fontSize: 10,
+      marginTop: 1,
+    },
 
-  semRefeicao: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-    borderWidth: 1,
-    borderColor: '#F1E8D8',
-  },
+    semRefeicao: {
+      backgroundColor: theme.card,
+      borderRadius: 16,
+      padding: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 4,
+      borderWidth: theme.borderWidth,
+      borderColor: theme.border,
+    },
 
-  semRefeicaoTexto: {
-    textAlign: 'center',
-    color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: 8,
-  },
+    semRefeicaoTexto: {
+      textAlign: 'center',
+      color: theme.textMuted,
+      fontSize: 13,
+      lineHeight: 19,
+      marginTop: 8,
+    },
 
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 15,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#F1E8D8',
-  },
+    card: {
+      backgroundColor: theme.card,
+      borderRadius: 18,
+      padding: 15,
+      marginBottom: 12,
+      borderWidth: theme.borderWidth,
+      borderColor: theme.border,
+    },
 
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
+    cardHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
 
-  icon: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    icon: {
+      width: 48,
+      height: 48,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
 
-  titulo: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: colors.textDark,
-  },
+    titulo: {
+      fontSize: 15,
+      fontWeight: '800',
+      color: theme.text,
+    },
 
-  horario: {
-    fontSize: 12,
-    color: colors.primary,
-    fontWeight: '700',
-    marginTop: 4,
-  },
+    horario: {
+      fontSize: 12,
+      color: theme.primary,
+      fontWeight: '700',
+      marginTop: 4,
+    },
 
-  desc: {
-    fontSize: 13,
-    color: colors.textMuted,
-    marginTop: 12,
-    lineHeight: 19,
-  },
+    desc: {
+      fontSize: 13,
+      color: theme.textMuted,
+      marginTop: 12,
+      lineHeight: 19,
+    },
 
-  pergunta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 16,
-    marginBottom: 9,
-  },
+    pergunta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginTop: 16,
+      marginBottom: 9,
+    },
 
-  perguntaTexto: {
-    flex: 1,
-    color: colors.textDark,
-    fontSize: 12,
-    fontWeight: '700',
-  },
+    perguntaTexto: {
+      flex: 1,
+      color: theme.text,
+      fontSize: 12,
+      fontWeight: '700',
+    },
 
-  opcoes: {
-    flexDirection: 'row',
-    gap: 10,
-  },
+    opcoes: {
+      flexDirection: 'row',
+      gap: 10,
+    },
 
-  opcaoBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.inputBorder,
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-  },
+    opcaoBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme.inputBorder,
+      backgroundColor: theme.card,
+      paddingVertical: 12,
+      paddingHorizontal: 8,
+    },
 
-  opcaoBtnSimAtivo: {
-    backgroundColor: '#2E7D32',
-    borderColor: '#2E7D32',
-  },
+    opcaoBtnSimAtivo: {
+      backgroundColor: theme.success,
+      borderColor: theme.success,
+    },
 
-  opcaoBtnNaoAtivo: {
-    backgroundColor: '#B3261E',
-    borderColor: '#B3261E',
-  },
+    opcaoBtnNaoAtivo: {
+      backgroundColor: theme.error,
+      borderColor: theme.error,
+    },
 
-  opcaoText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.textDark,
-  },
+    opcaoText: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: theme.text,
+    },
 
-  opcaoTextAtivo: {
-    color: '#FFFFFF',
-  },
+    opcaoTextAtivo: {
+      color: '#FFFFFF',
+    },
 
-  statusPendente: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    alignSelf: 'flex-start',
-    marginTop: 11,
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: '#FFF4D6',
-  },
+    statusPendente: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      alignSelf: 'flex-start',
+      marginTop: 11,
+      paddingHorizontal: 9,
+      paddingVertical: 6,
+      borderRadius: 8,
+      backgroundColor: theme.warningBg,
+    },
 
-  pendenteText: {
-    fontSize: 11,
-    color: '#8A5A00',
-    fontWeight: '600',
-  },
+    pendenteText: {
+      fontSize: 11,
+      color: theme.warning,
+      fontWeight: '600',
+    },
 
-  statusRespondido: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    alignSelf: 'flex-start',
-    marginTop: 11,
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: '#F5F7F2',
-  },
+    statusRespondido: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      alignSelf: 'flex-start',
+      marginTop: 11,
+      paddingHorizontal: 9,
+      paddingVertical: 6,
+      borderRadius: 8,
+      backgroundColor: theme.successBg,
+    },
 
-  respondidoText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
+    respondidoText: {
+      fontSize: 11,
+      fontWeight: '600',
+    },
 
-  bannerErro: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#FDECEA',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 14,
-  },
+    bannerErro: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      backgroundColor: theme.errorBg,
+      borderRadius: 12,
+      padding: 12,
+      marginBottom: 14,
+    },
 
-  bannerErroText: {
-    flex: 1,
-    color: '#B3261E',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-});
+    bannerErroText: {
+      flex: 1,
+      color: theme.error,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+  });

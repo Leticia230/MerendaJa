@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef} from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -16,20 +16,15 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import ScreenHeader from '../components/ScreenHeader';
 import LabeledInput from '../components/LabeledInput';
 import BotaoPrimario from '../components/BotaoPrimario';
-import { colors } from '../constants/theme';
+import { useAccessibility, AccessibilityTheme } from '../components/AccessibilityContext';
 import {
-  adicionarRefeicao,
-  assinarCardapioDia,
-  salvarRefeicoesDoDia,
-  salvarCardapioPorData,
   Refeicao,
-  excluirRefeicao,
   adicionarRefeicaoNaData,
   assinarDatasComCardapio,
   atualizarRefeicaoDaData,
   excluirRefeicaoDaData,
 } from './services/cardapio';
-import Text from '../components/AppText';  
+import Text from '../components/AppText';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { dataISO } from './services/refeicaoUtils';
 
@@ -57,6 +52,9 @@ function dataPorExtenso(iso: string) {
 
 export default function AddRefeicao() {
   const router = useRouter();
+  const { theme } = useAccessibility();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
   const params = useLocalSearchParams<{
     dia?: string;
     data?: string;
@@ -82,7 +80,6 @@ export default function AddRefeicao() {
   const [excluindo, setExcluindo] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
-
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState(false);
 
@@ -99,108 +96,107 @@ export default function AddRefeicao() {
 
   const marcados: Record<string, any> = {};
   datasComCardapio.forEach((d) => {
-    marcados[d] = { marked: true, dotColor: colors.primary };
+    marcados[d] = { marked: true, dotColor: theme.primary };
   });
   if (data) {
     marcados[data] = {
       ...(marcados[data] ?? {}),
       selected: true,
-      selectedColor: colors.primary,
+      selectedColor: theme.primary,
     };
   }
 
   async function salvar() {
-  setErro(null);
-  setSucesso(false);
+    setErro(null);
+    setSucesso(false);
 
-  const tituloNormalizado = titulo.trim();
-  const descNormalizado = desc.trim();
+    const tituloNormalizado = titulo.trim();
+    const descNormalizado = desc.trim();
 
-  if (!data) {
-    setErro('Selecione a data dessa refeição.');
-    return;
-  }
-
-  if (!modoEdicao && data < dataISO()) {
-    setErro('Não é possível cadastrar refeições em datas que já passaram.');
-    return;
-  }
-
-  if (!tituloNormalizado || !descNormalizado || !horario.trim()) {
-    setErro('Preencha o título, o horário e a descrição da refeição.');
-    return;
-  }
-
-  setSalvando(true);
-
-  const refeicao: Refeicao = {
-    titulo: tituloNormalizado,
-    horario: horario.trim(),
-    desc: descNormalizado,
-    icon,
-    color,
-    data,
-  };
-
-  try {
-    if (modoEdicao) {
-      await atualizarRefeicaoDaData(data, Number(params.index), refeicao);
-    } else {
-      await adicionarRefeicaoNaData(data, refeicao);
+    if (!data) {
+      setErro('Selecione a data dessa refeição.');
+      return;
     }
 
-    setSucesso(true);
-    setTimeout(() => router.back(), 600);
-  } catch (error: any) {
-    console.error('Erro ao salvar refeição:', error);
-
-    if (error?.code === 'permission-denied') {
-      setErro(
-        'Permissão negada pelo Firestore. Verifique as Security Rules da coleção "cardapios".'
-      );
-    } else if (error?.code === 'unavailable' || error?.code === 'network-request-failed') {
-      setErro('Sem conexão com o servidor. Verifique sua internet e tente novamente.');
-    } else {
-      setErro(
-        `Não foi possível salvar a refeição. (${error?.code ?? error?.message ?? 'erro desconhecido'})`
-      );
+    if (!modoEdicao && data < dataISO()) {
+      setErro('Não é possível cadastrar refeições em datas que já passaram.');
+      return;
     }
-  } finally {
-    setSalvando(false);
-  }
-}
 
-async function executarExclusao() {
-  setErro(null);
-  setExcluindo(true);
-
-  try {
-    await excluirRefeicaoDaData(data, Number(params.index));
-    router.back();
-  } catch (error: any) {
-    console.error('Erro ao excluir refeição:', error);
-
-    if (error?.code === 'permission-denied') {
-      setErro('Permissão negada pelo Firestore ao excluir a refeição. Verifique as Security Rules.');
-    } else {
-      setErro(`Não foi possível excluir a refeição. (${error?.code ?? error?.message ?? 'erro desconhecido'})`);
+    if (!tituloNormalizado || !descNormalizado || !horario.trim()) {
+      setErro('Preencha o título, o horário e a descrição da refeição.');
+      return;
     }
-    scrollRef.current?.scrollTo({ y: 0, animated: true });
-    setExcluindo(false);
+
+    setSalvando(true);
+
+    const refeicao: Refeicao = {
+      titulo: tituloNormalizado,
+      horario: horario.trim(),
+      desc: descNormalizado,
+      icon,
+      color,
+      data,
+    };
+
+    try {
+      if (modoEdicao) {
+        await atualizarRefeicaoDaData(data, Number(params.index), refeicao);
+      } else {
+        await adicionarRefeicaoNaData(data, refeicao);
+      }
+
+      setSucesso(true);
+      setTimeout(() => router.back(), 600);
+    } catch (error: any) {
+      console.error('Erro ao salvar refeição:', error);
+
+      if (error?.code === 'permission-denied') {
+        setErro(
+          'Permissão negada pelo Firestore. Verifique as Security Rules da coleção "cardapios".'
+        );
+      } else if (error?.code === 'unavailable' || error?.code === 'network-request-failed') {
+        setErro('Sem conexão com o servidor. Verifique sua internet e tente novamente.');
+      } else {
+        setErro(
+          `Não foi possível salvar a refeição. (${error?.code ?? error?.message ?? 'erro desconhecido'})`
+        );
+      }
+    } finally {
+      setSalvando(false);
+    }
   }
-}
 
-function confirmarExclusao() {
-  Alert.alert(
-    'Excluir refeição',
-    `Tem certeza que deseja excluir "${titulo}" de ${dataPorExtenso(data)}? Essa ação não pode ser desfeita.`,
-    [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Excluir', style: 'destructive', onPress: executarExclusao },
-    ]
-  );
-}
+  async function executarExclusao() {
+    setErro(null);
+    setExcluindo(true);
 
+    try {
+      await excluirRefeicaoDaData(data, Number(params.index));
+      router.back();
+    } catch (error: any) {
+      console.error('Erro ao excluir refeição:', error);
+
+      if (error?.code === 'permission-denied') {
+        setErro('Permissão negada pelo Firestore ao excluir a refeição. Verifique as Security Rules.');
+      } else {
+        setErro(`Não foi possível excluir a refeição. (${error?.code ?? error?.message ?? 'erro desconhecido'})`);
+      }
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
+      setExcluindo(false);
+    }
+  }
+
+  function confirmarExclusao() {
+    Alert.alert(
+      'Excluir refeição',
+      `Tem certeza que deseja excluir "${titulo}" de ${dataPorExtenso(data)}? Essa ação não pode ser desfeita.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Excluir', style: 'destructive', onPress: executarExclusao },
+      ]
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -210,17 +206,17 @@ function confirmarExclusao() {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+        <ScrollView ref={scrollRef} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
           {erro && (
             <View style={styles.bannerErro} testID="add-refeicao-erro">
-              <Ionicons name="alert-circle" size={18} color="#B3261E" />
+              <Ionicons name="alert-circle" size={18} color={theme.error} />
               <Text style={styles.bannerErroText}>{erro}</Text>
             </View>
           )}
 
           {sucesso && (
             <View style={styles.bannerSucesso} testID="add-refeicao-sucesso">
-              <Ionicons name="checkmark-circle" size={18} color="#2E7D32" />
+              <Ionicons name="checkmark-circle" size={18} color={theme.success} />
               <Text style={styles.bannerSucessoText}>Refeição salva!</Text>
             </View>
           )}
@@ -230,7 +226,7 @@ function confirmarExclusao() {
           {modoEdicao ? (
             <>
               <View style={styles.dataBox}>
-                <MaterialCommunityIcons name="calendar" size={18} color={colors.primary} />
+                <MaterialCommunityIcons name="calendar" size={18} color={theme.primary} />
                 <Text style={styles.dataBoxText}>{dataPorExtenso(data)}</Text>
               </View>
               <Text style={styles.hintEdicao}>
@@ -241,6 +237,7 @@ function confirmarExclusao() {
             <>
               <View style={styles.calendarWrap}>
                 <Calendar
+                  key={theme.background} // força remontar quando o tema muda
                   current={data || dataISO()}
                   minDate={dataISO()}                       // bloqueia datas passadas
                   disabledDaysIndexes={[0, 6]}              // sem sábado e domingo
@@ -249,9 +246,18 @@ function confirmarExclusao() {
                   onMonthChange={(m) => setMesVisivel(m.dateString.slice(0, 7))}
                   markedDates={marcados}
                   theme={{
-                    todayTextColor: colors.primary,
-                    arrowColor: colors.primary,
-                    selectedDayBackgroundColor: colors.primary,
+                    calendarBackground: theme.card,
+                    backgroundColor: theme.card,
+                    dayTextColor: theme.text,
+                    monthTextColor: theme.text,
+                    textSectionTitleColor: theme.textMuted,
+                    textDisabledColor: theme.placeholder,
+                    todayTextColor: theme.primary,
+                    arrowColor: theme.primary,
+                    selectedDayBackgroundColor: theme.primary,
+                    selectedDayTextColor: theme.onPrimary,
+                    dotColor: theme.primary,
+                    selectedDotColor: theme.onPrimary,
                   }}
                 />
               </View>
@@ -305,7 +311,7 @@ function confirmarExclusao() {
                 <MaterialCommunityIcons
                   name={i as any}
                   size={22}
-                  color={icon === i ? '#fff' : colors.textMuted}
+                  color={icon === i ? theme.onPrimary : theme.textMuted}
                 />
               </Pressable>
             ))}
@@ -346,10 +352,10 @@ function confirmarExclusao() {
               disabled={salvando || excluindo}
             >
               {excluindo ? (
-                <ActivityIndicator color="#B3261E" />
+                <ActivityIndicator color={theme.error} />
               ) : (
                 <>
-                  <Ionicons name="trash-outline" size={18} color="#B3261E" />
+                  <Ionicons name="trash-outline" size={18} color={theme.error} />
                   <Text style={styles.botaoExcluirText}>Excluir refeição</Text>
                 </>
               )}
@@ -361,135 +367,113 @@ function confirmarExclusao() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.cream },
-  body: {
-  paddingHorizontal: 22,
-  },
-  label: {
-    fontSize: 13,
-    color: colors.textDark,
-    fontWeight: '600',
-    marginTop: 18,
-    marginBottom: 8,
-  },
-  hint: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: -4,
-    marginBottom: 4,
-  },
-  row: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
-  dayChip: {
-    height: 36,
-    paddingHorizontal: 16,
-    borderRadius: 18,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: colors.inputBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dayChipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  dayChipDisabled: {
-    opacity: 0.6,
-  },
-  dayText: { color: colors.textDark, fontWeight: '700', fontSize: 13 },
-  dayTextActive: { color: '#fff' },
-  iconOption: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: colors.inputBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconOptionActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  colorSwatch: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  colorSwatchActive: {
-    borderColor: colors.textDark,
-  },
-  bannerErro: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#FDECEA',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-  },
-  bannerErroText: {
-    flex: 1,
-    color: '#B3261E',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  bannerSucesso: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#E8F5E9',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-  },
-  bannerSucessoText: {
-    flex: 1,
-    color: '#2E7D32',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  botaoExcluir: {
-  marginTop: 12,
-  height: 48,
-  borderRadius: 12,
-  borderWidth: 1,
-  borderColor: '#B3261E',
-  backgroundColor: '#fff',
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: 8,
-  },
-  botaoExcluirText: { color: '#B3261E', fontSize: 15, fontWeight: '600' },
-  calendarWrap: {
-  backgroundColor: '#fff',
-  borderRadius: 16,
-  overflow: 'hidden',
-  borderWidth: 1,
-  borderColor: colors.inputBorder,
-},
-dataBox: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 8,
-  backgroundColor: '#fff',
-  borderRadius: 12,
-  borderWidth: 1,
-  borderColor: colors.inputBorder,
-  padding: 14,
-},
-dataBoxText: { color: colors.textDark, fontSize: 14, fontWeight: '700' },
-hintEdicao: {
-  fontSize: 12,
-  color: colors.textMuted,
-  marginTop: 14,
-  marginBottom: 4,
-},
-});
+const createStyles = (theme: AccessibilityTheme) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: theme.background },
+    body: { paddingHorizontal: 22 },
+    label: {
+      fontSize: 13,
+      color: theme.text,
+      fontWeight: '600',
+      marginTop: 18,
+      marginBottom: 8,
+    },
+    hint: {
+      fontSize: 12,
+      color: theme.textMuted,
+      marginTop: -4,
+      marginBottom: 4,
+    },
+    row: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
+    iconOption: {
+      width: 44,
+      height: 44,
+      borderRadius: 12,
+      backgroundColor: theme.card,
+      borderWidth: 1,
+      borderColor: theme.inputBorder,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    iconOptionActive: {
+      backgroundColor: theme.primary,
+      borderColor: theme.primary,
+    },
+    colorSwatch: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 2,
+      borderColor: 'transparent',
+    },
+    colorSwatchActive: { borderColor: theme.text },
+    bannerErro: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      backgroundColor: theme.errorBg,
+      borderRadius: 12,
+      padding: 12,
+      marginBottom: 16,
+    },
+    bannerErroText: {
+      flex: 1,
+      color: theme.error,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    bannerSucesso: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      backgroundColor: theme.successBg,
+      borderRadius: 12,
+      padding: 12,
+      marginBottom: 16,
+    },
+    bannerSucessoText: {
+      flex: 1,
+      color: theme.success,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    botaoExcluir: {
+      marginTop: 12,
+      height: 48,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme.error,
+      backgroundColor: theme.card,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+    },
+    botaoExcluirText: { color: theme.error, fontSize: 15, fontWeight: '600' },
+    calendarWrap: {
+      backgroundColor: theme.card,
+      borderRadius: 16,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: theme.inputBorder,
+    },
+    dataBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      backgroundColor: theme.card,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme.inputBorder,
+      padding: 14,
+    },
+    dataBoxText: { color: theme.text, fontSize: 14, fontWeight: '700' },
+    hintEdicao: {
+      fontSize: 12,
+      color: theme.textMuted,
+      marginTop: 14,
+      marginBottom: 4,
+    },
+  });

@@ -15,10 +15,12 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import ChefLogo from '../components/ChefLogo';
 import BotaoPrimario from '../components/BotaoPrimario';
-import { colors } from '../constants/theme';
+import { useAccessibility } from '../components/AccessibilityContext';
 
 export default function InicioScreen() {
   const router = useRouter();
+  const { theme } = useAccessibility();
+  const styles = createStyles(theme);
 
   const [agreed, setAgreed] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
@@ -166,7 +168,7 @@ export default function InicioScreen() {
           <Ionicons
             name="document-text-outline"
             size={19}
-            color={colors.primary}
+            color={theme.primary}
           />
         </Pressable>
 
@@ -217,7 +219,7 @@ export default function InicioScreen() {
                 <Ionicons
                   name="close"
                   size={24}
-                  color={colors.textDark}
+                  color={theme.text}
                 />
               </Pressable>
             </View>
@@ -485,10 +487,10 @@ export default function InicioScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.yellow,
+    backgroundColor: theme.background,
   },
 
   container: {
@@ -507,19 +509,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 30,
     fontWeight: '800',
-    color: colors.primaryDark,
+    color: theme.primaryDark,
     marginTop: 8,
   },
 
   subtitle: {
     fontSize: 12,
-    color: colors.primary,
+    color: theme.primary,
     letterSpacing: 2,
     fontWeight: '600',
   },
 
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.card,
     borderRadius: 20,
     marginTop: 12,
     minHeight: 170,
@@ -533,6 +535,8 @@ const styles = StyleSheet.create({
     },
     elevation: 3,
     overflow: 'hidden',
+    borderWidth: theme.borderWidth,
+    borderColor: theme.border,
   },
 
   scroll: {
@@ -554,14 +558,14 @@ const styles = StyleSheet.create({
   welcome: {
     fontSize: 20,
     fontWeight: '700',
-    color: colors.textDark,
+    color: theme.text,
     textAlign: 'center',
     marginBottom: 8,
   },
 
   desc: {
     fontSize: 14,
-    color: colors.textMuted,
+    color: theme.textMuted,
     textAlign: 'center',
     lineHeight: 20,
     maxWidth: 300,
@@ -580,11 +584,11 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#F2C97B',
+    backgroundColor: theme.divider,
   },
 
   dotActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: theme.primary,
     width: 18,
   },
 
@@ -601,19 +605,19 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 5,
     borderWidth: 1.5,
-    borderColor: colors.primary,
-    backgroundColor: '#fff',
+    borderColor: theme.primary,
+    backgroundColor: theme.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   checkboxChecked: {
-    backgroundColor: colors.primary,
+    backgroundColor: theme.primary,
   },
 
   termsText: {
     fontSize: 13,
-    color: colors.textDark,
+    color: theme.text,
     flex: 1,
   },
 
@@ -630,10 +634,12 @@ const styles = StyleSheet.create({
   modalContainer: {
     width: '100%',
     maxHeight: '85%',
-    backgroundColor: '#fff',
+    backgroundColor: theme.card,
     borderRadius: 22,
     padding: 20,
     overflow: 'hidden',
+    borderWidth: theme.borderWidth,
+    borderColor: theme.border,
   },
 
   modalHeader: {
@@ -646,12 +652,12 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 22,
     fontWeight: '800',
-    color: colors.primaryDark,
+    color: theme.primaryDark,
   },
 
   modalSubtitle: {
     fontSize: 13,
-    color: colors.textMuted,
+    color: theme.textMuted,
     marginTop: 3,
   },
 
@@ -659,7 +665,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: theme.soft,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -676,7 +682,7 @@ const styles = StyleSheet.create({
   termsHeading: {
     fontSize: 15,
     fontWeight: '700',
-    color: colors.primaryDark,
+    color: theme.primaryDark,
     marginTop: 16,
     marginBottom: 7,
   },
@@ -684,7 +690,7 @@ const styles = StyleSheet.create({
   termsSubheading: {
     fontSize: 13,
     fontWeight: '700',
-    color: colors.primary,
+    color: theme.primary,
     marginTop: 10,
     marginBottom: 5,
   },
@@ -692,14 +698,14 @@ const styles = StyleSheet.create({
   termsParagraph: {
     fontSize: 13,
     lineHeight: 21,
-    color: colors.textMuted,
+    color: theme.textSecondary,
     textAlign: 'justify',
   },
 
   lastUpdate: {
     fontSize: 12,
     fontWeight: '600',
-    color: colors.textDark,
+    color: theme.text,
     marginTop: 22,
     marginBottom: 10,
   },
@@ -715,13 +721,13 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.primary,
+    borderColor: theme.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   backButtonText: {
-    color: colors.primary,
+    color: theme.primary,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -730,7 +736,7 @@ const styles = StyleSheet.create({
     flex: 1.5,
     height: 48,
     borderRadius: 12,
-    backgroundColor: colors.primary,
+    backgroundColor: theme.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

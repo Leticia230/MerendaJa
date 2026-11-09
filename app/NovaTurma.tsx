@@ -15,14 +15,17 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import ScreenHeader from '../components/ScreenHeader';
 import LabeledInput from '../components/LabeledInput';
 import BotaoPrimario from '../components/BotaoPrimario';
-import { colors } from '../constants/theme';
+import { useAccessibility } from '../components/AccessibilityContext';
 import { listarAlunos, Aluno } from './services/alunos';
 import { criarTurma, buscarTurma, atualizarTurma, excluirTurma } from './services/turmas';
-import Text from '../components/AppText';  
+import Text from '../components/AppText';
 
 const PERIODOS = ['Manhã', 'Tarde', 'Integral','Noite'];
 
 export default function NovaTurma() {
+  const { theme } = useAccessibility();
+  const styles = createStyles(theme);
+
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string }>();
   const modoEdicao = !!params.id;
@@ -137,46 +140,46 @@ export default function NovaTurma() {
   }
 
   async function executarExclusao() {
-  if (!params.id) return;
+    if (!params.id) return;
 
-  setErro(null);
-  setExcluindo(true);
+    setErro(null);
+    setExcluindo(true);
 
-  try {
-    await excluirTurma(params.id);
-    router.back();
-  } catch (error: any) {
-    console.error('Erro ao excluir turma:', error);
+    try {
+      await excluirTurma(params.id);
+      router.back();
+    } catch (error: any) {
+      console.error('Erro ao excluir turma:', error);
 
-    if (error?.code === 'permission-denied') {
-      setErro('Permissão negada pelo Firestore ao excluir a turma. Verifique as Security Rules.');
-    } else {
-      setErro(`Não foi possível excluir a turma. (${error?.code ?? error?.message ?? 'erro desconhecido'})`);
+      if (error?.code === 'permission-denied') {
+        setErro('Permissão negada pelo Firestore ao excluir a turma. Verifique as Security Rules.');
+      } else {
+        setErro(`Não foi possível excluir a turma. (${error?.code ?? error?.message ?? 'erro desconhecido'})`);
+      }
+      setExcluindo(false);
     }
-    setExcluindo(false);
-  }
-}
-
-function confirmarExclusao() {
-  const mensagem = `Tem certeza que deseja excluir a turma "${nome}"? Essa ação não pode ser desfeita.`;
-
-  // Alert com botões não funciona no web, então usamos confirm()
-  if (Platform.OS === 'web') {
-    if (window.confirm(mensagem)) executarExclusao();
-    return;
   }
 
-  Alert.alert('Excluir turma', mensagem, [
-    { text: 'Cancelar', style: 'cancel' },
-    { text: 'Excluir', style: 'destructive', onPress: executarExclusao },
-  ]);
-}
+  function confirmarExclusao() {
+    const mensagem = `Tem certeza que deseja excluir a turma "${nome}"? Essa ação não pode ser desfeita.`;
+
+    // Alert com botões não funciona no web, então usamos confirm()
+    if (Platform.OS === 'web') {
+      if (window.confirm(mensagem)) executarExclusao();
+      return;
+    }
+
+    Alert.alert('Excluir turma', mensagem, [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Excluir', style: 'destructive', onPress: executarExclusao },
+    ]);
+  }
 
   if (carregandoTurma) {
     return (
       <SafeAreaView style={styles.safe}>
         <ScreenHeader title="Editar Turma" />
-        <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />
+        <ActivityIndicator color={theme.primary} style={{ marginTop: 40 }} />
       </SafeAreaView>
     );
   }
@@ -187,19 +190,19 @@ function confirmarExclusao() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
           <View style={styles.avatar}>
-            <Ionicons name="people" size={38} color="#fff" />
+            <Ionicons name="people" size={38} color={theme.onPrimary} />
           </View>
 
           {erro && (
             <View style={styles.bannerErro} testID="nova-turma-erro">
-              <Ionicons name="alert-circle" size={18} color="#B3261E" />
+              <Ionicons name="alert-circle" size={18} color={theme.error} />
               <Text style={styles.bannerErroText}>{erro}</Text>
             </View>
           )}
 
           {sucesso && (
             <View style={styles.bannerSucesso} testID="nova-turma-sucesso">
-              <Ionicons name="checkmark-circle" size={18} color="#2E7D32" />
+              <Ionicons name="checkmark-circle" size={18} color={theme.success} />
               <Text style={styles.bannerSucessoText}>
                 {modoEdicao ? 'Turma atualizada!' : 'Turma criada!'}
               </Text>
@@ -230,7 +233,7 @@ function confirmarExclusao() {
               <Ionicons
                 name={periodoAberto ? 'chevron-up' : 'chevron-down'}
                 size={18}
-                color={colors.textMuted}
+                color={theme.textMuted}
               />
             </Pressable>
 
@@ -248,7 +251,7 @@ function confirmarExclusao() {
                   >
                     <Text style={styles.dropdownRowText}>{p}</Text>
                     {periodo === p && (
-                      <Ionicons name="checkmark" size={18} color={colors.primary} />
+                      <Ionicons name="checkmark" size={18} color={theme.primary} />
                     )}
                   </Pressable>
                 ))}
@@ -270,14 +273,14 @@ function confirmarExclusao() {
               <Ionicons
                 name={alunosAberto ? 'chevron-up' : 'chevron-down'}
                 size={18}
-                color={colors.textMuted}
+                color={theme.textMuted}
               />
             </Pressable>
 
             {alunosAberto && (
               <View style={styles.dropdown}>
                 {carregandoAlunos ? (
-                  <ActivityIndicator color={colors.primary} style={{ padding: 16 }} />
+                  <ActivityIndicator color={theme.primary} style={{ padding: 16 }} />
                 ) : alunos.length === 0 ? (
                   <Text style={styles.dropdownVazio}>
                     Nenhum aluno cadastrado ainda.
@@ -301,7 +304,7 @@ function confirmarExclusao() {
                         <Ionicons
                           name={selecionado ? 'checkbox' : 'square-outline'}
                           size={20}
-                          color={selecionado ? colors.primary : colors.textMuted}
+                          color={selecionado ? theme.primary : theme.textMuted}
                         />
                       </Pressable>
                     );
@@ -327,10 +330,10 @@ function confirmarExclusao() {
               disabled={salvando || excluindo}
             >
               {excluindo ? (
-                <ActivityIndicator color="#B3261E" />
+                <ActivityIndicator color={theme.error} />
               ) : (
                 <>
-                  <Ionicons name="trash-outline" size={18} color="#B3261E" />
+                  <Ionicons name="trash-outline" size={18} color={theme.error} />
                   <Text style={styles.botaoExcluirText}>Excluir turma</Text>
                 </>
               )}
@@ -343,30 +346,34 @@ function confirmarExclusao() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.cream },
+const createStyles = (theme: any) => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: theme.background },
   body: { padding: 22, paddingTop: 4, paddingBottom: 40 },
   avatar: {
     width: 78, height: 78, borderRadius: 39,
-    backgroundColor: colors.primary,
+    backgroundColor: theme.primary,
     alignSelf: 'center',
     alignItems: 'center', justifyContent: 'center',
     marginBottom: 8,
   },
-  label: { fontSize: 13, color: colors.textDark, fontWeight: '600', marginBottom: 6 },
+  label: { fontSize: 13, color: theme.text, fontWeight: '600', marginBottom: 6 },
   select: {
-    backgroundColor: '#fff', borderRadius: 12,
-    borderWidth: 1, borderColor: colors.inputBorder,
-    height: 48, paddingHorizontal: 14,
-    flexDirection: 'row', alignItems: 'center',
-  },
-  selectText: { flex: 1, color: colors.textLight, fontSize: 14 },
-  selectTextPreenchido: { color: colors.textDark, fontWeight: '600' },
-  dropdown: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.card,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.inputBorder,
+    borderColor: theme.inputBorder,
+    height: 48,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  selectText: { flex: 1, color: theme.placeholder, fontSize: 14 },
+  selectTextPreenchido: { color: theme.text, fontWeight: '600' },
+  dropdown: {
+    backgroundColor: theme.card,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.inputBorder,
     marginTop: 8,
     overflow: 'hidden',
   },
@@ -375,48 +382,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
+    borderBottomColor: theme.divider,
     gap: 10,
   },
-  dropdownRowText: { fontSize: 14, color: colors.textDark, fontWeight: '600' },
-  dropdownRowSub: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  dropdownRowText: { fontSize: 14, color: theme.text, fontWeight: '600' },
+  dropdownRowSub: { fontSize: 12, color: theme.textMuted, marginTop: 2 },
   dropdownVazio: {
     padding: 16,
     textAlign: 'center',
     fontSize: 13,
-    color: colors.textMuted,
+    color: theme.textMuted,
   },
   bannerErro: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#FDECEA',
+    backgroundColor: theme.errorBg,
     borderRadius: 12,
     padding: 12,
     marginBottom: 16,
   },
-  bannerErroText: { flex: 1, color: '#B3261E', fontSize: 13, fontWeight: '600' },
+  bannerErroText: { flex: 1, color: theme.error, fontSize: 13, fontWeight: '600' },
   bannerSucesso: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#E8F5E9',
+    backgroundColor: theme.successBg,
     borderRadius: 12,
     padding: 12,
     marginBottom: 16,
   },
   botaoExcluir: {
-  marginTop: 12,
-  height: 48,
-  borderRadius: 12,
-  borderWidth: 1,
-  borderColor: '#B3261E',
-  backgroundColor: '#fff',
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: 8,
- },
-botaoExcluirText: { color: '#B3261E', fontSize: 15, fontWeight: '600' },
-  bannerSucessoText: { flex: 1, color: '#2E7D32', fontSize: 13, fontWeight: '600' },
+    marginTop: 12,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.error,
+    backgroundColor: theme.card,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  botaoExcluirText: { color: theme.error, fontSize: 15, fontWeight: '600' },
+  bannerSucessoText: { flex: 1, color: theme.success, fontSize: 13, fontWeight: '600' },
 });

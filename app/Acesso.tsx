@@ -1,13 +1,17 @@
+
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import ChefLogo from '../components/ChefLogo';
-import { colors } from '../constants/theme';
+import { useAccessibility } from '../components/AccessibilityContext';
 
 export default function AccessScreen() {
   const router = useRouter();
+  const { theme } = useAccessibility();
+  const styles = createStyles(theme);
+
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.hero}>
@@ -49,10 +53,14 @@ export default function AccessScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.cream },
+const createStyles = (theme: any) => StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: theme.background,
+  },
+
   hero: {
-    backgroundColor: colors.yellow,
+    backgroundColor: theme.header,
     borderBottomLeftRadius: 40,
     borderBottomRightRadius: 40,
     alignItems: 'center',
@@ -60,24 +68,28 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     gap: 8,
   },
+
   title: {
     fontSize: 28,
     fontWeight: '800',
-    color: colors.primaryDark,
+    color: theme.primaryDark,
     marginTop: 6,
   },
+
   desc: {
     fontSize: 14,
-    color: colors.textDark,
+    color: theme.text,
     fontWeight: '600',
   },
+
   body: {
     padding: 20,
     gap: 16,
     marginTop: 12,
   },
+
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.card,
     borderRadius: 18,
     padding: 18,
     flexDirection: 'row',
@@ -88,23 +100,28 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
     elevation: 2,
+    borderWidth: theme.borderWidth,
+    borderColor: theme.border,
   },
+
   iconWrap: {
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: colors.primary,
+    backgroundColor: theme.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
+
   cardTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors.textDark,
+    color: theme.text,
     marginBottom: 2,
   },
+
   cardDesc: {
     fontSize: 12,
-    color: colors.textMuted,
+    color: theme.textMuted,
   },
 });

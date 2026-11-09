@@ -1,17 +1,39 @@
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
 import React from "react";
 import { useEffect } from "react";
-import { LogBox, StatusBar } from "react-native";
+import { LogBox } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Constants, { ExecutionEnvironment } from "expo-constants";
 import { useFonts } from "expo-font";
 import { StripeProvider } from "@stripe/stripe-react-native";
-import { AccessibilityProvider } from "../components/AccessibilityContext";
+import {
+  AccessibilityProvider,
+  useAccessibility,
+} from "../components/AccessibilityContext";
 
 LogBox.ignoreAllLogs(true);
 SplashScreen.preventAutoHideAsync();
+
+// Precisa ficar dentro do AccessibilityProvider para ler o tema.
+function ThemedApp() {
+  const { isDark, theme } = useAccessibility();
+
+  return (
+    <>
+      <StatusBar style={isDark ? "light" : "dark"} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          animation: "slide_from_right",
+          contentStyle: { backgroundColor: theme.background },
+        }}
+      />
+    </>
+  );
+}
 
 // --- Icon font loader (Expo Go workaround) ---
 const ICON_VECTOR_VERSION = "15.1.1";
@@ -63,8 +85,7 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
           <AccessibilityProvider>
-            <StatusBar barStyle="dark-content" />
-            <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }} />
+            <ThemedApp />
           </AccessibilityProvider>
         </SafeAreaProvider>
       </GestureHandlerRootView>

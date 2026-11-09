@@ -1,3 +1,4 @@
+
 import React, { useRef, useState } from 'react';
 import {
   View,
@@ -18,7 +19,7 @@ import { useRouter } from 'expo-router';
 import ScreenHeader from '../components/ScreenHeader';
 import LabeledInput from '../components/LabeledInput';
 import BotaoPrimario from '../components/BotaoPrimario';
-import { colors } from '../constants/theme';
+import { useAccessibility } from '../components/AccessibilityContext';
 
 import { login } from '../components/auth';
 
@@ -59,6 +60,8 @@ const ERROS_LOGIN: Record<string, { titulo: string; mensagem: string }> = {
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { theme } = useAccessibility();
+  const styles = createStyles(theme);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -189,55 +192,56 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.cream,
-  },
+const createStyles = (theme: any) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
 
-  keyboardView: {
-    flex: 1,
-  },
+    keyboardView: {
+      flex: 1,
+    },
 
-  body: {
-    padding: 22,
-    paddingTop: 4,
-    paddingBottom: 30,
-  },
+    body: {
+      padding: 22,
+      paddingTop: 4,
+      paddingBottom: 30,
+    },
 
-  iconWrap: {
-    width: 78,
-    height: 78,
-    borderRadius: 39,
-    backgroundColor: colors.primary,
-    alignSelf: 'center',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-  },
+    iconWrap: {
+      width: 78,
+      height: 78,
+      borderRadius: 39,
+      backgroundColor: theme.primary,
+      alignSelf: 'center',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 10,
+    },
 
-  title: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: colors.textDark,
-    textAlign: 'center',
-  },
+    title: {
+      fontSize: 20,
+      fontWeight: '800',
+      color: theme.text,
+      textAlign: 'center',
+    },
 
-  firstInput: {
-    marginTop: 20,
-  },
+    firstInput: {
+      marginTop: 20,
+    },
 
-  link: {
-    color: colors.primary,
-    fontWeight: '600',
-    fontSize: 13,
-    textAlign: 'right',
-    textDecorationLine: 'underline',
-    marginTop: 2,
-    marginBottom: 6,
-  },
+    link: {
+      color: theme.primary,
+      fontWeight: '600',
+      fontSize: 13,
+      textAlign: 'right',
+      textDecorationLine: 'underline',
+      marginTop: 2,
+      marginBottom: 6,
+    },
 
-  button: {
-    marginTop: 16,
-  },
-});
+    button: {
+      marginTop: 16,
+    },
+  });

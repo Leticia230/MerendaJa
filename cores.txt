@@ -1,0 +1,602 @@
+app\(tabs-aluno)\Cardapio.tsx:85:          <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
+app\(tabs-aluno)\Cardapio.tsx:99:                <MaterialCommunityIcons name={m.icon as any} size={26} color="#fff" />
+app\(tabs-aluno)\Cardapio.tsx:110:  safe: { flex: 1, backgroundColor: colors.cream },
+app\(tabs-aluno)\Cardapio.tsx:112:    backgroundColor: colors.yellow,
+app\(tabs-aluno)\Cardapio.tsx:119:  headerTitle: { fontSize: 20, fontWeight: '800', color: colors.textDark },
+app\(tabs-aluno)\Cardapio.tsx:126:    backgroundColor: '#fff',
+app\(tabs-aluno)\Cardapio.tsx:128:    borderColor: colors.inputBorder,
+app\(tabs-aluno)\Cardapio.tsx:134:    backgroundColor: colors.primary,
+app\(tabs-aluno)\Cardapio.tsx:135:    borderColor: colors.primary,
+app\(tabs-aluno)\Cardapio.tsx:137:  dayText: { color: colors.textDark, fontWeight: '700', fontSize: 13 },
+app\(tabs-aluno)\Cardapio.tsx:138:  dayTextActive: { color: '#fff' },
+app\(tabs-aluno)\Cardapio.tsx:142:    color: colors.textMuted,
+app\(tabs-aluno)\Cardapio.tsx:147:    backgroundColor: '#fff',
+app\(tabs-aluno)\Cardapio.tsx:153:    shadowColor: '#000',
+app\(tabs-aluno)\Cardapio.tsx:159:  mealTitle: { fontSize: 15, fontWeight: '700', color: colors.textDark, marginBottom: 4 },
+app\(tabs-aluno)\Cardapio.tsx:160:  mealHorario: { fontSize: 12, color: colors.primary, fontWeight: '700', marginBottom: 2 },
+app\(tabs-aluno)\Cardapio.tsx:161:  mealDesc: { fontSize: 12, color: colors.textMuted, lineHeight: 17 },
+app\(tabs-aluno)\Configuracoes.tsx:12:  { icon: 'person', label: 'Perfil', route: '/PerfilAluno', color: '#FFB27A' }, 
+app\(tabs-aluno)\Configuracoes.tsx:13:  { icon: 'information-circle', label: 'Sobre', route: '/Sobre', color: '#FFC845' },
+app\(tabs-aluno)\Configuracoes.tsx:14:  { icon: 'lock-closed', label: 'Permissões', route: '/Permissoes', color: '#FFB27A' }, 
+app\(tabs-aluno)\Configuracoes.tsx:15:  { icon: 'accessibility', label: 'Acessibilidade', route: '/Acessibilidade', color: '#FFC845' },
+app\(tabs-aluno)\Configuracoes.tsx:16:  { icon: 'document-text', label: 'Termos de uso', route: '/TermosUso', color: '#FFB27A' },
+app\(tabs-aluno)\Configuracoes.tsx:17:  { icon: 'shield-checkmark', label: 'Segurança e Privacidade', route: '/SegurancaPrivacidade', color: '#FFC845' },
+app\(tabs-aluno)\Configuracoes.tsx:35:        <Ionicons name="settings-outline" size={20} color={colors.textDark} />
+app\(tabs-aluno)\Configuracoes.tsx:48:                <Ionicons name={it.icon as any} size={18} color="#fff" />
+app\(tabs-aluno)\Configuracoes.tsx:51:              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+app\(tabs-aluno)\Configuracoes.tsx:69:  safe: { flex: 1, backgroundColor: colors.cream },
+app\(tabs-aluno)\Configuracoes.tsx:71:    backgroundColor: colors.yellow,
+app\(tabs-aluno)\Configuracoes.tsx:80:  headerTitle: { flex: 1, fontSize: 20, fontWeight: '800', color: colors.textDark },
+app\(tabs-aluno)\Configuracoes.tsx:83:    backgroundColor: '#fff',
+app\(tabs-aluno)\Configuracoes.tsx:95:    borderBottomColor: colors.divider,
+app\(tabs-aluno)\Configuracoes.tsx:104:  label: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.textDark },
+app\(tabs-aluno)\Configuracoes.tsx:106:    backgroundColor: colors.primary,
+app\(tabs-aluno)\Configuracoes.tsx:112:  logoutText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+app\(tabs-aluno)\Home.tsx:30:        <MaterialCommunityIcons name={icon as any} size={24} color="#ffffff" />
+app\(tabs-aluno)\Home.tsx:108:                color={colors.primaryDark}
+app\(tabs-aluno)\Home.tsx:120:            <MaterialCommunityIcons name="chevron-right" size={18} color={colors.splashBg} />
+app\(tabs-aluno)\Home.tsx:129:                  <MaterialCommunityIcons name={r.icon as any} size={12} color="#ffffff" />
+app\(tabs-aluno)\Home.tsx:182:          <Ionicons name="notifications-outline" size={22} color={colors.textDark} />
+app\(tabs-aluno)\Home.tsx:192:          <MaterialCommunityIcons name="food-apple" size={44} color="#fff" />
+app\(tabs-aluno)\Home.tsx:204:            <ActivityIndicator color={colors.primary} style={{ padding: 20 }} />
+app\(tabs-aluno)\Home.tsx:228:  safe: { flex: 1, backgroundColor: colors.cream },
+app\(tabs-aluno)\Home.tsx:234:    backgroundColor: colors.yellow,
+app\(tabs-aluno)\Home.tsx:238:  hello: { fontSize: 13, color: colors.textDark, fontWeight: '600' },
+app\(tabs-aluno)\Home.tsx:239:  brand: { fontSize: 20, fontWeight: '800', color: colors.primaryDark },
+app\(tabs-aluno)\Home.tsx:245:    backgroundColor: '#fff',
+app\(tabs-aluno)\Home.tsx:251:    backgroundColor: colors.primary,
+app\(tabs-aluno)\Home.tsx:257:  dayTitle: { color: '#fff', fontSize: 18, fontWeight: '800' },
+app\(tabs-aluno)\Home.tsx:258:  dayDate: { color: '#FFE0CE', fontSize: 12, marginTop: 4 },
+app\(tabs-aluno)\Home.tsx:271:  backgroundColor: '#fff',
+app\(tabs-aluno)\Home.tsx:275:  borderColor: '#FFE0CE',
+app\(tabs-aluno)\Home.tsx:277:  shadowColor: '#000',
+app\(tabs-aluno)\Home.tsx:287:  backgroundColor: colors.primary,   // anel pulsante laranja
+app\(tabs-aluno)\Home.tsx:293:  backgroundColor: '#FFE0CE',        // laranja bem claro atrás do ícone
+app\(tabs-aluno)\Home.tsx:297:marcarRefeicoesTitle: { color: colors.textDark, fontSize: 16, fontWeight: '800' },
+app\(tabs-aluno)\Home.tsx:298:marcarRefeicoesSubtitle: { color: colors.textMuted, fontSize: 11, marginTop: 3 },
+app\(tabs-aluno)\Home.tsx:302:  backgroundColor: colors.primary,   // botão laranja
+app\(tabs-aluno)\Home.tsx:308:marcarCtaText: { color: '#fff', fontWeight: '800', fontSize: 12 },
+app\(tabs-aluno)\Home.tsx:316:  borderTopColor: colors.divider,
+app\(tabs-aluno)\Home.tsx:321:  backgroundColor: '#FFF3EB',        // fundo laranja bem suave
+app\(tabs-aluno)\Home.tsx:332:  backgroundColor: '#FFE0CE',
+app\(tabs-aluno)\Home.tsx:336:chipText: { color: colors.textDark, fontSize: 11, fontWeight: '600' },
+app\(tabs-aluno)\Home.tsx:341:    color: colors.textDark,
+app\(tabs-aluno)\Home.tsx:346:    backgroundColor: '#fff',
+app\(tabs-aluno)\Home.tsx:352:    color: colors.textMuted,
+app\(tabs-aluno)\Home.tsx:362:  mealTitle: { fontSize: 15, fontWeight: '700', color: colors.textDark },
+app\(tabs-aluno)\Home.tsx:363:  mealTime: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+app\(tabs-aluno)\Home.tsx:371:  divider: { height: 1, backgroundColor: colors.divider, marginHorizontal: 12 },
+app\(tabs-aluno)\_layout.tsx:14:      color={f ? colors.primary : colors.textMuted}
+app\(tabs-aluno)\_layout.tsx:22:      color={f ? colors.primary : colors.textMuted}
+app\(tabs-aluno)\_layout.tsx:30:      color={f ? colors.primary : colors.textMuted}
+app\(tabs-aluno)\_layout.tsx:99:    backgroundColor: '#fff',
+app\(tabs-aluno)\_layout.tsx:104:    borderTopColor: colors.divider,
+app\(tabs-aluno)\_layout.tsx:119:    backgroundColor: '#FFE8DA',
+app\(tabs-aluno)\_layout.tsx:123:    color: colors.textMuted,
+app\(tabs-aluno)\_layout.tsx:127:    color: colors.primary,
+app\(tabs-instituicao)\Cardapio.tsx:77:    <MaterialCommunityIcons name="chevron-left" size={22} color={colors.textDark} />
+app\(tabs-instituicao)\Cardapio.tsx:89:    <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textDark} />
+app\(tabs-instituicao)\Cardapio.tsx:115:          <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
+app\(tabs-instituicao)\Cardapio.tsx:134:                <MaterialCommunityIcons name={m.icon as any} size={26} color="#fff" />
+app\(tabs-instituicao)\Cardapio.tsx:161:  safe: { flex: 1, backgroundColor: colors.cream },
+app\(tabs-instituicao)\Cardapio.tsx:163:    backgroundColor: colors.yellow,
+app\(tabs-instituicao)\Cardapio.tsx:170:  headerTitle: { fontSize: 20, fontWeight: '800', color: colors.textDark },
+app\(tabs-instituicao)\Cardapio.tsx:177:    backgroundColor: '#fff',
+app\(tabs-instituicao)\Cardapio.tsx:179:    borderColor: colors.inputBorder,
+app\(tabs-instituicao)\Cardapio.tsx:185:    backgroundColor: colors.primary,
+app\(tabs-instituicao)\Cardapio.tsx:186:    borderColor: colors.primary,
+app\(tabs-instituicao)\Cardapio.tsx:188:  dayText: { color: colors.textDark, fontWeight: '700', fontSize: 13 },
+app\(tabs-instituicao)\Cardapio.tsx:189:  dayTextActive: { color: '#fff' },
+app\(tabs-instituicao)\Cardapio.tsx:193:    color: colors.textMuted,
+app\(tabs-instituicao)\Cardapio.tsx:198:    backgroundColor: '#fff',
+app\(tabs-instituicao)\Cardapio.tsx:204:    shadowColor: '#000',
+app\(tabs-instituicao)\Cardapio.tsx:210:  mealTitle: { fontSize: 15, fontWeight: '700', color: colors.textDark, marginBottom: 4 },
+app\(tabs-instituicao)\Cardapio.tsx:211:  mealHorario: { fontSize: 12, color: colors.primary, fontWeight: '700', marginBottom: 2 },
+app\(tabs-instituicao)\Cardapio.tsx:212:  mealDesc: { fontSize: 12, color: colors.textMuted, lineHeight: 17 },
+app\(tabs-instituicao)\Cardapio.tsx:221:    backgroundColor: colors.primary,
+app\(tabs-instituicao)\Cardapio.tsx:227:  addBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+app\(tabs-instituicao)\Cardapio.tsx:239:  backgroundColor: '#fff',
+app\(tabs-instituicao)\Cardapio.tsx:241:  borderColor: colors.inputBorder,
+app\(tabs-instituicao)\Cardapio.tsx:245:semanaTexto: { fontSize: 14, fontWeight: '700', color: colors.textDark, minWidth: 120, textAlign: 'center' },
+app\(tabs-instituicao)\Configuracoes.tsx:10:  { icon: 'person', label: 'Perfil', route: '/PerfilInstituicao', color: '#FFB27A' }, 
+app\(tabs-instituicao)\Configuracoes.tsx:11:  { icon: 'information-circle', label: 'Sobre', route: '/Sobre', color: '#FFC845' },
+app\(tabs-instituicao)\Configuracoes.tsx:12:  { icon: 'lock-closed', label: 'Permissões', route: '/Permissoes', color: '#FFB27A' }, 
+app\(tabs-instituicao)\Configuracoes.tsx:13:  { icon: 'accessibility', label: 'Acessibilidade', route: '/Acessibilidade', color: '#FFC845' },
+app\(tabs-instituicao)\Configuracoes.tsx:14:  { icon: 'document-text', label: 'Termos de uso', route: '/TermosUso', color: '#FFB27A' },
+app\(tabs-instituicao)\Configuracoes.tsx:15:  { icon: 'shield-checkmark', label: 'Segurança e Privacidade', route: '/SegurancaPrivacidade', color: '#FFC845' },
+app\(tabs-instituicao)\Configuracoes.tsx:16:  {icon:'card', label: 'Planos e Assinaturas', route: '/PlanosAssinaturas', color: '#FFB27A' },
+app\(tabs-instituicao)\Configuracoes.tsx:25:        <Ionicons name="settings-outline" size={20} color={colors.textDark} />
+app\(tabs-instituicao)\Configuracoes.tsx:38:                <Ionicons name={it.icon as any} size={18} color="#fff" />
+app\(tabs-instituicao)\Configuracoes.tsx:41:              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+app\(tabs-instituicao)\Configuracoes.tsx:59:  safe: { flex: 1, backgroundColor: colors.cream },
+app\(tabs-instituicao)\Configuracoes.tsx:61:    backgroundColor: colors.yellow,
+app\(tabs-instituicao)\Configuracoes.tsx:70:  headerTitle: { flex: 1, fontSize: 20, fontWeight: '800', color: colors.textDark },
+app\(tabs-instituicao)\Configuracoes.tsx:73:    backgroundColor: '#fff',
+app\(tabs-instituicao)\Configuracoes.tsx:85:    borderBottomColor: colors.divider,
+app\(tabs-instituicao)\Configuracoes.tsx:94:  label: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.textDark },
+app\(tabs-instituicao)\Configuracoes.tsx:96:    backgroundColor: colors.primary,
+app\(tabs-instituicao)\Configuracoes.tsx:102:  logoutText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+app\(tabs-instituicao)\Home.tsx:112:          color="#fff"
+app\(tabs-instituicao)\Home.tsx:131:            color="#2E7D32"
+app\(tabs-instituicao)\Home.tsx:143:            color="#B3261E"
+app\(tabs-instituicao)\Home.tsx:312:        <ActivityIndicator color={colors.primary} />
+app\(tabs-instituicao)\Home.tsx:344:            color={colors.textDark}
+app\(tabs-instituicao)\Home.tsx:368:            color="#fff"
+app\(tabs-instituicao)\Home.tsx:378:              color={colors.primary}
+app\(tabs-instituicao)\Home.tsx:400:              color="#fff"
+app\(tabs-instituicao)\Home.tsx:417:            color={colors.textMuted}
+app\(tabs-instituicao)\Home.tsx:435:              color="#fff"
+app\(tabs-instituicao)\Home.tsx:452:            color={colors.textMuted}
+app\(tabs-instituicao)\Home.tsx:469:              color="#fff"
+app\(tabs-instituicao)\Home.tsx:486:            color={colors.textMuted}
+app\(tabs-instituicao)\Home.tsx:498:              <ActivityIndicator color={colors.primary} />
+app\(tabs-instituicao)\Home.tsx:512:              <ActivityIndicator color={colors.primary} />
+app\(tabs-instituicao)\Home.tsx:526:              <ActivityIndicator color={colors.primary} />
+app\(tabs-instituicao)\Home.tsx:590:              color={colors.primary}
+app\(tabs-instituicao)\Home.tsx:607:                    color="#2E7D32"
+app\(tabs-instituicao)\Home.tsx:619:                    color="#B3261E"
+app\(tabs-instituicao)\Home.tsx:659:    backgroundColor: colors.cream,
+app\(tabs-instituicao)\Home.tsx:667:    backgroundColor: colors.yellow,
+app\(tabs-instituicao)\Home.tsx:674:    color: colors.textDark,
+app\(tabs-instituicao)\Home.tsx:681:    color: colors.primaryDark,
+app\(tabs-instituicao)\Home.tsx:689:    backgroundColor: '#fff',
+app\(tabs-instituicao)\Home.tsx:700:    backgroundColor: colors.primary,
+app\(tabs-instituicao)\Home.tsx:708:    color: '#fff',
+app\(tabs-instituicao)\Home.tsx:714:    color: '#FFE0CE',
+app\(tabs-instituicao)\Home.tsx:729:    color: colors.textMuted,
+app\(tabs-instituicao)\Home.tsx:736:    color: colors.textDark,
+app\(tabs-instituicao)\Home.tsx:744:    backgroundColor: '#fff',
+app\(tabs-instituicao)\Home.tsx:748:    shadowColor: '#000',
+app\(tabs-instituicao)\Home.tsx:762:    backgroundColor: colors.primary,
+app\(tabs-instituicao)\Home.tsx:770:    color: colors.textDark,
+app\(tabs-instituicao)\Home.tsx:775:    color: colors.textMuted,
+app\(tabs-instituicao)\Home.tsx:786:    backgroundColor: '#fff',
+app\(tabs-instituicao)\Home.tsx:792:    shadowColor: '#000',
+app\(tabs-instituicao)\Home.tsx:805:    color: colors.primary,
+app\(tabs-instituicao)\Home.tsx:810:    color: colors.textMuted,
+app\(tabs-instituicao)\Home.tsx:823:    backgroundColor: '#fff',
+app\(tabs-instituicao)\Home.tsx:825:    borderColor: colors.inputBorder,
+app\(tabs-instituicao)\Home.tsx:833:    backgroundColor: colors.primary,
+app\(tabs-instituicao)\Home.tsx:834:    borderColor: colors.primary,
+app\(tabs-instituicao)\Home.tsx:838:    color: colors.textDark,
+app\(tabs-instituicao)\Home.tsx:844:    color: '#fff',
+app\(tabs-instituicao)\Home.tsx:851:    backgroundColor: colors.primary,
+app\(tabs-instituicao)\Home.tsx:855:    backgroundColor: '#fff',
+app\(tabs-instituicao)\Home.tsx:859:    backgroundColor: '#fff',
+app\(tabs-instituicao)\Home.tsx:866:    color: colors.textMuted,
+app\(tabs-instituicao)\Home.tsx:887:    color: colors.textMuted,
+app\(tabs-instituicao)\Home.tsx:909:    color: colors.textDark,
+app\(tabs-instituicao)\Home.tsx:914:    color: colors.textMuted,
+app\(tabs-instituicao)\Home.tsx:933:    backgroundColor: '#E8F5E9',
+app\(tabs-instituicao)\Home.tsx:937:    backgroundColor: '#FDECEA',
+app\(tabs-instituicao)\Home.tsx:946:    color: '#2E7D32',
+app\(tabs-instituicao)\Home.tsx:950:    color: '#B3261E',
+app\(tabs-instituicao)\Home.tsx:955:    backgroundColor: colors.divider,
+app\(tabs-instituicao)\Turmas.tsx:39:        <Ionicons name="search" size={16} color={colors.textMuted} />
+app\(tabs-instituicao)\Turmas.tsx:45:          placeholderTextColor={colors.textLight}
+app\(tabs-instituicao)\Turmas.tsx:52:          <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
+app\(tabs-instituicao)\Turmas.tsx:74:              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+app\(tabs-instituicao)\Turmas.tsx:92:  safe: { flex: 1, backgroundColor: colors.cream },
+app\(tabs-instituicao)\Turmas.tsx:94:    backgroundColor: colors.yellow,
+app\(tabs-instituicao)\Turmas.tsx:101:  headerTitle: { fontSize: 20, fontWeight: '800', color: colors.textDark },
+app\(tabs-instituicao)\Turmas.tsx:105:    backgroundColor: '#fff',
+app\(tabs-instituicao)\Turmas.tsx:113:    borderColor: colors.inputBorder,
+app\(tabs-instituicao)\Turmas.tsx:115:  searchInput: { flex: 1, fontSize: 14, color: colors.textDark, padding: 0 },
+app\(tabs-instituicao)\Turmas.tsx:119:    color: colors.textMuted,
+app\(tabs-instituicao)\Turmas.tsx:125:    backgroundColor: '#fff',
+app\(tabs-instituicao)\Turmas.tsx:131:  name: { fontSize: 15, fontWeight: '700', color: colors.textDark },
+app\(tabs-instituicao)\Turmas.tsx:132:  count: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+app\(tabs-instituicao)\Turmas.tsx:134:    backgroundColor: colors.primary,
+app\(tabs-instituicao)\Turmas.tsx:140:  addBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+app\(tabs-instituicao)\_layout.tsx:17:      color={f ? colors.primary : colors.textMuted}
+app\(tabs-instituicao)\_layout.tsx:25:      color={f ? colors.primary : colors.textMuted}
+app\(tabs-instituicao)\_layout.tsx:33:      color={f ? colors.primary : colors.textMuted}
+app\(tabs-instituicao)\_layout.tsx:41:      color={f ? colors.primary : colors.textMuted}
+app\(tabs-instituicao)\_layout.tsx:114:    backgroundColor: '#fff',
+app\(tabs-instituicao)\_layout.tsx:119:    borderTopColor: colors.divider,
+app\(tabs-instituicao)\_layout.tsx:134:    backgroundColor: '#FFE8DA',
+app\(tabs-instituicao)\_layout.tsx:138:    color: colors.textMuted,
+app\(tabs-instituicao)\_layout.tsx:142:    color: colors.primary,
+app\Acessibilidade.tsx:112:        trackColor={{ false: '#999', true: theme.primary }}
+app\Acessibilidade.tsx:113:        thumbColor="#fff"
+app\Acessibilidade.tsx:133:    shadowColor: '#000',
+app\Acesso.tsx:26:            <FontAwesome5 name="user-graduate" size={22} color="#fff" />
+app\Acesso.tsx:40:            <Ionicons name="business" size={24} color="#fff" />
+app\Acesso.tsx:53:  safe: { flex: 1, backgroundColor: colors.cream },
+app\Acesso.tsx:55:    backgroundColor: colors.yellow,
+app\Acesso.tsx:66:    color: colors.primaryDark,
+app\Acesso.tsx:71:    color: colors.textDark,
+app\Acesso.tsx:80:    backgroundColor: '#fff',
+app\Acesso.tsx:86:    shadowColor: '#000',
+app\Acesso.tsx:96:    backgroundColor: colors.primary,
+app\Acesso.tsx:103:    color: colors.textDark,
+app\Acesso.tsx:108:    color: colors.textMuted,
+app\AddRefeicao.tsx:36:const CORES = ['#FFD79A', '#FFB27A', '#FFC845', '#FF9E7A', '#B7E4C7'];
+app\AddRefeicao.tsx:102:    marcados[d] = { marked: true, dotColor: colors.primary };
+app\AddRefeicao.tsx:108:      selectedColor: colors.primary,
+app\AddRefeicao.tsx:216:              <Ionicons name="alert-circle" size={18} color="#B3261E" />
+app\AddRefeicao.tsx:223:              <Ionicons name="checkmark-circle" size={18} color="#2E7D32" />
+app\AddRefeicao.tsx:233:                <MaterialCommunityIcons name="calendar" size={18} color={colors.primary} />
+app\AddRefeicao.tsx:252:                    todayTextColor: colors.primary,
+app\AddRefeicao.tsx:253:                    arrowColor: colors.primary,
+app\AddRefeicao.tsx:254:                    selectedDayBackgroundColor: colors.primary,
+app\AddRefeicao.tsx:308:                  color={icon === i ? '#fff' : colors.textMuted}
+app\AddRefeicao.tsx:328:                {color === c && <Ionicons name="checkmark" size={16} color="#fff" />}
+app\AddRefeicao.tsx:349:                <ActivityIndicator color="#B3261E" />
+app\AddRefeicao.tsx:352:                  <Ionicons name="trash-outline" size={18} color="#B3261E" />
+app\AddRefeicao.tsx:365:  safe: { flex: 1, backgroundColor: colors.cream },
+app\AddRefeicao.tsx:371:    color: colors.textDark,
+app\AddRefeicao.tsx:378:    color: colors.textMuted,
+app\AddRefeicao.tsx:387:    backgroundColor: '#fff',
+app\AddRefeicao.tsx:389:    borderColor: colors.inputBorder,
+app\AddRefeicao.tsx:394:    backgroundColor: colors.primary,
+app\AddRefeicao.tsx:395:    borderColor: colors.primary,
+app\AddRefeicao.tsx:400:  dayText: { color: colors.textDark, fontWeight: '700', fontSize: 13 },
+app\AddRefeicao.tsx:401:  dayTextActive: { color: '#fff' },
+app\AddRefeicao.tsx:406:    backgroundColor: '#fff',
+app\AddRefeicao.tsx:408:    borderColor: colors.inputBorder,
+app\AddRefeicao.tsx:413:    backgroundColor: colors.primary,
+app\AddRefeicao.tsx:414:    borderColor: colors.primary,
+app\AddRefeicao.tsx:426:    borderColor: colors.textDark,
+app\AddRefeicao.tsx:432:    backgroundColor: '#FDECEA',
+app\AddRefeicao.tsx:439:    color: '#B3261E',
+app\AddRefeicao.tsx:447:    backgroundColor: '#E8F5E9',
+app\AddRefeicao.tsx:454:    color: '#2E7D32',
+app\AddRefeicao.tsx:463:  borderColor: '#B3261E',
+app\AddRefeicao.tsx:464:  backgroundColor: '#fff',
+app\AddRefeicao.tsx:470:  botaoExcluirText: { color: '#B3261E', fontSize: 15, fontWeight: '600' },
+app\AddRefeicao.tsx:472:  backgroundColor: '#fff',
+app\AddRefeicao.tsx:476:  borderColor: colors.inputBorder,
+app\AddRefeicao.tsx:482:  backgroundColor: '#fff',
+app\AddRefeicao.tsx:485:  borderColor: colors.inputBorder,
+app\AddRefeicao.tsx:488:dataBoxText: { color: colors.textDark, fontSize: 14, fontWeight: '700' },
+app\AddRefeicao.tsx:491:  color: colors.textMuted,
+app\CadastroAluno.tsx:226:            <Ionicons name="person" size={38} color="#fff" />
+app\CadastroAluno.tsx:242:                color="#B3261E"
+app\CadastroAluno.tsx:307:                color={colors.textMuted}
+app\CadastroAluno.tsx:315:                    color={colors.primary}
+app\CadastroAluno.tsx:347:                          color={colors.primary}
+app\CadastroAluno.tsx:384:                color={colors.textMuted}
+app\CadastroAluno.tsx:408:                        color={colors.primary}
+app\CadastroAluno.tsx:472:                color="#B3261E"
+app\CadastroAluno.tsx:500:    backgroundColor: colors.cream,
+app\CadastroAluno.tsx:522:    backgroundColor: colors.primary,
+app\CadastroAluno.tsx:532:    color: colors.textDark,
+app\CadastroAluno.tsx:538:    color: colors.textMuted,
+app\CadastroAluno.tsx:546:    color: colors.textDark,
+app\CadastroAluno.tsx:556:    backgroundColor: '#fff',
+app\CadastroAluno.tsx:559:    borderColor: colors.inputBorder,
+app\CadastroAluno.tsx:568:    color: colors.textLight,
+app\CadastroAluno.tsx:573:    color: colors.textDark,
+app\CadastroAluno.tsx:578:    backgroundColor: '#fff',
+app\CadastroAluno.tsx:581:    borderColor: colors.inputBorder,
+app\CadastroAluno.tsx:591:    borderBottomColor: colors.divider,
+app\CadastroAluno.tsx:598:    color: colors.textDark,
+app\CadastroAluno.tsx:604:    color: colors.textMuted,
+app\CadastroAluno.tsx:612:    color: colors.textMuted,
+app\CadastroAluno.tsx:619:    backgroundColor: '#FDECEA',
+app\CadastroAluno.tsx:627:    color: '#B3261E',
+app\CadastroAluno.tsx:636:    backgroundColor: '#FDECEA',
+app\CadastroAluno.tsx:645:    color: '#B3261E',
+app\CadastroInstituicao.tsx:227:              color="#fff"
+app\CadastroInstituicao.tsx:291:                  color="#B3261E"
+app\CadastroInstituicao.tsx:337:    backgroundColor: colors.cream,
+app\CadastroInstituicao.tsx:354:    backgroundColor: colors.primary,
+app\CadastroInstituicao.tsx:364:    color: colors.textDark,
+app\CadastroInstituicao.tsx:381:    backgroundColor: '#FDECEA',
+app\CadastroInstituicao.tsx:390:    color: '#B3261E',
+app\CodigoVerificacao.tsx:67:  safe: { flex: 1, backgroundColor: colors.cream },
+app\CodigoVerificacao.tsx:73:    color: colors.textDark,
+app\CodigoVerificacao.tsx:79:    color: colors.textMuted,
+app\CodigoVerificacao.tsx:94:    backgroundColor: '#fff',
+app\CodigoVerificacao.tsx:96:    borderColor: colors.inputBorder,
+app\CodigoVerificacao.tsx:100:    color: colors.textDark,
+app\CodigoVerificacao.tsx:105:    color: colors.textMuted,
+app\CodigoVerificacao.tsx:110:    color: colors.primary,
+app\Erro.tsx:16:        <Ionicons name="alert-circle" size={64} color={colors.primary} />
+app\Erro.tsx:32:  safe: { flex: 1, backgroundColor: colors.cream },
+app\Erro.tsx:34:  title: { fontSize: 20, fontWeight: '800', color: colors.textDark, marginTop: 16 },
+app\Erro.tsx:35:  subtitle: { fontSize: 14, color: colors.textMuted, textAlign: 'center', marginTop: 8 },
+app\Estatisticas.tsx:163:  if (proporcao >= 0.66) return '#2e7d32';
+app\Estatisticas.tsx:164:  if (proporcao >= 0.33) return '#f9a825';
+app\Estatisticas.tsx:166:  return '#c62828';
+app\Estatisticas.tsx:416:                color={colors.primary}
+app\Estatisticas.tsx:443:                color={colors.primary}
+app\Estatisticas.tsx:462:                color={colors.primary}
+app\Estatisticas.tsx:540:                color={colors.primary}
+app\Estatisticas.tsx:581:            color={colors.primary}
+app\Estatisticas.tsx:606:                  backgroundColor: '#fff',
+app\Estatisticas.tsx:607:                  backgroundGradientFrom: '#fff',
+app\Estatisticas.tsx:608:                  backgroundGradientTo: '#fff',
+app\Estatisticas.tsx:629:                  color="#fff"
+app\Estatisticas.tsx:659:                  color="#2e7d32"
+app\Estatisticas.tsx:684:                  color="#c62828"
+app\Estatisticas.tsx:741:                      color={colors.primary}
+app\Estatisticas.tsx:862:    backgroundColor: colors.cream,
+app\Estatisticas.tsx:872:    color: '#777',
+app\Estatisticas.tsx:878:    backgroundColor: '#fff',
+app\Estatisticas.tsx:892:    backgroundColor: colors.primary,
+app\Estatisticas.tsx:898:    color: '#777',
+app\Estatisticas.tsx:902:    color: '#fff',
+app\Estatisticas.tsx:908:    backgroundColor: '#fff',
+app\Estatisticas.tsx:913:    shadowColor: '#000',
+app\Estatisticas.tsx:938:    color: '#333',
+app\Estatisticas.tsx:943:    color: '#999',
+app\Estatisticas.tsx:957:    backgroundColor: '#F2F6F1',
+app\Estatisticas.tsx:965:    color: colors.textDark,
+app\Estatisticas.tsx:983:    color: '#999',
+app\Estatisticas.tsx:995:    backgroundColor: colors.primary,
+app\Estatisticas.tsx:1000:    borderColor: colors.primary,
+app\Estatisticas.tsx:1006:    color: '#444',
+app\Estatisticas.tsx:1010:    color: '#fff',
+app\Estatisticas.tsx:1015:    color: colors.primary,
+app\Estatisticas.tsx:1021:    backgroundColor: '#eee',
+app\Estatisticas.tsx:1035:    backgroundColor: '#EAF4E9',
+app\Estatisticas.tsx:1042:    color: '#999',
+app\Estatisticas.tsx:1048:    color: '#333',
+app\Estatisticas.tsx:1056:    backgroundColor: '#EAF4E9',
+app\Estatisticas.tsx:1060:    color: colors.primary,
+app\Estatisticas.tsx:1068:    backgroundColor: '#fff',
+app\Estatisticas.tsx:1073:    shadowColor: '#000',
+app\Estatisticas.tsx:1089:    color: '#333',
+app\Estatisticas.tsx:1097:    color: '#999',
+app\Estatisticas.tsx:1107:    backgroundColor: colors.primary,
+app\Estatisticas.tsx:1126:    color: '#E8F5E9',
+app\Estatisticas.tsx:1132:    color: '#fff',
+app\Estatisticas.tsx:1139:    color: '#E8F5E9',
+app\Estatisticas.tsx:1156:    backgroundColor: '#fff',
+app\Estatisticas.tsx:1161:    borderLeftColor: '#2e7d32',
+app\Estatisticas.tsx:1166:    borderLeftColor: '#c62828',
+app\Estatisticas.tsx:1171:    color: '#999',
+app\Estatisticas.tsx:1178:    color: '#333',
+app\Estatisticas.tsx:1185:    color: '#333',
+app\Estatisticas.tsx:1194:    color: '#999',
+app\Estatisticas.tsx:1216:    backgroundColor: '#397A45',
+app\Estatisticas.tsx:1223:    backgroundColor: '#9E9E9E',
+app\Estatisticas.tsx:1228:    color: '#777',
+app\Estatisticas.tsx:1234:    backgroundColor: '#fff',
+app\Estatisticas.tsx:1244:    backgroundColor: '#EAF4E9',
+app\Estatisticas.tsx:1256:    color: '#333',
+app\Estatisticas.tsx:1270:    color: '#397A45',
+app\Estatisticas.tsx:1276:    color: '#aaa',
+app\Estatisticas.tsx:1281:    color: '#777',
+app\Estatisticas.tsx:1288:    backgroundColor: '#eee',
+app\Estatisticas.tsx:1301:    backgroundColor: '#fff',
+app\Estatisticas.tsx:1314:    color: colors.primary,
+app\Estatisticas.tsx:1327:    color: '#397A45',
+app\Estatisticas.tsx:1332:    color: '#aaa',
+app\Estatisticas.tsx:1338:    color: '#777',
+app\Estatisticas.tsx:1343:    color: '#999',
+app\index.tsx:30:    backgroundColor: colors.yellow,
+app\Inicio.tsx:157:                color="#fff"
+app\Inicio.tsx:169:            color={colors.primary}
+app\Inicio.tsx:220:                  color={colors.textDark}
+app\Inicio.tsx:471:                  color="#fff"
+app\Inicio.tsx:491:    backgroundColor: colors.yellow,
+app\Inicio.tsx:510:    color: colors.primaryDark,
+app\Inicio.tsx:516:    color: colors.primary,
+app\Inicio.tsx:522:    backgroundColor: '#fff',
+app\Inicio.tsx:527:    shadowColor: '#000',
+app\Inicio.tsx:557:    color: colors.textDark,
+app\Inicio.tsx:564:    color: colors.textMuted,
+app\Inicio.tsx:583:    backgroundColor: '#F2C97B',
+app\Inicio.tsx:587:    backgroundColor: colors.primary,
+app\Inicio.tsx:604:    borderColor: colors.primary,
+app\Inicio.tsx:605:    backgroundColor: '#fff',
+app\Inicio.tsx:611:    backgroundColor: colors.primary,
+app\Inicio.tsx:616:    color: colors.textDark,
+app\Inicio.tsx:633:    backgroundColor: '#fff',
+app\Inicio.tsx:649:    color: colors.primaryDark,
+app\Inicio.tsx:654:    color: colors.textMuted,
+app\Inicio.tsx:662:    backgroundColor: '#F5F5F5',
+app\Inicio.tsx:679:    color: colors.primaryDark,
+app\Inicio.tsx:687:    color: colors.primary,
+app\Inicio.tsx:695:    color: colors.textMuted,
+app\Inicio.tsx:702:    color: colors.textDark,
+app\Inicio.tsx:718:    borderColor: colors.primary,
+app\Inicio.tsx:724:    color: colors.primary,
+app\Inicio.tsx:733:    backgroundColor: colors.primary,
+app\Inicio.tsx:741:    color: '#fff',
+app\Login.tsx:127:              color="#fff"
+app\Login.tsx:195:    backgroundColor: colors.cream,
+app\Login.tsx:212:    backgroundColor: colors.primary,
+app\Login.tsx:222:    color: colors.textDark,
+app\Login.tsx:231:    color: colors.primary,
+app\LoginInstituicao.tsx:137:              color="#fff"
+app\LoginInstituicao.tsx:228:    backgroundColor: colors.cream,
+app\LoginInstituicao.tsx:245:    backgroundColor: colors.primary,
+app\LoginInstituicao.tsx:255:    color: colors.textDark,
+app\LoginInstituicao.tsx:264:    color: colors.primary,
+app\LoginInstituicao.tsx:285:    color: colors.textMuted,
+app\LoginInstituicao.tsx:289:    color: colors.primary,
+app\NovaTurma.tsx:179:        <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />
+app\NovaTurma.tsx:190:            <Ionicons name="people" size={38} color="#fff" />
+app\NovaTurma.tsx:195:              <Ionicons name="alert-circle" size={18} color="#B3261E" />
+app\NovaTurma.tsx:202:              <Ionicons name="checkmark-circle" size={18} color="#2E7D32" />
+app\NovaTurma.tsx:233:                color={colors.textMuted}
+app\NovaTurma.tsx:251:                      <Ionicons name="checkmark" size={18} color={colors.primary} />
+app\NovaTurma.tsx:273:                color={colors.textMuted}
+app\NovaTurma.tsx:280:                  <ActivityIndicator color={colors.primary} style={{ padding: 16 }} />
+app\NovaTurma.tsx:304:                          color={selecionado ? colors.primary : colors.textMuted}
+app\NovaTurma.tsx:330:                <ActivityIndicator color="#B3261E" />
+app\NovaTurma.tsx:333:                  <Ionicons name="trash-outline" size={18} color="#B3261E" />
+app\NovaTurma.tsx:347:  safe: { flex: 1, backgroundColor: colors.cream },
+app\NovaTurma.tsx:351:    backgroundColor: colors.primary,
+app\NovaTurma.tsx:356:  label: { fontSize: 13, color: colors.textDark, fontWeight: '600', marginBottom: 6 },
+app\NovaTurma.tsx:358:    backgroundColor: '#fff', borderRadius: 12,
+app\NovaTurma.tsx:359:    borderWidth: 1, borderColor: colors.inputBorder,
+app\NovaTurma.tsx:363:  selectText: { flex: 1, color: colors.textLight, fontSize: 14 },
+app\NovaTurma.tsx:364:  selectTextPreenchido: { color: colors.textDark, fontWeight: '600' },
+app\NovaTurma.tsx:366:    backgroundColor: '#fff',
+app\NovaTurma.tsx:369:    borderColor: colors.inputBorder,
+app\NovaTurma.tsx:378:    borderBottomColor: colors.divider,
+app\NovaTurma.tsx:381:  dropdownRowText: { fontSize: 14, color: colors.textDark, fontWeight: '600' },
+app\NovaTurma.tsx:382:  dropdownRowSub: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+app\NovaTurma.tsx:387:    color: colors.textMuted,
+app\NovaTurma.tsx:393:    backgroundColor: '#FDECEA',
+app\NovaTurma.tsx:398:  bannerErroText: { flex: 1, color: '#B3261E', fontSize: 13, fontWeight: '600' },
+app\NovaTurma.tsx:403:    backgroundColor: '#E8F5E9',
+app\NovaTurma.tsx:413:  borderColor: '#B3261E',
+app\NovaTurma.tsx:414:  backgroundColor: '#fff',
+app\NovaTurma.tsx:420:botaoExcluirText: { color: '#B3261E', fontSize: 15, fontWeight: '600' },
+app\NovaTurma.tsx:421:  bannerSucessoText: { flex: 1, color: '#2E7D32', fontSize: 13, fontWeight: '600' },
+app\PerfilAluno.tsx:129:            color={colors.primary}
+app\PerfilAluno.tsx:160:              color="#fff"
+app\PerfilAluno.tsx:224:    backgroundColor: colors.cream,
+app\PerfilAluno.tsx:238:    backgroundColor: colors.primary,
+app\PerfilAluno.tsx:241:    shadowColor: colors.primary,
+app\PerfilAluno.tsx:253:    color: colors.textMuted,
+app\PerfilAluno.tsx:268:    color: colors.textMuted,
+app\PerfilInstituicao.tsx:163:            <Ionicons name="person" size={44} color="#fff" />
+app\PerfilInstituicao.tsx:215:  safe: { flex: 1, backgroundColor: colors.cream },
+app\PerfilInstituicao.tsx:223:    backgroundColor: colors.primary,
+app\PerfilInstituicao.tsx:226:    shadowColor: colors.primary,
+app\Permissoes.tsx:94:  safe: { flex: 1, backgroundColor: colors.cream },
+app\Permissoes.tsx:99:    backgroundColor: '#fff',
+app\Permissoes.tsx:103:  label: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.textDark },
+app\Permissoes.tsx:105:  toggleOn: { backgroundColor: colors.primary },
+app\Permissoes.tsx:106:  toggleOff: { backgroundColor: '#E1E1E1' },
+app\Permissoes.tsx:107:  thumb: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff' },
+app\PlanosAssinaturas.tsx:125:          <View style={[styles.status, { borderColor: cancelada ? '#d64545' : theme.primary }]}>
+app\PlanosAssinaturas.tsx:129:              color={cancelada ? '#d64545' : theme.primary}
+app\PlanosAssinaturas.tsx:159:                <ActivityIndicator color="#d64545" />
+app\PlanosAssinaturas.tsx:205:          <View style={[styles.aviso, { borderColor: '#d64545' }]}>
+app\PlanosAssinaturas.tsx:206:            <Ionicons name="alert-circle" size={fs(22)} color="#d64545" />
+app\PlanosAssinaturas.tsx:237:                { borderColor: ativo ? theme.primary : '#E5E5E5' },
+app\PlanosAssinaturas.tsx:249:                  <View style={[styles.selo, { backgroundColor: '#333' }]}>
+app\PlanosAssinaturas.tsx:287:            <ActivityIndicator color="#fff" />
+app\PlanosAssinaturas.tsx:314:  safe: { flex: 1, backgroundColor: '#FFF8F0', top: 50 }, // use o mesmo valor de colors.cream
+app\PlanosAssinaturas.tsx:317:  intro: { fontSize: 14, color: '#555', lineHeight: 21, marginBottom: 18 },
+app\PlanosAssinaturas.tsx:321:    backgroundColor: '#fff',
+app\PlanosAssinaturas.tsx:328:  statusTitulo: { fontSize: 13, fontWeight: '700', color: '#777', marginTop: 8, textTransform: 'uppercase' },
+app\PlanosAssinaturas.tsx:329:  statusPlano: { fontSize: 22, fontWeight: '700', color: '#333', marginTop: 4, marginBottom: 12 },
+app\PlanosAssinaturas.tsx:330:  statusInfo: { fontSize: 14, color: '#555', marginTop: 2 },
+app\PlanosAssinaturas.tsx:331:  statusAviso: { fontSize: 13, color: '#d64545', marginTop: 10, fontWeight: '600' },
+app\PlanosAssinaturas.tsx:337:    backgroundColor: '#fff',
+app\PlanosAssinaturas.tsx:343:  avisoTexto: { flex: 1, fontSize: 13, color: '#333', lineHeight: 19, marginLeft: 10 },
+app\PlanosAssinaturas.tsx:346:    backgroundColor: '#fff',
+app\PlanosAssinaturas.tsx:354:  nome: { flex: 1, fontSize: 16, fontWeight: '700', color: '#333', marginLeft: 10 },
+app\PlanosAssinaturas.tsx:356:  seloTexto: { fontSize: 11, fontWeight: '700', color: '#fff' },
+app\PlanosAssinaturas.tsx:357:  descricao: { fontSize: 13, color: '#777', marginTop: 8, marginLeft: 32 },
+app\PlanosAssinaturas.tsx:359:  preco: { fontSize: 20, fontWeight: '700', color: '#333' },
+app\PlanosAssinaturas.tsx:360:  porMes: { fontSize: 12, color: '#777' },
+app\PlanosAssinaturas.tsx:369:  botaoTexto: { color: '#fff', fontSize: 16, fontWeight: '700' },
+app\PlanosAssinaturas.tsx:371:    backgroundColor: '#fff',
+app\PlanosAssinaturas.tsx:373:    borderColor: '#d64545',
+app\PlanosAssinaturas.tsx:376:  botaoCancelarTexto: { color: '#d64545', fontSize: 16, fontWeight: '700' },
+app\PlanosAssinaturas.tsx:378:  linkTexto: { fontSize: 14, fontWeight: '600', color: '#777' },
+app\PlanosAssinaturas.tsx:379:  rodape: { fontSize: 12, color: '#777', textAlign: 'center', marginTop: 14 },
+app\RecuperarSenha.tsx:120:  safe: { flex: 1, backgroundColor: colors.cream },
+app\RecuperarSenha.tsx:132:    color: colors.textDark,
+app\RecuperarSenha.tsx:138:    color: colors.textMuted,
+app\RecuperarSenha.tsx:144:    color: '#C0392B',
+app\RefeicoesDia.tsx:236:            <MaterialCommunityIcons name="calendar-check-outline" size={25} color={colors.primary} />
+app\RefeicoesDia.tsx:252:              <Text style={[styles.resumoNumero, { color: '#2E7D32' }]}>{refeicoesRespondidas}</Text>
+app\RefeicoesDia.tsx:257:              <Text style={[styles.resumoNumero, { color: refeicoesPendentes > 0 ? '#B26A00' : '#2E7D32' }]}>
+app\RefeicoesDia.tsx:270:              color="#B3261E"
+app\RefeicoesDia.tsx:278:          <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />
+app\RefeicoesDia.tsx:302:                    color={colors.textMuted}
+app\RefeicoesDia.tsx:331:                            color="#fff"
+app\RefeicoesDia.tsx:347:                          color={colors.textMuted}
+app\RefeicoesDia.tsx:365:                            color={resposta === true ? '#fff' : '#2E7D32'}
+app\RefeicoesDia.tsx:390:                            color={resposta === false ? '#fff' : '#B3261E'}
+app\RefeicoesDia.tsx:406:                          <MaterialCommunityIcons name="clock-outline" size={14} color="#9A6700" />
+app\RefeicoesDia.tsx:414:                            color={resposta ? '#2E7D32' : '#B3261E'}
+app\RefeicoesDia.tsx:416:                          <Text style={[styles.respondidoText, { color: resposta ? '#2E7D32' : '#B3261E' }]}>
+app\RefeicoesDia.tsx:425:                          color={colors.primary}
+app\RefeicoesDia.tsx:444:    backgroundColor: colors.cream,
+app\RefeicoesDia.tsx:455:    backgroundColor: '#FFFFFF',
+app\RefeicoesDia.tsx:461:    borderColor: '#F1E8D8',
+app\RefeicoesDia.tsx:468:    backgroundColor: '#FFF4D6',
+app\RefeicoesDia.tsx:477:    color: colors.textDark,
+app\RefeicoesDia.tsx:483:    color: colors.textMuted,
+app\RefeicoesDia.tsx:493:    backgroundColor: '#FFFFFF',
+app\RefeicoesDia.tsx:499:    borderColor: '#F1E8D8',
+app\RefeicoesDia.tsx:510:    color: colors.textDark,
+app\RefeicoesDia.tsx:515:    color: colors.textMuted,
+app\RefeicoesDia.tsx:523:    backgroundColor: '#EEE5D7',
+app\RefeicoesDia.tsx:545:    color: colors.textDark,
+app\RefeicoesDia.tsx:550:    color: colors.textMuted,
+app\RefeicoesDia.tsx:561:    backgroundColor: '#FFF4D6',
+app\RefeicoesDia.tsx:565:    color: colors.textDark,
+app\RefeicoesDia.tsx:571:    color: colors.textMuted,
+app\RefeicoesDia.tsx:577:    backgroundColor: '#FFFFFF',
+app\RefeicoesDia.tsx:584:    borderColor: '#F1E8D8',
+app\RefeicoesDia.tsx:589:    color: colors.textMuted,
+app\RefeicoesDia.tsx:596:    backgroundColor: '#FFFFFF',
+app\RefeicoesDia.tsx:601:    borderColor: '#F1E8D8',
+app\RefeicoesDia.tsx:621:    color: colors.textDark,
+app\RefeicoesDia.tsx:626:    color: colors.primary,
+app\RefeicoesDia.tsx:633:    color: colors.textMuted,
+app\RefeicoesDia.tsx:648:    color: colors.textDark,
+app\RefeicoesDia.tsx:666:    borderColor: colors.inputBorder,
+app\RefeicoesDia.tsx:667:    backgroundColor: '#FFFFFF',
+app\RefeicoesDia.tsx:673:    backgroundColor: '#2E7D32',
+app\RefeicoesDia.tsx:674:    borderColor: '#2E7D32',
+app\RefeicoesDia.tsx:678:    backgroundColor: '#B3261E',
+app\RefeicoesDia.tsx:679:    borderColor: '#B3261E',
+app\RefeicoesDia.tsx:685:    color: colors.textDark,
+app\RefeicoesDia.tsx:689:    color: '#FFFFFF',
+app\RefeicoesDia.tsx:701:    backgroundColor: '#FFF4D6',
+app\RefeicoesDia.tsx:706:    color: '#8A5A00',
+app\RefeicoesDia.tsx:719:    backgroundColor: '#F5F7F2',
+app\RefeicoesDia.tsx:731:    backgroundColor: '#FDECEA',
+app\RefeicoesDia.tsx:739:    color: '#B3261E',
+app\RestricoesAlimentares.tsx:55:            color={colors.primary}
+app\RestricoesAlimentares.tsx:114:    backgroundColor: colors.cream,
+app\RestricoesAlimentares.tsx:123:    backgroundColor: '#fff',
+app\RestricoesAlimentares.tsx:135:    backgroundColor: '#FFF3CD',
+app\RestricoesAlimentares.tsx:144:    color: '#856404',
+app\RestricoesAlimentares.tsx:154:    color: colors.textDark,
+app\RestricoesAlimentares.tsx:159:    color: colors.textMuted,
+app\RestricoesAlimentares.tsx:166:    color: colors.textMuted,
+app\RestricoesAlimentares.tsx:172:    color: colors.textDark,
+app\RestricoesAlimentares.tsx:187:    color: colors.textMuted,
+app\RestricoesAlimentares.tsx:193:    color: colors.textDark,
+app\RestricoesAlimentares.tsx:200:    color: colors.textMuted,
+app\SegurancaPrivacidade.tsx:215:        trackColor={{ false: '#999', true: theme.primary }}
+app\SegurancaPrivacidade.tsx:216:        thumbColor="#fff"
+app\SegurancaPrivacidade.tsx:248:          color={danger ? '#d64545' : theme.primary}
+app\SegurancaPrivacidade.tsx:255:          danger && { color: '#d64545' },
+app\SegurancaPrivacidade.tsx:291:        placeholderTextColor="#999"
+app\SegurancaPrivacidade.tsx:427:                  <ActivityIndicator color="#fff" />
+app\SegurancaPrivacidade.tsx:441:  safe: { flex: 1, backgroundColor: colors.cream, top: 50 },
+app\SegurancaPrivacidade.tsx:446:    color: '#999',
+app\SegurancaPrivacidade.tsx:454:    backgroundColor: '#fff',
+app\SegurancaPrivacidade.tsx:458:    shadowColor: '#000',
+app\SegurancaPrivacidade.tsx:473:    backgroundColor: colors.cream,
+app\SegurancaPrivacidade.tsx:485:  rowTitle: { fontSize: 15, fontWeight: '600', color: '#333' },
+app\SegurancaPrivacidade.tsx:487:  rowDescription: { fontSize: 12, color: '#777', marginTop: 2 },
+app\SegurancaPrivacidade.tsx:500:    backgroundColor: '#fff',
+app\SegurancaPrivacidade.tsx:504:  modalTitle: { fontSize: 22, fontWeight: '700', color: '#333', marginBottom: 8 },
+app\SegurancaPrivacidade.tsx:505:  modalSubtitle: { fontSize: 15, color: '#777', marginBottom: 20, lineHeight: 22 },
+app\SegurancaPrivacidade.tsx:510:    borderColor: '#ddd',
+app\SegurancaPrivacidade.tsx:512:    backgroundColor: '#fff',
+app\SegurancaPrivacidade.tsx:520:    color: '#333',
+app\SegurancaPrivacidade.tsx:528:  error: { fontSize: 14, color: '#d64545', marginBottom: 10 },
+app\SegurancaPrivacidade.tsx:537:  buttonPrimary: { backgroundColor: colors.primary, marginLeft: 6 },
+app\SegurancaPrivacidade.tsx:538:  buttonDanger: { backgroundColor: '#d64545', marginLeft: 6 },
+app\SegurancaPrivacidade.tsx:539:  buttonSecondary: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ddd', marginRight: 6 },
+app\SegurancaPrivacidade.tsx:540:  buttonText: { fontSize: 16, fontWeight: '700', color: '#fff' },
+app\SegurancaPrivacidade.tsx:541:  buttonSecondaryText: { fontSize: 16, fontWeight: '600', color: '#333' },
+app\Sobre.tsx:27:          <Ionicons name="globe-outline" size={16} color={colors.primary} />
+app\Sobre.tsx:33:          <Ionicons name="call-outline" size={16} color={colors.primary} />
+app\Sobre.tsx:37:          <Ionicons name="mail-outline" size={16} color={colors.primary} />
+app\Sobre.tsx:46:  safe: { flex: 1, backgroundColor: colors.cream },
+app\Sobre.tsx:52:    color: colors.primaryDark,
+app\Sobre.tsx:55:  version: { fontSize: 13, color: colors.textMuted, marginTop: 4 },
+app\Sobre.tsx:57:    fontSize: 13, color: colors.textDark,
+app\Sobre.tsx:63:    color: colors.textDark,
+app\Sobre.tsx:73:  rowText: { fontSize: 13, color: colors.textBody },
+app\TermosUso.tsx:209:  safe: { flex: 1, backgroundColor: colors.cream },
+app\TermosUso.tsx:213:    color: '#999',
+app\TermosUso.tsx:219:    backgroundColor: '#fff',
+app\TermosUso.tsx:227:    color: '#333',
+app\TermosUso.tsx:239:    color: '#999',
+app\TermosUso.tsx:244:    color: '#333',
+app\TermosUso.tsx:249:    backgroundColor: '#fff',
+app\TermosUso.tsx:263:    backgroundColor: '#eee',
+app\TermosUso.tsx:271:    color: '#333',
+app\TermosUso.tsx:277:    color: '#333',
+app\TermosUso.tsx:285:    color: '#333',
+app\TermosUso.tsx:290:    color: '#555',

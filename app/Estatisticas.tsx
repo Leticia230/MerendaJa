@@ -13,8 +13,8 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { BarChart } from 'react-native-chart-kit';
 
 import ScreenHeader from '../components/ScreenHeader';
-import { colors } from '../constants/theme';
 import Text from '../components/AppText';
+import { useAccessibility } from '../components/AccessibilityContext';
 
 import {
   assinarConfirmacoesPeriodo,
@@ -178,6 +178,9 @@ function iconeRefeicao(titulo: string) {
 }
 
 export default function StatisticsScreen() {
+  const { theme } = useAccessibility();
+  const styles = createStyles(theme);
+
   const hoje = new Date();
 
   const [period, setPeriod] = useState<Period>('semana');
@@ -391,18 +394,21 @@ export default function StatisticsScreen() {
             label="Semana"
             active={period === 'semana'}
             onPress={() => setPeriod('semana')}
+            theme={theme}
           />
 
           <PeriodButton
             label="Mês"
             active={period === 'mes'}
             onPress={() => setPeriod('mes')}
+            theme={theme}
           />
 
           <PeriodButton
             label="Ano"
             active={period === 'ano'}
             onPress={() => setPeriod('ano')}
+            theme={theme}
           />
         </View>
 
@@ -413,7 +419,7 @@ export default function StatisticsScreen() {
               <Ionicons
                 name="calendar-outline"
                 size={21}
-                color={colors.primary}
+                color={theme.primary}
               />
 
               <Text style={styles.calendarTitle}>
@@ -440,7 +446,7 @@ export default function StatisticsScreen() {
               <Ionicons
                 name="chevron-back"
                 size={21}
-                color={colors.primary}
+                color={theme.primary}
               />
             </TouchableOpacity>
 
@@ -459,7 +465,7 @@ export default function StatisticsScreen() {
               <Ionicons
                 name="chevron-forward"
                 size={21}
-                color={colors.primary}
+                color={theme.primary}
               />
             </TouchableOpacity>
           </View>
@@ -537,7 +543,7 @@ export default function StatisticsScreen() {
               <Ionicons
                 name="calendar"
                 size={18}
-                color={colors.primary}
+                color={theme.primary}
               />
             </View>
 
@@ -578,7 +584,7 @@ export default function StatisticsScreen() {
 
         {carregando ? (
           <ActivityIndicator
-            color={colors.primary}
+            color={theme.primary}
             size="large"
             style={{ marginTop: 30 }}
           />
@@ -603,14 +609,14 @@ export default function StatisticsScreen() {
                 yAxisSuffix=""
                 showValuesOnTopOfBars
                 chartConfig={{
-                  backgroundColor: '#fff',
-                  backgroundGradientFrom: '#fff',
-                  backgroundGradientTo: '#fff',
+                  backgroundColor: theme.card,
+                  backgroundGradientFrom: theme.card,
+                  backgroundGradientTo: theme.card,
                   decimalPlaces: 0,
                   color: (opacity = 1) =>
                     `rgba(90, 150, 90, ${opacity})`,
                   labelColor: (opacity = 1) =>
-                    `rgba(60, 60, 60, ${opacity})`,
+                    theme.textSecondary,
                   barPercentage: 0.6,
                   propsForLabels: {
                     fontSize: 11,
@@ -656,7 +662,7 @@ export default function StatisticsScreen() {
                 <Ionicons
                   name="trending-up"
                   size={20}
-                  color="#2e7d32"
+                  color={theme.success}
                 />
 
                 <Text style={styles.highlightLabel}>
@@ -681,7 +687,7 @@ export default function StatisticsScreen() {
                 <Ionicons
                   name="trending-down"
                   size={20}
-                  color="#c62828"
+                  color={theme.error}
                 />
 
                 <Text style={styles.highlightLabel}>
@@ -738,7 +744,7 @@ export default function StatisticsScreen() {
                     <MaterialCommunityIcons
                       name={iconeRefeicao(tipo) as any}
                       size={21}
-                      color={colors.primary}
+                      color={theme.primary}
                     />
                   </View>
 
@@ -829,13 +835,17 @@ type PeriodButtonProps = {
   label: string;
   active: boolean;
   onPress: () => void;
+  theme: any;
 };
 
 function PeriodButton({
   label,
   active,
   onPress,
+  theme,
 }: PeriodButtonProps) {
+  const styles = createStyles(theme);
+
   return (
     <TouchableOpacity
       style={[
@@ -856,10 +866,10 @@ function PeriodButton({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.cream,
+    backgroundColor: theme.background,
   },
 
   body: {
@@ -869,16 +879,18 @@ const styles = StyleSheet.create({
 
   subtitle: {
     fontSize: 14,
-    color: '#777',
+    color: theme.textSecondary,
     marginBottom: 16,
   },
 
   periodSelector: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: theme.card,
     borderRadius: 12,
     padding: 4,
     marginBottom: 16,
+    borderWidth: theme.borderWidth,
+    borderColor: theme.border,
   },
 
   periodButton: {
@@ -889,26 +901,28 @@ const styles = StyleSheet.create({
   },
 
   periodButtonActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: theme.primary,
   },
 
   periodButtonText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#777',
+    color: theme.textSecondary,
   },
 
   periodButtonTextActive: {
-    color: '#fff',
+    color: theme.onPrimary,
   },
 
   // Calendário
 
   calendarCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.card,
     borderRadius: 16,
     padding: 16,
     marginBottom: 20,
+    borderWidth: theme.borderWidth,
+    borderColor: theme.border,
     elevation: 2,
     shadowColor: '#000',
     shadowOpacity: 0.05,
@@ -935,12 +949,12 @@ const styles = StyleSheet.create({
   calendarTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#333',
+    color: theme.text,
   },
 
   calendarMode: {
     fontSize: 10,
-    color: '#999',
+    color: theme.textMuted,
   },
 
   calendarNavigation: {
@@ -954,7 +968,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#F2F6F1',
+    backgroundColor: theme.soft,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -962,7 +976,7 @@ const styles = StyleSheet.create({
   calendarMonthTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: colors.textDark,
+    color: theme.text,
   },
 
   calendarGrid: {
@@ -980,7 +994,7 @@ const styles = StyleSheet.create({
   calendarDayHeader: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#999',
+    color: theme.textMuted,
   },
 
   calendarDay: {
@@ -992,33 +1006,33 @@ const styles = StyleSheet.create({
   },
 
   calendarDaySelected: {
-    backgroundColor: colors.primary,
+    backgroundColor: theme.primary,
   },
 
   calendarDayToday: {
     borderWidth: 1.5,
-    borderColor: colors.primary,
+    borderColor: theme.primary,
   },
 
   calendarDayText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#444',
+    color: theme.text,
   },
 
   calendarDayTextSelected: {
-    color: '#fff',
+    color: theme.onPrimary,
     fontWeight: '800',
   },
 
   calendarDayTextToday: {
-    color: colors.primary,
+    color: theme.primaryDark,
     fontWeight: '800',
   },
 
   calendarDivider: {
     height: 1,
-    backgroundColor: '#eee',
+    backgroundColor: theme.divider,
     marginVertical: 14,
   },
 
@@ -1032,20 +1046,20 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#EAF4E9',
+    backgroundColor: theme.soft,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   selectedPeriodLabel: {
     fontSize: 10,
-    color: '#999',
+    color: theme.textMuted,
   },
 
   selectedPeriodValue: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#333',
+    color: theme.text,
     marginTop: 3,
   },
 
@@ -1053,11 +1067,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 9,
-    backgroundColor: '#EAF4E9',
+    backgroundColor: theme.soft,
   },
 
   todayButtonText: {
-    color: colors.primary,
+    color: theme.primaryDark,
     fontSize: 11,
     fontWeight: '800',
   },
@@ -1065,11 +1079,13 @@ const styles = StyleSheet.create({
   // Gráfico
 
   chartCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.card,
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: 'center',
     marginBottom: 18,
+    borderWidth: theme.borderWidth,
+    borderColor: theme.border,
     shadowColor: '#000',
     shadowOpacity: 0.06,
     shadowRadius: 6,
@@ -1086,7 +1102,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     fontSize: 15,
     fontWeight: '700',
-    color: '#333',
+    color: theme.text,
   },
 
   chartSubtitle: {
@@ -1094,7 +1110,7 @@ const styles = StyleSheet.create({
     marginLeft: 18,
     marginBottom: 8,
     fontSize: 11,
-    color: '#999',
+    color: theme.textMuted,
   },
 
   chart: {
@@ -1104,7 +1120,7 @@ const styles = StyleSheet.create({
   // Total
 
   totalCard: {
-    backgroundColor: colors.primary,
+    backgroundColor: theme.primary,
     borderRadius: 16,
     padding: 16,
     flexDirection: 'row',
@@ -1153,36 +1169,38 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 14,
     padding: 14,
-    backgroundColor: '#fff',
+    backgroundColor: theme.card,
+    borderWidth: theme.borderWidth,
+    borderColor: theme.border,
   },
 
   highlightGood: {
     borderLeftWidth: 4,
-    borderLeftColor: '#2e7d32',
+    borderLeftColor: theme.success,
   },
 
   highlightBad: {
     borderLeftWidth: 4,
-    borderLeftColor: '#c62828',
+    borderLeftColor: theme.error,
   },
 
   highlightLabel: {
     fontSize: 11,
-    color: '#999',
+    color: theme.textMuted,
     marginTop: 6,
   },
 
   highlightTurma: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#333',
+    color: theme.text,
     marginTop: 2,
   },
 
   highlightValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#333',
+    color: theme.text,
     marginTop: 4,
   },
 
@@ -1191,7 +1209,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#999',
+    color: theme.textMuted,
     textTransform: 'uppercase',
     marginBottom: 10,
     marginTop: 4,
@@ -1213,35 +1231,37 @@ const styles = StyleSheet.create({
     width: 9,
     height: 9,
     borderRadius: 5,
-    backgroundColor: '#397A45',
+    backgroundColor: theme.success,
   },
 
   legendGray: {
     width: 9,
     height: 9,
     borderRadius: 5,
-    backgroundColor: '#9E9E9E',
+    backgroundColor: theme.textMuted,
   },
 
   legendText: {
     fontSize: 11,
-    color: '#777',
+    color: theme.textSecondary,
   },
 
   rankRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.card,
     borderRadius: 12,
     padding: 13,
     marginBottom: 10,
+    borderWidth: theme.borderWidth,
+    borderColor: theme.border,
   },
 
   rankIcon: {
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: '#EAF4E9',
+    backgroundColor: theme.soft,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
@@ -1253,7 +1273,7 @@ const styles = StyleSheet.create({
 
   rankTurma: {
     fontSize: 13,
-    color: '#333',
+    color: theme.text,
     fontWeight: '700',
     marginBottom: 5,
   },
@@ -1267,25 +1287,25 @@ const styles = StyleSheet.create({
 
   rankWant: {
     fontSize: 11,
-    color: '#397A45',
+    color: theme.success,
     fontWeight: '700',
   },
 
   rankSeparator: {
     fontSize: 11,
-    color: '#aaa',
+    color: theme.textMuted,
   },
 
   rankRefuse: {
     fontSize: 11,
-    color: '#777',
+    color: theme.textSecondary,
     fontWeight: '500',
   },
 
   rankBarBackground: {
     height: 6,
     borderRadius: 4,
-    backgroundColor: '#eee',
+    backgroundColor: theme.divider,
     marginTop: 9,
     overflow: 'hidden',
   },
@@ -1298,20 +1318,22 @@ const styles = StyleSheet.create({
   // Detalhamento por período
 
   dayRow: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
+    borderWidth: theme.borderWidth,
+    borderColor: theme.border,
   },
 
   dayName: {
     width: 55,
     fontSize: 15,
     fontWeight: '800',
-    color: colors.primary,
+    color: theme.primaryDark,
   },
 
   dayNumbers: {
@@ -1324,23 +1346,23 @@ const styles = StyleSheet.create({
   dayValue: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#397A45',
+    color: theme.success,
   },
 
   daySeparator: {
     fontSize: 11,
-    color: '#aaa',
+    color: theme.textMuted,
   },
 
   dayRefusal: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#777',
+    color: theme.textSecondary,
   },
 
   dayDescription: {
     fontSize: 10,
-    color: '#999',
+    color: theme.textMuted,
     marginTop: 4,
   },
 });

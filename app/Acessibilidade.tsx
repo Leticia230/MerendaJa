@@ -16,6 +16,13 @@ type OptionConfig = {
 
 const OPTIONS: OptionConfig[] = [
   {
+    setting: 'darkMode',
+    testID: 'accessibility-dark-mode',
+    icon: 'moon',
+    title: 'Tema escuro',
+    description: 'Usa cores escuras em todo o app',
+  },
+  {
     setting: 'largeText',
     testID: 'accessibility-large-text',
     icon: 'text',

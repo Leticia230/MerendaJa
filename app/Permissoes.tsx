@@ -1,13 +1,16 @@
+
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenHeader from '../components/ScreenHeader';
-import { colors } from '../constants/theme';
+import { useAccessibility } from '../components/AccessibilityContext';
 import * as Notifications from 'expo-notifications';
 import * as Location from 'expo-location';
-import Text from '../components/AppText';  
+import Text from '../components/AppText';
 
-function Toggle({ value, onChange, testID }: any) {
+function Toggle({ value, onChange, testID, theme }: any) {
+  const styles = createStyles(theme);
+
   return (
     <Pressable
       testID={testID}
@@ -20,6 +23,9 @@ function Toggle({ value, onChange, testID }: any) {
 }
 
 export default function PermissoesScreen() {
+  const { theme } = useAccessibility();
+  const styles = createStyles(theme);
+
   const [notif, setNotif] = useState(true);
   const [loc, setLoc] = useState(false);
 
@@ -42,21 +48,24 @@ export default function PermissoesScreen() {
   }, []);
 
   return (
-<SafeAreaView
-  style={[
-    styles.safe,
-    {
-      paddingTop: 50,
-    },
-  ]}
->    
-    <ScreenHeader title="Permissões" />
+    <SafeAreaView
+      style={[
+        styles.safe,
+        {
+          paddingTop: 50,
+        },
+      ]}
+    >
+      <ScreenHeader title="Permissões" />
+
       <View style={styles.body}>
         <View style={styles.card}>
           <Text style={styles.label}>Acesso a notificações</Text>
+
           <Toggle
             testID="toggle-notifications"
             value={notif}
+            theme={theme}
             onChange={async (value: boolean) => {
               if (value) {
                 const { status } = await Notifications.requestPermissionsAsync();
@@ -70,9 +79,11 @@ export default function PermissoesScreen() {
 
         <View style={styles.card}>
           <Text style={styles.label}>Acesso à localização</Text>
+
           <Toggle
             testID="toggle-location"
             value={loc}
+            theme={theme}
             onChange={async (value: boolean) => {
               if (value) {
                 const { status } =
@@ -90,21 +101,54 @@ export default function PermissoesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.cream },
-  body: { padding: 18, gap: 12 },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 14,
-  },
-  label: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.textDark },
-  toggle: { width: 44, height: 26, borderRadius: 13, padding: 3, justifyContent: 'center' },
-  toggleOn: { backgroundColor: colors.primary },
-  toggleOff: { backgroundColor: '#E1E1E1' },
-  thumb: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff' },
-  thumbOn: { alignSelf: 'flex-end' },
-  thumbOff: { alignSelf: 'flex-start' },
-});
+const createStyles = (theme: any) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    body: {
+      padding: 18,
+      gap: 12,
+    },
+    card: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.card,
+      borderRadius: 14,
+      padding: 14,
+      borderWidth: theme.borderWidth,
+      borderColor: theme.border,
+    },
+    label: {
+      flex: 1,
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.text,
+    },
+    toggle: {
+      width: 44,
+      height: 26,
+      borderRadius: 13,
+      padding: 3,
+      justifyContent: 'center',
+    },
+    toggleOn: {
+      backgroundColor: theme.primary,
+    },
+    toggleOff: {
+      backgroundColor: theme.divider,
+    },
+    thumb: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: '#fff',
+    },
+    thumbOn: {
+      alignSelf: 'flex-end',
+    },
+    thumbOff: {
+      alignSelf: 'flex-start',
+    },
+  });

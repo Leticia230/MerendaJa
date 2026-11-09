@@ -1,3 +1,4 @@
+
 import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -5,10 +6,13 @@ import { useRouter } from 'expo-router';
 import ScreenHeader from '../components/ScreenHeader';
 import ChefLogo from '../components/ChefLogo';
 import BotaoPrimario from '../components/BotaoPrimario';
-import { colors } from '../constants/theme';
+import { useAccessibility } from '../components/AccessibilityContext';
 
 export default function VerifyCodeScreen() {
   const router = useRouter();
+  const { theme } = useAccessibility();
+  const styles = createStyles(theme);
+
   const [code, setCode] = useState(['1', '2', '3', '4']);
   const inputs = useRef<Array<TextInput | null>>([]);
 
@@ -63,51 +67,67 @@ export default function VerifyCodeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.cream },
-  body: { padding: 22, paddingTop: 8 },
-  logoWrap: { alignItems: 'center' },
+const createStyles = (theme: any) => StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: theme.background,
+  },
+
+  body: {
+    padding: 22,
+    paddingTop: 8,
+  },
+
+  logoWrap: {
+    alignItems: 'center',
+  },
+
   title: {
     fontSize: 22,
     fontWeight: '800',
-    color: colors.textDark,
+    color: theme.text,
     textAlign: 'center',
     marginTop: 10,
   },
+
   desc: {
     fontSize: 13,
-    color: colors.textMuted,
+    color: theme.textMuted,
     textAlign: 'center',
     marginTop: 8,
     lineHeight: 18,
   },
+
   otpRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 12,
     marginTop: 24,
   },
+
   otpInput: {
     width: 60,
     height: 68,
     borderRadius: 14,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: colors.inputBorder,
+    backgroundColor: theme.card,
+    borderWidth: theme.borderWidth || 1,
+    borderColor: theme.inputBorder,
     textAlign: 'center',
     fontSize: 24,
     fontWeight: '700',
-    color: colors.textDark,
+    color: theme.text,
   },
+
   hint: {
     textAlign: 'center',
     marginTop: 20,
-    color: colors.textMuted,
+    color: theme.textMuted,
     fontSize: 13,
   },
+
   resend: {
     textAlign: 'center',
-    color: colors.primary,
+    color: theme.primary,
     fontWeight: '700',
     fontSize: 13,
     marginTop: 4,
