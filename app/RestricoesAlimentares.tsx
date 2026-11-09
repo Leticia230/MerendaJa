@@ -8,14 +8,17 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import ScreenHeader from '../components/ScreenHeader';
-import { colors } from '../constants/theme';
 import {
   Aluno,
   listarAlunos,
 } from './services/alunos';
-import Text from '../components/AppText';  
+import Text from '../components/AppText';
+import { useAccessibility } from '../components/AccessibilityContext';
 
 export default function RestricoesAlimentares() {
+  const { theme } = useAccessibility();
+  const styles = createStyles(theme);
+
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [carregando, setCarregando] = useState(true);
 
@@ -52,7 +55,7 @@ export default function RestricoesAlimentares() {
         <View style={styles.center}>
           <ActivityIndicator
             size="large"
-            color={colors.primary}
+            color={theme.primary}
           />
 
           <Text style={styles.loadingText}>
@@ -108,97 +111,100 @@ export default function RestricoesAlimentares() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.cream,
-  },
+const createStyles = (theme: any) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
 
-  list: {
-    padding: 20,
-    paddingBottom: 40,
-  },
+    list: {
+      padding: 20,
+      paddingBottom: 40,
+    },
 
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
+    card: {
+      backgroundColor: theme.card,
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 12,
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      borderColor: theme.border,
+      borderWidth: theme.borderWidth,
+    },
 
-  icon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FFF3CD',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
+    icon: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: theme.warningBg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 12,
+    },
 
-  iconText: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#856404',
-  },
+    iconText: {
+      fontSize: 20,
+      fontWeight: '800',
+      color: theme.warning,
+    },
 
-  info: {
-    flex: 1,
-  },
+    info: {
+      flex: 1,
+    },
 
-  nome: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: colors.textDark,
-  },
+    nome: {
+      fontSize: 16,
+      fontWeight: '800',
+      color: theme.text,
+    },
 
-  rm: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 3,
-  },
+    rm: {
+      fontSize: 12,
+      color: theme.textMuted,
+      marginTop: 3,
+    },
 
-  label: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.textMuted,
-    marginTop: 12,
-  },
+    label: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: theme.textMuted,
+      marginTop: 12,
+    },
 
-  restricao: {
-    fontSize: 14,
-    color: colors.textDark,
-    marginTop: 4,
-    lineHeight: 20,
-  },
+    restricao: {
+      fontSize: 14,
+      color: theme.text,
+      marginTop: 4,
+      lineHeight: 20,
+    },
 
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 30,
-  },
+    center: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 30,
+    },
 
-  loadingText: {
-    marginTop: 10,
-    fontSize: 14,
-    color: colors.textMuted,
-  },
+    loadingText: {
+      marginTop: 10,
+      fontSize: 14,
+      color: theme.textMuted,
+    },
 
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: colors.textDark,
-    textAlign: 'center',
-  },
+    emptyTitle: {
+      fontSize: 18,
+      fontWeight: '800',
+      color: theme.text,
+      textAlign: 'center',
+    },
 
-  emptyText: {
-    marginTop: 8,
-    fontSize: 13,
-    color: colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 19,
-  },
-});
+    emptyText: {
+      marginTop: 8,
+      fontSize: 13,
+      color: theme.textMuted,
+      textAlign: 'center',
+      lineHeight: 19,
+    },
+  });

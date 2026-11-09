@@ -1,11 +1,25 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+
+import React, { useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  Alert,
+} from 'react-native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import ChefLogo from '../components/ChefLogo';
+
+import ScreenHeader from '../components/ScreenHeader';
 import LabeledInput from '../components/LabeledInput';
 import BotaoPrimario from '../components/BotaoPrimario';
-import { colors } from '../constants/theme';
+import { useAccessibility } from '../components/AccessibilityContext';
 
 import { login } from '../components/auth';
 
@@ -46,15 +60,23 @@ const ERROS_LOGIN: Record<string, { titulo: string; mensagem: string }> = {
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { theme } = useAccessibility();
+  const styles = createStyles(theme);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [carregando, setCarregando] = useState(false);
+
+  const passwordInputRef = useRef<TextInput>(null);
 
   async function realizarLogin() {
     const emailNormalizado = email.trim().toLowerCase();
 
     if (!emailNormalizado || !password) {
-      Alert.alert('Campos obrigatórios', 'Digite seu e-mail e sua senha.');
+      Alert.alert(
+        'Campos obrigatórios',
+        'Digite seu e-mail e sua senha.'
+      );
       return;
     }
 
@@ -66,6 +88,11 @@ export default function LoginScreen() {
       await login(emailNormalizado, password, 'aluno');
 
       router.replace('/(tabs-aluno)/Home');
+
+      if (Platform.OS !== 'web') {
+        Alert.alert('Login realizado!', 'Bem-vindo ao Merenda Já.');
+      }
+
     } catch (error: any) {
       console.error('Erro no login:', error);
 
@@ -82,101 +109,139 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <ScreenHeader title="" />
+
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >        
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-          <View style={styles.hero}>
-            <ChefLogo size={350} />
-            <Text style={styles.title}>Merenda Já</Text>
-            <Text style={styles.subtitle}>Entrar na sua conta</Text>
+        style={styles.keyboardView}
+        behavior={
+          Platform.OS === 'ios'
+            ? 'padding'
+            : undefined
+        }
+      >
+        <ScrollView
+          contentContainerStyle={styles.body}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.iconWrap}>
+            <Ionicons
+              name="school"
+              size={38}
+              color="#fff"
+            />
           </View>
 
-          <View style={styles.body}>
-            <LabeledInput
-              testID="login-email-input"
-              label="E-mail institucional"
-              placeholder="seu@email.com"
-              autoCapitalize="none"
-              keyboardType="email-address"
-              editable={!carregando}
-              value={email}
-              onChangeText={setEmail}
-            />
-            <LabeledInput
-              testID="login-password-input"
-              label="Senha"
-              placeholder="Digite sua senha"
-              isPassword
-              editable={!carregando}
-              value={password}
-              onChangeText={setPassword}
-            />
-            <Pressable onPress={() => router.push('/RecuperarSenha')}>
-              <Text style={styles.link}>Esqueceu a senha?</Text>
-            </Pressable>
+          <Text style={styles.title}>
+            Login do Aluno
+          </Text>
 
-            <BotaoPrimario
-              testID="login-submit-button"
-              title={carregando ? 'Entrando...' : 'Entrar'}
-              onPress={realizarLogin}
-              disabled={carregando}
-              style={{ marginTop: 16 }}
-            />
+          <LabeledInput
+            testID="login-email-input"
+            label="E-mail institucional"
+            placeholder="seu@email.com"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            autoComplete="email"
+            textContentType="username"
+            returnKeyType="next"
+            onSubmitEditing={() => passwordInputRef.current?.focus()}
+            blurOnSubmit={false}
+            editable={!carregando}
+            value={email}
+            onChangeText={setEmail}
+            containerStyle={styles.firstInput}
+          />
 
-          </View>
+          <LabeledInput
+            ref={passwordInputRef}
+            testID="login-password-input"
+            label="Senha"
+            placeholder="Digite sua senha"
+            isPassword
+            autoComplete="password"
+            textContentType="password"
+            returnKeyType="done"
+            onSubmitEditing={realizarLogin}
+            editable={!carregando}
+            value={password}
+            onChangeText={setPassword}
+          />
+
+          <Pressable
+            onPress={() => router.push('/RecuperarSenha')}
+            accessibilityRole="link"
+            accessibilityLabel="Esqueceu a senha?"
+          >
+            <Text style={styles.link}>
+              Esqueceu a senha?
+            </Text>
+          </Pressable>
+
+          <BotaoPrimario
+            testID="login-submit-button"
+            title={carregando ? 'Entrando...' : 'Entrar'}
+            onPress={realizarLogin}
+            disabled={carregando}
+            style={styles.button}
+          />
+
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.cream },
-  hero: {
-    backgroundColor: colors.yellow,
-    borderBottomLeftRadius: 40,
-    borderBottomRightRadius: 40,
-    alignItems: 'center',
-    paddingTop: 30,
-    paddingBottom: 30,
-    gap: 6,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: colors.primaryDark,
-    marginTop: 4,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: colors.textDark,
-    fontWeight: '600',
-  },
-  body: {
-    padding: 22,
-  },
-  link: {
-    color: colors.primary,
-    fontWeight: '600',
-    fontSize: 13,
-    textAlign: 'right',
-    marginTop: 2,
-    marginBottom: 8,
-    textDecorationLine: 'underline',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 18,
-  },
-  footerText: {
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-  footerLink: {
-    color: colors.primary,
-    fontWeight: '700',
-  },
-});
+const createStyles = (theme: any) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+
+    keyboardView: {
+      flex: 1,
+    },
+
+    body: {
+      padding: 22,
+      paddingTop: 4,
+      paddingBottom: 30,
+    },
+
+    iconWrap: {
+      width: 78,
+      height: 78,
+      borderRadius: 39,
+      backgroundColor: theme.primary,
+      alignSelf: 'center',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 10,
+    },
+
+    title: {
+      fontSize: 20,
+      fontWeight: '800',
+      color: theme.text,
+      textAlign: 'center',
+    },
+
+    firstInput: {
+      marginTop: 20,
+    },
+
+    link: {
+      color: theme.primary,
+      fontWeight: '600',
+      fontSize: 13,
+      textAlign: 'right',
+      textDecorationLine: 'underline',
+      marginTop: 2,
+      marginBottom: 6,
+    },
+
+    button: {
+      marginTop: 16,
+    },
+  });

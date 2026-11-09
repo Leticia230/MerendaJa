@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { colors } from '../constants/theme';
+import { useAccessibility } from './AccessibilityContext';
 
 type Props = {
   title: string;
@@ -12,6 +13,8 @@ type Props = {
 
 export default function ScreenHeader({ title, onBack, right }: Props) {
   const router = useRouter();
+  const { theme, fs } = useAccessibility();
+
   return (
     <View style={styles.wrap} testID="screen-header">
       <Pressable
@@ -20,9 +23,12 @@ export default function ScreenHeader({ title, onBack, right }: Props) {
         hitSlop={12}
         style={styles.back}
       >
-        <Ionicons name="chevron-back" size={22} color={colors.textDark} />
+        <Ionicons name="chevron-back" size={fs(22)} color={theme.text} />
       </Pressable>
-      <Text style={styles.title} numberOfLines={1}>
+      <Text
+        style={[styles.title, { color: theme.text, fontSize: fs(20) }]}
+        numberOfLines={1}
+      >
         {title}
       </Text>
       <View style={styles.right}>{right}</View>

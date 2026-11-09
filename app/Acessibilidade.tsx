@@ -1,9 +1,10 @@
+
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Switch, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenHeader from '../components/ScreenHeader';
-import { useAccessibility, AccessibilitySettings } from './AccessibilityContext';
+import { useAccessibility, AccessibilitySettings } from '../components/AccessibilityContext';
 
 type OptionConfig = {
   setting: keyof AccessibilitySettings;
@@ -15,11 +16,11 @@ type OptionConfig = {
 
 const OPTIONS: OptionConfig[] = [
   {
-    setting: 'highContrast',
-    testID: 'accessibility-high-contrast',
-    icon: 'contrast',
-    title: 'Alto contraste',
-    description: 'Aumenta o contraste de cores para melhor visualização',
+    setting: 'darkMode',
+    testID: 'accessibility-dark-mode',
+    icon: 'moon',
+    title: 'Tema escuro',
+    description: 'Usa cores escuras em todo o app',
   },
   {
     setting: 'largeText',
@@ -31,13 +32,13 @@ const OPTIONS: OptionConfig[] = [
 ];
 
 export default function AccessibilityScreen() {
-  const { settings, setSetting, theme, fs } = useAccessibility();
+  const { settings, setSetting, theme } = useAccessibility();
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]}>
       <ScreenHeader title="Acessibilidade" />
-      <ScrollView contentContainerStyle={styles.body}>
 
+      <ScrollView contentContainerStyle={styles.body}>
         {OPTIONS.map((opt) => (
           <AccessibilityOption
             key={opt.testID}
@@ -78,18 +79,32 @@ function AccessibilityOption({
       accessibilityHint={hint(description)}
       style={[
         styles.option,
-        { backgroundColor: theme.card, borderColor: theme.border, borderWidth: theme.borderWidth },
+        {
+          backgroundColor: theme.card,
+          borderColor: theme.border,
+          borderWidth: theme.borderWidth,
+        },
       ]}
     >
       <View style={[styles.iconWrapper, { backgroundColor: theme.background }]}>
         <Ionicons name={icon} size={fs(22)} color={theme.primary} />
       </View>
+
       <View style={styles.optionText}>
-        <Text style={[styles.optionTitle, { color: theme.text, fontSize: fs(15) }]}>{title}</Text>
-        <Text style={[styles.optionDescription, { color: theme.textSecondary, fontSize: fs(12) }]}>
+        <Text style={[styles.optionTitle, { color: theme.text, fontSize: fs(15) }]}>
+          {title}
+        </Text>
+
+        <Text
+          style={[
+            styles.optionDescription,
+            { color: theme.textSecondary, fontSize: fs(12) },
+          ]}
+        >
           {description}
         </Text>
       </View>
+
       <Switch
         testID={testID}
         value={value}
@@ -103,16 +118,12 @@ function AccessibilityOption({
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
-  body: { padding: 22 },
-  preview: {
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 20,
+  safe: {
+    flex: 1,
   },
-  previewLabel: { fontWeight: '700', letterSpacing: 0.5, marginBottom: 6 },
-  previewTitle: { fontWeight: '700', marginBottom: 4 },
-  previewText: { lineHeight: 20 },
+  body: {
+    padding: 22,
+  },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -133,7 +144,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 12,
   },
-  optionText: { flex: 1, marginRight: 8 },
-  optionTitle: { fontWeight: '600' },
-  optionDescription: { marginTop: 2 },
+  optionText: {
+    flex: 1,
+    marginRight: 8,
+  },
+  optionTitle: {
+    fontWeight: '600',
+  },
+  optionDescription: {
+    marginTop: 2,
+  },
 });

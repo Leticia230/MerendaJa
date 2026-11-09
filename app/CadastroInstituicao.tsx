@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 
 import {
@@ -18,7 +19,7 @@ import ScreenHeader from '../components/ScreenHeader';
 import LabeledInput from '../components/LabeledInput';
 import BotaoPrimario from '../components/BotaoPrimario';
 
-import { colors } from '../constants/theme';
+import { useAccessibility } from '../components/AccessibilityContext';
 import { cadastrar } from '../components/auth';
 
 // Mapa de erros do Firebase Auth para mensagens amigáveis
@@ -85,6 +86,8 @@ function mostrarAlerta(
 
 export default function RegisterInstitution() {
   const router = useRouter();
+  const { theme } = useAccessibility();
+  const styles = createStyles(theme);
 
   const [email, setEmail] = useState('');
   const [inep, setInep] = useState('');
@@ -288,7 +291,7 @@ export default function RegisterInstitution() {
                 <Ionicons
                   name="information-circle-outline"
                   size={18}
-                  color="#B3261E"
+                  color={theme.error}
                 />
 
                 <Text
@@ -331,64 +334,65 @@ export default function RegisterInstitution() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.cream,
-  },
+const createStyles = (theme: any) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
 
-  keyboardView: {
-    flex: 1,
-  },
+    keyboardView: {
+      flex: 1,
+    },
 
-  body: {
-    padding: 22,
-    paddingTop: 4,
-    paddingBottom: 30,
-  },
+    body: {
+      padding: 22,
+      paddingTop: 4,
+      paddingBottom: 30,
+    },
 
-  iconWrap: {
-    width: 78,
-    height: 78,
-    borderRadius: 39,
-    backgroundColor: colors.primary,
-    alignSelf: 'center',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-  },
+    iconWrap: {
+      width: 78,
+      height: 78,
+      borderRadius: 39,
+      backgroundColor: theme.primary,
+      alignSelf: 'center',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 10,
+    },
 
-  title: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: colors.textDark,
-    textAlign: 'center',
-  },
+    title: {
+      fontSize: 20,
+      fontWeight: '800',
+      color: theme.text,
+      textAlign: 'center',
+    },
 
-  firstInput: {
-    marginTop: 20,
-  },
+    firstInput: {
+      marginTop: 20,
+    },
 
-  button: {
-    marginTop: 16,
-  },
+    button: {
+      marginTop: 16,
+    },
 
-  // Aviso visual da senha
-  avisoSenha: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    backgroundColor: '#FDECEA',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    marginTop: 7,
-  },
+    // Aviso visual da senha
+    avisoSenha: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 7,
+      backgroundColor: theme.errorBg,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 9,
+      marginTop: 7,
+    },
 
-  avisoSenhaTexto: {
-    flex: 1,
-    color: '#B3261E',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-});
+    avisoSenhaTexto: {
+      flex: 1,
+      color: theme.error,
+      fontSize: 12,
+      fontWeight: '600',
+    },
+  });

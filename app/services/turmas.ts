@@ -3,6 +3,7 @@ import {
   arrayUnion,
   collection,
   doc,
+  deleteDoc,
   getDoc,
   getDocs,
   onSnapshot,
@@ -108,4 +109,9 @@ export async function adicionarAlunoATurma(
   await updateDoc(turmaRef(turmaId, instituicaoId), {
     alunosIds: arrayUnion(alunoId),
   });
+}
+
+/** Exclui uma turma da instituição logada. */
+export async function excluirTurma(id: string) {
+  await deleteDoc(turmaRef(id));
 }

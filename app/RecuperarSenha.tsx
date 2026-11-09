@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   View,
@@ -14,8 +15,8 @@ import ScreenHeader from '../components/ScreenHeader';
 import ChefLogo from '../components/ChefLogo';
 import LabeledInput from '../components/LabeledInput';
 import BotaoPrimario from '../components/BotaoPrimario';
-import { colors } from '../constants/theme';
-import { recuperarSenha } from '../components/auth'; 
+import { useAccessibility } from '../components/AccessibilityContext';
+import { recuperarSenha } from '../components/auth';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -34,6 +35,9 @@ function mensagemDeErro(code?: string) {
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const { theme } = useAccessibility();
+  const styles = createStyles(theme);
+
   const [email, setEmail] = useState('');
   const [erro, setErro] = useState('');
   const [loading, setLoading] = useState(false);
@@ -116,33 +120,37 @@ export default function ForgotPasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.cream },
-  body: {
-    padding: 22,
-    paddingTop: 8,
-  },
-  logoWrap: {
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: colors.textDark,
-    textAlign: 'center',
-    marginTop: 10,
-  },
-  desc: {
-    fontSize: 13,
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 18,
-  },
-  erro: {
-    color: '#C0392B',
-    fontSize: 13,
-    marginTop: 10,
-  },
-});
+const createStyles = (theme: any) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    body: {
+      padding: 22,
+      paddingTop: 8,
+    },
+    logoWrap: {
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    title: {
+      fontSize: 22,
+      fontWeight: '800',
+      color: theme.text,
+      textAlign: 'center',
+      marginTop: 10,
+    },
+    desc: {
+      fontSize: 13,
+      color: theme.textMuted,
+      textAlign: 'center',
+      marginTop: 8,
+      lineHeight: 18,
+    },
+    erro: {
+      color: theme.error,
+      fontSize: 13,
+      marginTop: 10,
+    },
+  });

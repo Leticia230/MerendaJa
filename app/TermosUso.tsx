@@ -2,8 +2,8 @@ import React, { useRef } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenHeader from '../components/ScreenHeader';
-import { colors } from '../constants/theme';
-import Text from '../components/AppText';  
+import Text from '../components/AppText';
+import { useAccessibility } from '../components/AccessibilityContext';
 
 // Cada bloco pode ter um "label" (subtópico em negrito) e o "text".
 type Block = {
@@ -141,6 +141,9 @@ const SECTIONS: Section[] = [
 ];
 
 export default function TermsOfUseScreen() {
+  const { theme } = useAccessibility();
+  const styles = createStyles(theme);
+
   const scrollRef = useRef<ScrollView>(null);
   const positions = useRef<Record<number, number>>({});
 
@@ -151,17 +154,19 @@ export default function TermsOfUseScreen() {
     }
   };
 
-  // ... o return continua igual
-
   return (
     <SafeAreaView style={styles.safe}>
       <ScreenHeader title="Termos de Uso" />
+
       <ScrollView ref={scrollRef} contentContainerStyle={styles.body}>
-        <Text style={styles.updatedAt}>Última atualização: 23 de agosto de 2026</Text>
+        <Text style={styles.updatedAt}>
+          Última atualização: 23 de agosto de 2026
+        </Text>
 
         {/* Índice */}
         <View style={styles.indexCard}>
           <Text style={styles.indexTitle}>Neste documento</Text>
+
           {SECTIONS.map((section) => (
             <TouchableOpacity
               key={section.number}
@@ -189,12 +194,16 @@ export default function TermsOfUseScreen() {
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{section.number}</Text>
               </View>
+
               <Text style={styles.sectionTitle}>{section.title}</Text>
             </View>
 
             {section.blocks.map((block, index) => (
               <View key={index} style={index > 0 ? styles.blockSpacing : null}>
-                {block.label ? <Text style={styles.label}>{block.label}</Text> : null}
+                {block.label ? (
+                  <Text style={styles.label}>{block.label}</Text>
+                ) : null}
+
                 <Text style={styles.paragraph}>{block.text}</Text>
               </View>
             ))}
@@ -205,89 +214,113 @@ export default function TermsOfUseScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.cream },
-  body: { padding: 22, paddingBottom: 40 },
-  updatedAt: {
-    fontSize: 12,
-    color: '#999',
-    marginBottom: 16,
-  },
+const createStyles = (theme: any) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
 
-  // Índice
-  indexCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  indexTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#333',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 8,
-  },
-  indexRow: {
-    flexDirection: 'row',
-    paddingVertical: 6,
-  },
-  indexNumber: {
-    width: 28,
-    fontSize: 14,
-    color: '#999',
-  },
-  indexLink: {
-    flex: 1,
-    fontSize: 14,
-    color: '#333',
-  },
+    body: {
+      padding: 22,
+      paddingBottom: 40,
+    },
 
-  // Seções
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  badge: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: '#eee',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-  badgeText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#333',
-  },
-  sectionTitle: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#333',
-  },
-  blockSpacing: {
-    marginTop: 14,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: 2,
-  },
-  paragraph: {
-    fontSize: 14,
-    color: '#555',
-    lineHeight: 21,
-  },
-});
+    updatedAt: {
+      fontSize: 12,
+      color: theme.textMuted,
+      marginBottom: 16,
+    },
+
+    // Índice
+    indexCard: {
+      backgroundColor: theme.card,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 16,
+      borderColor: theme.border,
+      borderWidth: theme.borderWidth,
+    },
+
+    indexTitle: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: theme.text,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      marginBottom: 8,
+    },
+
+    indexRow: {
+      flexDirection: 'row',
+      paddingVertical: 6,
+    },
+
+    indexNumber: {
+      width: 28,
+      fontSize: 14,
+      color: theme.textMuted,
+    },
+
+    indexLink: {
+      flex: 1,
+      fontSize: 14,
+      color: theme.text,
+    },
+
+    // Seções
+    card: {
+      backgroundColor: theme.card,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 12,
+      borderColor: theme.border,
+      borderWidth: theme.borderWidth,
+    },
+
+    cardHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+
+    badge: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      backgroundColor: theme.soft,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 10,
+    },
+
+    badgeText: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: theme.text,
+    },
+
+    sectionTitle: {
+      flex: 1,
+      fontSize: 15,
+      fontWeight: '700',
+      color: theme.text,
+    },
+
+    blockSpacing: {
+      marginTop: 14,
+    },
+
+    label: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: theme.text,
+      marginBottom: 2,
+    },
+
+    paragraph: {
+      fontSize: 14,
+      color: theme.textSecondary,
+      lineHeight: 21,
+    },
+  });

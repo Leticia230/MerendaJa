@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import ScreenHeader from '../components/ScreenHeader';
 import LabeledInput from '../components/LabeledInput';
 import BotaoPrimario from '../components/BotaoPrimario';
-import { colors } from '../constants/theme';
+import { useAccessibility } from '../components/AccessibilityContext';
 
 import {
   buscarPerfilAluno,
@@ -22,10 +22,12 @@ import {
 } from './services/alunos';
 
 import { auth } from '../components/firebaseConfig';
-import Text from '../components/AppText';  
-
+import Text from '../components/AppText';
 
 export default function ProfileScreen() {
+  const { theme } = useAccessibility();
+  const styles = createStyles(theme);
+
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [rm, setRm] = useState('');
@@ -126,7 +128,7 @@ export default function ProfileScreen() {
         <View style={styles.loading}>
           <ActivityIndicator
             size="large"
-            color={colors.primary}
+            color={theme.primary}
           />
 
           <Text style={styles.loadingText}>
@@ -218,53 +220,54 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.cream,
-  },
-
-  body: {
-    padding: 22,
-    paddingBottom: 40,
-  },
-
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    alignSelf: 'center',
-    marginBottom: 20,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.primary,
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 4,
+const createStyles = (theme: any) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: theme.background,
     },
-    elevation: 4,
-  },
 
-  helperText: {
-    fontSize: 11,
-    color: colors.textMuted,
-    marginTop: -8,
-    marginBottom: 12,
-    lineHeight: 16,
-  },
+    body: {
+      padding: 22,
+      paddingBottom: 40,
+    },
 
-  loading: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    avatar: {
+      width: 100,
+      height: 100,
+      borderRadius: 50,
+      alignSelf: 'center',
+      marginBottom: 20,
+      backgroundColor: theme.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: theme.primary,
+      shadowOpacity: 0.25,
+      shadowRadius: 10,
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
+      elevation: 4,
+    },
 
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: colors.textMuted,
-  },
-});
+    helperText: {
+      fontSize: 11,
+      color: theme.textMuted,
+      marginTop: -8,
+      marginBottom: 12,
+      lineHeight: 16,
+    },
+
+    loading: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    loadingText: {
+      marginTop: 12,
+      fontSize: 14,
+      color: theme.textMuted,
+    },
+  });

@@ -1,68 +1,59 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { colors } from '../../constants/theme';
-import { assinarCardapioDia, Refeicao } from '../services/cardapio';
-import Text from '../../components/AppText';  
+import { Refeicao, assinarCardapioData } from '../services/cardapio';
+import Text from '../../components/AppText';
+import { useAccessibility, AccessibilityTheme } from '../../components/AccessibilityContext';
+import { dataISO, intervaloDoPeriodo } from '../services/refeicaoUtils';
 
 const DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
 
-function obterDataDaProximaSemana(dia: string): string {
-  const hoje = new Date();
-  const diaSemana = hoje.getDay();
+// Datas (AAAA-MM-DD) de Seg a Sex. offset 0 = semana base do app
+// (a mesma usada pelo aluno); 1 = a seguinte, e assim por diante.
+function datasDaSemana(offset: number): string[] {
+  const [segundaISO] = intervaloDoPeriodo('semana');
+  const [a, m, d] = segundaISO.split('-').map(Number);
+  return DAYS.map((_, i) => dataISO(new Date(a, m - 1, d + offset * 7 + i)));
+}
 
-  const diasAteSegunda =
-    diaSemana === 0
-      ? 1
-      : 8 - diaSemana;
-
-  const segunda = new Date(hoje);
-
-  segunda.setDate(
-    hoje.getDate() + diasAteSegunda
-  );
-
-  segunda.setHours(0, 0, 0, 0);
-
-  const indice = DAYS.indexOf(dia);
-
-  const data = new Date(segunda);
-
-  data.setDate(
-    segunda.getDate() + indice
-  );
-
-  const ano = data.getFullYear();
-  const mes = String(data.getMonth() + 1).padStart(2, '0');
-  const diaNumerico = String(data.getDate()).padStart(2, '0');
-
-  return `${ano}-${mes}-${diaNumerico}`;
+function formatarCurto(iso: string) {
+  const [, m, d] = iso.split('-');
+  return `${d}/${m}`;
 }
 
 export default function CardapioScreen() {
-  const [day, setDay] = useState('Seg');
+  const { theme } = useAccessibility();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
+  const hojeISO = dataISO();
+  const [semana, setSemana] = useState(0);
+  const datas = useMemo(() => datasDaSemana(semana), [semana]);
+  const [indiceDia, setIndiceDia] = useState(() =>
+    Math.max(datasDaSemana(0).indexOf(hojeISO), 0)
+  );
+  const dataSelecionada = datas[indiceDia];
+
   const [refeicoes, setRefeicoes] = useState<Refeicao[]>([]);
   const [carregando, setCarregando] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     setCarregando(true);
-    const unsubscribe = assinarCardapioDia(day, (dados) => {
+    const unsubscribe = assinarCardapioData(dataSelecionada, (dados) => {
       setRefeicoes(dados);
       setCarregando(false);
     });
 
     return unsubscribe;
-  }, [day]);
+  }, [dataSelecionada]);
 
   function abrirEdicao(refeicao: Refeicao, index: number) {
     router.push({
       pathname: '/AddRefeicao',
       params: {
-        dia: day,
-        data: refeicao.data ?? obterDataDaProximaSemana(day),
+        data: dataSelecionada,
         index: String(index),
         titulo: refeicao.titulo,
         horario: refeicao.horario,
@@ -79,18 +70,43 @@ export default function CardapioScreen() {
         <Text style={styles.headerTitle}>Cardápio</Text>
       </View>
 
+      <View style={styles.semanaNav}>
+        <Pressable
+          testID="semana-anterior"
+          onPress={() => setSemana((s) => Math.max(0, s - 1))}
+          disabled={semana === 0}
+          style={[styles.semanaBtn, semana === 0 && { opacity: 0.3 }]}
+        >
+          <MaterialCommunityIcons name="chevron-left" size={22} color={theme.text} />
+        </Pressable>
+
+        <Text style={styles.semanaTexto}>
+          {formatarCurto(datas[0])} a {formatarCurto(datas[4])}
+        </Text>
+
+        <Pressable
+          testID="semana-seguinte"
+          onPress={() => setSemana((s) => s + 1)}
+          style={styles.semanaBtn}
+        >
+          <MaterialCommunityIcons name="chevron-right" size={22} color={theme.text} />
+        </Pressable>
+      </View>
+
       <View style={styles.daysWrap}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.daysRow}>
-          {DAYS.map(d => {
-            const active = d === day;
+          {DAYS.map((d, i) => {
+            const active = i === indiceDia;
             return (
               <Pressable
                 key={d}
                 testID={`day-chip-${d}`}
-                onPress={() => setDay(d)}
+                onPress={() => setIndiceDia(i)}
                 style={[styles.dayChip, active && styles.dayChipActive]}
               >
-                <Text style={[styles.dayText, active && styles.dayTextActive]}>{d}</Text>
+                <Text style={[styles.dayText, active && styles.dayTextActive]}>
+                  {d} {formatarCurto(datas[i])}
+                </Text>
               </Pressable>
             );
           })}
@@ -99,7 +115,7 @@ export default function CardapioScreen() {
 
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         {carregando ? (
-          <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
+          <ActivityIndicator color={theme.primary} style={{ marginTop: 20 }} />
         ) : refeicoes.length === 0 ? (
           <Text style={styles.emptyText}>
             Nenhuma refeição cadastrada para esse dia ainda.
@@ -131,8 +147,8 @@ export default function CardapioScreen() {
             router.push({
               pathname: '/AddRefeicao',
               params: {
-                dia: day,
-                data: obterDataDaProximaSemana(day),
+                // datas passadas não aceitam cadastro; a tela de adicionar pede a data
+                data: dataSelecionada >= hojeISO ? dataSelecionada : '',
               },
             })
           }
@@ -144,72 +160,97 @@ export default function CardapioScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.cream },
-  headerWrap: {
-    backgroundColor: colors.yellow,
-    paddingTop: 20,
-    paddingBottom: 18,
-    alignItems: 'center',
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-  },
-  headerTitle: { fontSize: 20, fontWeight: '800', color: colors.textDark },
-  daysWrap: { paddingVertical: 12 },
-  daysRow: { paddingHorizontal: 16, gap: 8, height: 56, alignItems: 'center' },
-  dayChip: {
-    height: 36,
-    paddingHorizontal: 18,
-    borderRadius: 18,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: colors.inputBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  dayChipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  dayText: { color: colors.textDark, fontWeight: '700', fontSize: 13 },
-  dayTextActive: { color: '#fff' },
-  body: { padding: 16, paddingBottom: 30, gap: 12 },
-  emptyText: {
-    textAlign: 'center',
-    color: colors.textMuted,
-    fontSize: 13,
-    marginTop: 24,
-  },
-  mealCard: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
-  },
-  mealTitle: { fontSize: 15, fontWeight: '700', color: colors.textDark, marginBottom: 4 },
-  mealHorario: { fontSize: 12, color: colors.primary, fontWeight: '700', marginBottom: 2 },
-  mealDesc: { fontSize: 12, color: colors.textMuted, lineHeight: 17 },
-  mealIcon: {
-    width: 54,
-    height: 54,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: 14,
-    padding: 15,
-    alignItems: 'center',
-    marginTop: 6,
-  },
-  addBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-});
+const createStyles = (theme: AccessibilityTheme) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: theme.background },
+    headerWrap: {
+      backgroundColor: theme.header,
+      paddingTop: 20,
+      paddingBottom: 18,
+      alignItems: 'center',
+      borderBottomLeftRadius: 24,
+      borderBottomRightRadius: 24,
+    },
+    headerTitle: { fontSize: 20, fontWeight: '800', color: theme.text },
+    daysWrap: { paddingVertical: 12 },
+    daysRow: { paddingHorizontal: 16, gap: 8, height: 56, alignItems: 'center' },
+    dayChip: {
+      height: 36,
+      paddingHorizontal: 18,
+      borderRadius: 18,
+      backgroundColor: theme.card,
+      borderWidth: 1,
+      borderColor: theme.inputBorder,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
+    dayChipActive: {
+      backgroundColor: theme.primary,
+      borderColor: theme.primary,
+    },
+    dayText: { color: theme.text, fontWeight: '700', fontSize: 13 },
+    dayTextActive: { color: '#fff' },
+    body: { padding: 16, paddingBottom: 30, gap: 12 },
+    emptyText: {
+      textAlign: 'center',
+      color: theme.textMuted,
+      fontSize: 13,
+      marginTop: 24,
+    },
+    mealCard: {
+      backgroundColor: theme.card,
+      borderRadius: 14,
+      padding: 14,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      shadowColor: '#000',
+      shadowOpacity: 0.05,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 1,
+    },
+    mealTitle: { fontSize: 15, fontWeight: '700', color: theme.text, marginBottom: 4 },
+    mealHorario: { fontSize: 12, color: theme.primary, fontWeight: '700', marginBottom: 2 },
+    mealDesc: { fontSize: 12, color: theme.textMuted, lineHeight: 17 },
+    mealIcon: {
+      width: 54,
+      height: 54,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    addBtn: {
+      backgroundColor: theme.primary,
+      borderRadius: 14,
+      padding: 15,
+      alignItems: 'center',
+      marginTop: 6,
+    },
+    addBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+    semanaNav: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 12,
+      marginTop: 12,
+    },
+    semanaBtn: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: theme.card,
+      borderWidth: 1,
+      borderColor: theme.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    semanaTexto: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: theme.text,
+      minWidth: 120,
+      textAlign: 'center',
+    },
+  });

@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import ScreenHeader from '../components/ScreenHeader';
 import Text from '../components/AppText';
-import { useAccessibility } from './AccessibilityContext';
+import { useAccessibility } from '../components/AccessibilityContext';
 import { PLANOS, PlanoId, formatarValor } from '../components/planos';
 import {
   ativarPlano,
@@ -28,6 +28,7 @@ const textoDias = (n: number) => `${n} ${n === 1 ? 'dia restante' : 'dias restan
 export default function PlanosScreen() {
   const router = useRouter();
   const { theme, fs } = useAccessibility();
+  const styles = createStyles(theme);
 
   const [selecionado, setSelecionado] = useState<PlanoId>('anual');
   const [assinatura, setAssinatura] = useState<Assinatura | null>(null);
@@ -122,11 +123,11 @@ export default function PlanosScreen() {
       <SafeAreaView style={styles.safe}>
         <ScreenHeader title="Planos e Assinaturas" />
         <ScrollView contentContainerStyle={styles.body}>
-          <View style={[styles.status, { borderColor: cancelada ? '#d64545' : theme.primary }]}>
+          <View style={[styles.status, { borderColor: cancelada ? theme.error : theme.primary }]}>
             <Ionicons
               name={cancelada ? 'close-circle' : 'checkmark-circle'}
               size={fs(40)}
-              color={cancelada ? '#d64545' : theme.primary}
+              color={cancelada ? theme.error : theme.primary}
             />
             <Text style={styles.statusTitulo}>{cancelada ? 'Plano cancelado' : 'Plano ativo'}</Text>
             <Text style={styles.statusPlano}>{nomeDoPlano(assinatura.plano)}</Text>
@@ -156,7 +157,7 @@ export default function PlanosScreen() {
               accessibilityRole="button"
             >
               {cancelando ? (
-                <ActivityIndicator color="#d64545" />
+                <ActivityIndicator color={theme.error} />
               ) : (
                 <Text style={styles.botaoCancelarTexto}>Cancelar plano</Text>
               )}
@@ -202,8 +203,8 @@ export default function PlanosScreen() {
         )}
 
         {vencida && assinatura && (
-          <View style={[styles.aviso, { borderColor: '#d64545' }]}>
-            <Ionicons name="alert-circle" size={fs(22)} color="#d64545" />
+          <View style={[styles.aviso, { borderColor: theme.error }]}>
+            <Ionicons name="alert-circle" size={fs(22)} color={theme.error} />
             <Text style={styles.avisoTexto}>
               Seu {nomeDoPlano(assinatura.plano).toLowerCase()} venceu em{' '}
               {formatarData(assinatura.fim)}. Escolha um plano para continuar.
@@ -234,7 +235,7 @@ export default function PlanosScreen() {
               accessibilityLabel={plano.nome}
               style={[
                 styles.card,
-                { borderColor: ativo ? theme.primary : '#E5E5E5' },
+                { borderColor: ativo ? theme.primary : theme.border },
                 desabilitado && styles.cardDesabilitado,
               ]}
             >
@@ -246,7 +247,7 @@ export default function PlanosScreen() {
                 />
                 <Text style={styles.nome}>{plano.nome}</Text>
                 {eAtual ? (
-                  <View style={[styles.selo, { backgroundColor: '#333' }]}>
+                  <View style={[styles.selo, { backgroundColor: theme.primary }]}>
                     <Text style={styles.seloTexto}>Plano atual</Text>
                   </View>
                 ) : plano.destaque && !desabilitado ? (
@@ -284,7 +285,7 @@ export default function PlanosScreen() {
           accessibilityRole="button"
         >
           {enviando ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={theme.onPrimary} />
           ) : (
             <Text style={styles.botaoTexto}>
               {selecionado === 'teste' ? 'Começar teste grátis' : 'Continuar para o pagamento'}
@@ -310,40 +311,40 @@ export default function PlanosScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#FFF8F0', top: 50 }, // use o mesmo valor de colors.cream
+const createStyles = (theme: any) => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: theme.background, top: 50 },
   center: { alignItems: 'center', justifyContent: 'center' },
   body: { padding: 22, paddingBottom: 40 },
-  intro: { fontSize: 14, color: '#555', lineHeight: 21, marginBottom: 18 },
+  intro: { fontSize: 14, color: theme.textSecondary, lineHeight: 21, marginBottom: 18 },
 
   // Status do plano
   status: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.card,
     borderRadius: 16,
     borderWidth: 2,
     padding: 24,
     alignItems: 'center',
     marginBottom: 20,
   },
-  statusTitulo: { fontSize: 13, fontWeight: '700', color: '#777', marginTop: 8, textTransform: 'uppercase' },
-  statusPlano: { fontSize: 22, fontWeight: '700', color: '#333', marginTop: 4, marginBottom: 12 },
-  statusInfo: { fontSize: 14, color: '#555', marginTop: 2 },
-  statusAviso: { fontSize: 13, color: '#d64545', marginTop: 10, fontWeight: '600' },
+  statusTitulo: { fontSize: 13, fontWeight: '700', color: theme.textMuted, marginTop: 8, textTransform: 'uppercase' },
+  statusPlano: { fontSize: 22, fontWeight: '700', color: theme.text, marginTop: 4, marginBottom: 12 },
+  statusInfo: { fontSize: 14, color: theme.textSecondary, marginTop: 2 },
+  statusAviso: { fontSize: 13, color: theme.error, marginTop: 10, fontWeight: '600' },
 
   // Avisos
   aviso: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.card,
     borderRadius: 12,
     borderWidth: 2,
     padding: 14,
     marginBottom: 18,
   },
-  avisoTexto: { flex: 1, fontSize: 13, color: '#333', lineHeight: 19, marginLeft: 10 },
+  avisoTexto: { flex: 1, fontSize: 13, color: theme.text, lineHeight: 19, marginLeft: 10 },
 
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.card,
     borderRadius: 14,
     borderWidth: 2,
     padding: 16,
@@ -351,13 +352,13 @@ const styles = StyleSheet.create({
   },
   cardDesabilitado: { opacity: 0.5 },
   cardTopo: { flexDirection: 'row', alignItems: 'center' },
-  nome: { flex: 1, fontSize: 16, fontWeight: '700', color: '#333', marginLeft: 10 },
+  nome: { flex: 1, fontSize: 16, fontWeight: '700', color: theme.text, marginLeft: 10 },
   selo: { borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
-  seloTexto: { fontSize: 11, fontWeight: '700', color: '#fff' },
-  descricao: { fontSize: 13, color: '#777', marginTop: 8, marginLeft: 32 },
+  seloTexto: { fontSize: 11, fontWeight: '700', color: theme.white },
+  descricao: { fontSize: 13, color: theme.textMuted, marginTop: 8, marginLeft: 32 },
   precoLinha: { flexDirection: 'row', alignItems: 'baseline', marginTop: 10, marginLeft: 32 },
-  preco: { fontSize: 20, fontWeight: '700', color: '#333' },
-  porMes: { fontSize: 12, color: '#777' },
+  preco: { fontSize: 20, fontWeight: '700', color: theme.text },
+  porMes: { fontSize: 12, color: theme.textMuted },
 
   botao: {
     minHeight: 50,
@@ -366,15 +367,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 8,
   },
-  botaoTexto: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  botaoTexto: { color: theme.onPrimary, fontSize: 16, fontWeight: '700' },
   botaoCancelar: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.card,
     borderWidth: 2,
-    borderColor: '#d64545',
+    borderColor: theme.error,
     marginTop: 12,
   },
-  botaoCancelarTexto: { color: '#d64545', fontSize: 16, fontWeight: '700' },
+  botaoCancelarTexto: { color: theme.error, fontSize: 16, fontWeight: '700' },
   link: { alignItems: 'center', paddingVertical: 14, marginTop: 4 },
-  linkTexto: { fontSize: 14, fontWeight: '600', color: '#777' },
-  rodape: { fontSize: 12, color: '#777', textAlign: 'center', marginTop: 14 },
+  linkTexto: { fontSize: 14, fontWeight: '600', color: theme.textSecondary },
+  rodape: { fontSize: 12, color: theme.textMuted, textAlign: 'center', marginTop: 14 },
 });

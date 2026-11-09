@@ -1,12 +1,15 @@
+
 import React, { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import ChefLogo from '../components/ChefLogo';
-import { colors } from '../constants/theme';
+import { useAccessibility } from '../components/AccessibilityContext';
 
 export default function SplashScreen() {
   const router = useRouter();
+  const { theme } = useAccessibility();
+  const styles = createStyles(theme);
 
   useEffect(() => {
 
@@ -24,10 +27,10 @@ export default function SplashScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.yellow,
+    backgroundColor: theme.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
