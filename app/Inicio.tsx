@@ -230,6 +230,7 @@ export default function InicioScreen() {
               showsVerticalScrollIndicator
               contentContainerStyle={styles.termsContentInner}
             >
+              
               <Text style={styles.termsHeading}>
                 1. Aceitação dos termos
               </Text>
@@ -326,8 +327,7 @@ export default function InicioScreen() {
 
               <Text style={styles.termsParagraph}>
                 O uso do software está sujeito à Política de
-                Privacidade da ClubMeal, que pode ser acessada
-                em link para a Política de Privacidade.
+                Segurança da ClubMeal, descrita abaixo.
               </Text>
 
               <Text style={styles.termsSubheading}>
@@ -359,17 +359,268 @@ export default function InicioScreen() {
                 do usuário e gerar estatísticas.
               </Text>
 
+              {/* POLÍTICA DE SEGURANÇA */}
+              <Text style={styles.termsHeading}>
+                Política de Segurança
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Introdução
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                A segurança da informação é fundamental para a
+                integridade, confidencialidade e disponibilidade
+                dos dados e sistemas da ClubMeal. Esta política
+                define as diretrizes para proteger as informações
+                da empresa contra acesso não autorizado, uso
+                indevido, divulgação, alteração e destruição.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Objetivo
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                O objetivo desta política é estabelecer um conjunto
+                de regras para garantir a proteção das informações
+                da ClubMeal, minimizando riscos e assegurando o
+                cumprimento das leis e regulamentações aplicáveis.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Escopo
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Esta política se aplica a todos os funcionários,
+                contratados, prestadores de serviços, parceiros e
+                terceiros que tenham acesso aos sistemas e
+                informações da ClubMeal.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Diretrizes gerais
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Confidencialidade:
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Todas as informações sensíveis devem ser acessíveis
+                somente a indivíduos autorizados. O compartilhamento
+                de informações deve ser limitado ao mínimo necessário.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Integridade:
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                As informações devem ser protegidas contra alterações
+                não autorizadas. Sistemas de controle de versões e
+                backups regulares devem ser implementados para
+                preservar a integridade dos dados.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Disponibilidade:
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                As informações e os sistemas devem estar disponíveis
+                para os usuários autorizados sempre que necessário,
+                com medidas de contingência em vigor para garantir
+                a continuidade dos negócios.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Classificação da informação
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                As informações da ClubMeal devem ser classificadas
+                em diferentes níveis de sensibilidade, como:
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Pública:
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Informações que podem ser divulgadas ao público
+                sem restrições.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Confidencial:
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Informações que podem causar danos à empresa
+                se divulgadas indevidamente.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Restrita:
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Informações altamente sensíveis que exigem o mais
+                alto nível de proteção.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Controle de acesso
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Autenticação e Autorização:
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Todos os usuários devem ter credenciais únicas e
+                seguras. O acesso aos sistemas e dados deve ser
+                concedido com base na necessidade de saber e no
+                princípio do menor privilégio.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Gerenciamento de Senhas:
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Senhas devem ser complexas e trocadas regularmente.
+                É proibido o compartilhamento de senhas.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Segurança física
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Controle de Acesso Físico:
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Somente pessoal autorizado pode acessar áreas onde
+                informações sensíveis são armazenadas ou processadas.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Proteção de Equipamentos:
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Todos os dispositivos devem estar fisicamente seguros,
+                especialmente quando transportados.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Uso de dispositivo e rede
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Dispositivos Pessoais:
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                O uso de dispositivos pessoais para acessar informações
+                da empresa deve ser limitado e autorizado pela equipe
+                de TI.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Rede Segura:
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                A conexão a redes públicas ou desconhecidas para
+                acessar informações da empresa deve ser evitada.
+                Redes virtuais privadas (VPNs) devem ser usadas
+                quando necessário.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Treinamento e conscientização
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Todos os funcionários devem participar de programas
+                regulares de treinamento em segurança da informação
+                para entender suas responsabilidades e as melhores
+                práticas.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Resposta a incidentes
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Relatório de Incidentes:
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Todos os incidentes de segurança devem ser reportados
+                imediatamente ao departamento de TI ou ao responsável
+                pela segurança da informação.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Gestão de Incidentes:
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                A equipe de resposta a incidentes deve investigar,
+                documentar e mitigar os efeitos de qualquer incidente
+                de segurança.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Conformidade e auditoria
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Conformidade:
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                A ClubMeal deve assegurar o cumprimento de todas as
+                leis e regulamentações aplicáveis relacionadas à
+                segurança da informação.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Auditorias Regulares:
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Auditorias internas e externas devem ser conduzidas
+                regularmente para garantir a aderência a esta política.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Revisão da política
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Esta política deve ser revisada anualmente, ou sempre
+                que necessário, para garantir sua eficácia e conformidade
+                com as mudanças legais e tecnológicas.
+              </Text>
+
               <Text style={styles.termsHeading}>
                 6. Limitação de responsabilidade
               </Text>
 
               <Text style={styles.termsParagraph}>
-                Em nenhuma circunstância a ClubMeal será
-                responsável por quaisquer danos diretos,
-                indiretos, incidentais, especiais, consequenciais
-                ou punitivos decorrentes do uso ou da incapacidade
-                de usar o software, mesmo que a ClubMeal tenha
-                sido avisada da possibilidade de tais danos.
+                Em nenhuma circunstância a ClubMeal será responsável
+                por quaisquer danos diretos, indiretos, incidentais,
+                especiais, consequenciais ou punitivos decorrentes do
+                uso ou da incapacidade de usar o software, mesmo que
+                a ClubMeal tenha sido avisada da possibilidade de tais
+                danos.
               </Text>
 
               <Text style={styles.termsHeading}>
@@ -378,10 +629,9 @@ export default function InicioScreen() {
 
               <Text style={styles.termsParagraph}>
                 O software é fornecido "como está", sem garantias
-                de qualquer tipo, expressas ou implícitas,
-                incluindo, mas não se limitando a garantias de
-                comercialização, adequação a um propósito
-                específico ou não violação.
+                de qualquer tipo, expressas ou implícitas, incluindo,
+                mas não se limitando a garantias de comercialização,
+                adequação a um propósito específico ou não violação.
               </Text>
 
               <Text style={styles.termsHeading}>
@@ -389,14 +639,12 @@ export default function InicioScreen() {
               </Text>
 
               <Text style={styles.termsParagraph}>
-                Estes Termos de Uso são efetivos até serem
-                rescindidos. A ClubMeal pode rescindir estes
-                Termos de Uso a qualquer momento, sem aviso
-                prévio, se você violar qualquer uma das
-                disposições aqui contidas. Após a rescisão,
-                você deve cessar todo o uso do software e
-                destruir todas as cópias do software em sua
-                posse.
+                Estes Termos de Uso são efetivos até serem rescindidos.
+                A ClubMeal pode rescindir estes Termos de Uso a qualquer
+                momento, sem aviso prévio, se você violar qualquer uma
+                das disposições aqui contidas. Após a rescisão,
+                você deve cessar todo o uso do software e destruir
+                todas as cópias do software em sua posse.
               </Text>
 
               <Text style={styles.termsHeading}>
@@ -409,8 +657,8 @@ export default function InicioScreen() {
 
               <Text style={styles.termsParagraph}>
                 Estes Termos de Uso serão regidos e interpretados
-                de acordo com as leis do Brasil, Estado de São
-                Paulo, sem consideração aos conflitos de leis.
+                de acordo com as leis do Brasil, Estado de São Paulo,
+                sem consideração aos conflitos de leis.
               </Text>
 
               <Text style={styles.termsSubheading}>
@@ -421,7 +669,7 @@ export default function InicioScreen() {
                 A ClubMeal reserva-se o direito de modificar
                 estes Termos de Uso a qualquer momento. As
                 modificações serão efetivas quando publicadas
-                no site da Club Meal ou quando notificadas a
+                no site da ClubMeal ou quando notificadas a
                 você por qualquer outro meio.
               </Text>
 
@@ -450,6 +698,7 @@ export default function InicioScreen() {
               <Text style={styles.lastUpdate}>
                 Última atualização: 23 de agosto de 2026.
               </Text>
+
             </ScrollView>
 
             {/* BOTÕES DO MODAL */}

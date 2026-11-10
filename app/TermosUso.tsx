@@ -5,8 +5,14 @@ import ScreenHeader from '../components/ScreenHeader';
 import Text from '../components/AppText';
 import { useAccessibility } from '../components/AccessibilityContext';
 
-// Cada bloco pode ter um "label" (subtópico em negrito) e o "text".
+// Cada bloco pode ter:
+// - groupTitle: título grande de um grupo (ex.: "Política de Segurança")
+// - heading: título de subseção (ex.: "Introdução")
+// - label: subtópico em negrito (ex.: "Confidencialidade:")
+// - text: o texto do bloco
 type Block = {
+  groupTitle?: string;
+  heading?: string;
   label?: string;
   text: string;
 };
@@ -72,7 +78,7 @@ const SECTIONS: Section[] = [
       },
       {
         label: 'Política de privacidade:',
-        text: 'O uso do software está sujeito à Política de Privacidade da ClubMeal, que pode ser acessada em link para a Política de Privacidade.',
+        text: 'O uso do software está sujeito à Política de Segurança da ClubMeal, descrita abaixo.',
       },
       {
         label: 'Consentimento do usuário:',
@@ -82,6 +88,103 @@ const SECTIONS: Section[] = [
         label: 'Política de cookies:',
         text: 'O aplicativo MerendaJá poderá se utilizar de cookies e de outras ferramentas como o armazenamento local para manter o login ativo do usuário, lembrar preferências do usuário tais como idioma e tema, melhorar a experiência do usuário e gerar estatísticas.',
       },
+
+      // ===== Política de Segurança =====
+      {
+        groupTitle: 'Política de Segurança',
+        heading: 'Introdução',
+        text: 'A segurança da informação é fundamental para a integridade, confidencialidade e disponibilidade dos dados e sistemas da ClubMeal. Esta política define as diretrizes para proteger as informações da empresa contra acesso não autorizado, uso indevido, divulgação, alteração e destruição.',
+      },
+      {
+        heading: 'Objetivo',
+        text: 'O objetivo desta política é estabelecer um conjunto de regras para garantir a proteção das informações da ClubMeal, minimizando riscos e assegurando o cumprimento das leis e regulamentações aplicáveis.',
+      },
+      {
+        heading: 'Escopo',
+        text: 'Esta política se aplica a todos os funcionários, contratados, prestadores de serviços, parceiros e terceiros que tenham acesso aos sistemas e informações da ClubMeal.',
+      },
+      {
+        heading: 'Diretrizes gerais',
+        label: 'Confidencialidade:',
+        text: 'Todas as informações sensíveis devem ser acessíveis somente a indivíduos autorizados. O compartilhamento de informações deve ser limitado ao mínimo necessário.',
+      },
+      {
+        label: 'Integridade:',
+        text: 'As informações devem ser protegidas contra alterações não autorizadas. Sistemas de controle de versões e backups regulares devem ser implementados para preservar a integridade dos dados.',
+      },
+      {
+        label: 'Disponibilidade:',
+        text: 'As informações e os sistemas devem estar disponíveis para os usuários autorizados sempre que necessário, com medidas de contingência em vigor para garantir a continuidade dos negócios.',
+      },
+      {
+        heading: 'Classificação da informação',
+        text: 'As informações da ClubMeal devem ser classificadas em diferentes níveis de sensibilidade, como:',
+      },
+      {
+        label: 'Pública:',
+        text: 'Informações que podem ser divulgadas ao público sem restrições.',
+      },
+      {
+        label: 'Confidencial:',
+        text: 'Informações que podem causar danos à empresa se divulgadas indevidamente.',
+      },
+      {
+        label: 'Restrita:',
+        text: 'Informações altamente sensíveis que exigem o mais alto nível de proteção.',
+      },
+      {
+        heading: 'Controle de acesso',
+        label: 'Autenticação e Autorização:',
+        text: 'Todos os usuários devem ter credenciais únicas e seguras. O acesso aos sistemas e dados deve ser concedido com base na necessidade de saber e no princípio do menor privilégio.',
+      },
+      {
+        label: 'Gerenciamento de Senhas:',
+        text: 'Senhas devem ser complexas e trocadas regularmente. É proibido o compartilhamento de senhas.',
+      },
+      {
+        heading: 'Segurança física',
+        label: 'Controle de Acesso Físico:',
+        text: 'Somente pessoal autorizado pode acessar áreas onde informações sensíveis são armazenadas ou processadas.',
+      },
+      {
+        label: 'Proteção de Equipamentos:',
+        text: 'Todos os dispositivos devem estar fisicamente seguros, especialmente quando transportados.',
+      },
+      {
+        heading: 'Uso de dispositivo e rede',
+        label: 'Dispositivos Pessoais:',
+        text: 'O uso de dispositivos pessoais para acessar informações da empresa deve ser limitado e autorizado pela equipe de TI.',
+      },
+      {
+        label: 'Rede Segura:',
+        text: 'A conexão a redes públicas ou desconhecidas para acessar informações da empresa deve ser evitada. Redes virtuais privadas (VPNs) devem ser usadas quando necessário.',
+      },
+      {
+        heading: 'Treinamento e conscientização',
+        text: 'Todos os funcionários devem participar de programas regulares de treinamento em segurança da informação para entender suas responsabilidades e as melhores práticas.',
+      },
+      {
+        heading: 'Resposta a incidentes',
+        label: 'Relatório de Incidentes:',
+        text: 'Todos os incidentes de segurança devem ser reportados imediatamente ao departamento de TI ou ao responsável pela segurança da informação.',
+      },
+      {
+        label: 'Gestão de Incidentes:',
+        text: 'A equipe de resposta a incidentes deve investigar, documentar e mitigar os efeitos de qualquer incidente de segurança.',
+      },
+      {
+        heading: 'Conformidade e auditoria',
+        label: 'Conformidade:',
+        text: 'A ClubMeal deve assegurar o cumprimento de todas as leis e regulamentações aplicáveis relacionadas à segurança da informação.',
+      },
+      {
+        label: 'Auditorias Regulares:',
+        text: 'Auditorias internas e externas devem ser conduzidas regularmente para garantir a aderência a esta política.',
+      },
+      {
+        heading: 'Revisão da política',
+        text: 'Esta política deve ser revisada anualmente, ou sempre que necessário, para garantir sua eficácia e conformidade com as mudanças legais e tecnológicas.',
+      },
     ],
   },
   {
@@ -89,7 +192,7 @@ const SECTIONS: Section[] = [
     title: 'Limitação de responsabilidade',
     blocks: [
       {
-        text: 'Em nenhuma circunstância a ClubMeal será responsável por quaisquer danos diretos, indiretos, incidentais, especiais, consequenciais ou punitivos decorrentes do uso ou da incapacidade de usar o software, mesmo que a ClubMeal tenha sido avisada da possibilidade de tais danos',
+        text: 'Em nenhuma circunstância a ClubMeal será responsável por quaisquer danos diretos, indiretos, incidentais, especiais, consequenciais ou punitivos decorrentes do uso ou da incapacidade de usar o software, mesmo que a ClubMeal tenha sido avisada da possibilidade de tais danos.',
       },
     ],
   },
@@ -98,7 +201,7 @@ const SECTIONS: Section[] = [
     title: 'Garantia limitada',
     blocks: [
       {
-        text: 'O software é fornecido "como está", sem garantias de qualquer tipo, expressas ou implícitas, incluindo, mas não se limitando a garantias de comercialização, adequação a um propósito específico ou não violação',
+        text: 'O software é fornecido "como está", sem garantias de qualquer tipo, expressas ou implícitas, incluindo, mas não se limitando a garantias de comercialização, adequação a um propósito específico ou não violação.',
       },
     ],
   },
@@ -121,7 +224,7 @@ const SECTIONS: Section[] = [
       },
       {
         label: 'Alterações aos termos:',
-        text: 'A ClubMeal reserva-se o direito de modificar estes Termos de Uso a qualquer momento. As modificações serão efetivas quando publicadas no site da Club Meal ou quando notificadas a você por qualquer outro meio',
+        text: 'A ClubMeal reserva-se o direito de modificar estes Termos de Uso a qualquer momento. As modificações serão efetivas quando publicadas no site da ClubMeal ou quando notificadas a você por qualquer outro meio.',
       },
       {
         label: 'Acordo integral:',
@@ -199,7 +302,26 @@ export default function TermsOfUseScreen() {
             </View>
 
             {section.blocks.map((block, index) => (
-              <View key={index} style={index > 0 ? styles.blockSpacing : null}>
+              <View
+                key={index}
+                style={
+                  block.groupTitle
+                    ? null
+                    : index > 0
+                    ? block.heading
+                      ? styles.headingSpacing
+                      : styles.blockSpacing
+                    : null
+                }
+              >
+                {block.groupTitle ? (
+                  <Text style={styles.groupTitle}>{block.groupTitle}</Text>
+                ) : null}
+
+                {block.heading ? (
+                  <Text style={styles.heading}>{block.heading}</Text>
+                ) : null}
+
                 {block.label ? (
                   <Text style={styles.label}>{block.label}</Text>
                 ) : null}
@@ -309,6 +431,30 @@ const createStyles = (theme: any) =>
 
     blockSpacing: {
       marginTop: 14,
+    },
+
+    headingSpacing: {
+      marginTop: 20,
+    },
+
+    // Título do grupo (ex.: Política de Segurança)
+    groupTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: theme.text,
+      marginTop: 24,
+      marginBottom: 12,
+      paddingTop: 16,
+      borderTopWidth: 1,
+      borderTopColor: theme.divider,
+    },
+
+    // Título de subseção (ex.: Introdução, Objetivo)
+    heading: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: theme.primary,
+      marginBottom: 6,
     },
 
     label: {

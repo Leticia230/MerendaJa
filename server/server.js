@@ -45,6 +45,8 @@ app.get('/health', (req, res) => {
   res.json({ ok: true });
 });
 
-app.listen(3000, '0.0.0.0', () => {
-  console.log('Backend Stripe rodando na porta 3000');
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Backend Stripe rodando na porta ${PORT}`);
 });
