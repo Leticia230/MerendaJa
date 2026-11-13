@@ -13,14 +13,20 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-
 import { useAccessibility } from '../../components/AccessibilityContext';
 import { assinarCardapioData, Refeicao } from '../services/cardapio';
-import { diaAbreviadoDeHoje, nomeDiaSemanaPtBR, dataPorExtensoPtBR } from '../services/data';
+import {
+  diaAbreviadoDeHoje,
+  nomeDiaSemanaPtBR,
+  dataPorExtensoPtBR,
+} from '../services/data';
 import { useInstituicaoId } from '../services/useInstituicaoId';
 import Text from '../../components/AppText';
 import { dataISO } from '../services/refeicaoUtils';
+import { registrarDispositivoParaNotificacoes } from '../services/notificacoesPush';
 import * as Notifications from 'expo-notifications';
+import { useResponsive } from '../../hooks/useResponsive';
+import ResponsiveContainer from '../../components/ResponsiveContainer';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -33,16 +39,19 @@ Notifications.setNotificationHandler({
 
 function MealRow({ titulo, horario, color, icon }: Refeicao) {
   const { theme } = useAccessibility();
-  const styles = createStyles(theme);
+  const { isSmallScreen, fontScale } = useResponsive();
+
+  const compacto = isSmallScreen || fontScale >= 1.2;
+  const styles = createStyles(theme, compacto);
 
   return (
     <View style={styles.mealRow} testID={`meal-${titulo}`}>
-      <View style={{ flex: 1 }}>
+      <View style={styles.mealInfo}>
         <Text style={styles.mealTitle}>{titulo}</Text>
         <Text style={styles.mealTime}>{horario}</Text>
       </View>
 
-      <View style={[styles.mealIcon, { backgroundColor: color }]}>
+      <View style={[styles.mealIcon, compacto && styles.mealIconCompact, { backgroundColor: color }]}>
         <MaterialCommunityIcons
           name={icon as any}
           size={24}
@@ -65,61 +74,61 @@ function MarcarRefeicoesCard({
   onPress,
 }: MarcarCardProps) {
   const { theme } = useAccessibility();
-  const styles = createStyles(theme);
+  const { isSmallScreen, fontScale } = useResponsive();
+
+  const compacto = isSmallScreen || fontScale >= 1.2;
+  const styles = createStyles(theme, compacto);
 
   const pulse = useRef(new Animated.Value(0)).current;
   const press = useRef(new Animated.Value(1)).current;
   const [reduceMotion, setReduceMotion] = useState(false);
 
   useEffect(() => {
-  async function enviarNotificacao() {
-    try {
-      if (Platform.OS === 'web') return;
+    async function enviarNotificacao() {
+      try {
+        if (Platform.OS === 'web') return;
 
-      // Configuração do canal de notificações no Android
-      if (Platform.OS === 'android') {
-        await Notifications.setNotificationChannelAsync('default', {
-          name: 'Notificações',
-          importance: Notifications.AndroidImportance.HIGH,
-          vibrationPattern: [0, 250, 250, 250],
-          lightColor: '#F99033',
-        });
-      }
+        if (Platform.OS === 'android') {
+          await Notifications.setNotificationChannelAsync('default', {
+            name: 'Notificações',
+            importance: Notifications.AndroidImportance.HIGH,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#F99033',
+          });
+        }
 
-      // Verifica a permissão
-      const { status: statusAtual } =
-        await Notifications.getPermissionsAsync();
+        const { status: statusAtual } =
+          await Notifications.getPermissionsAsync();
 
-      let status = statusAtual;
+        let status = statusAtual;
 
-      if (status !== 'granted') {
-        const permissao =
-          await Notifications.requestPermissionsAsync();
+        if (status !== 'granted') {
+          const permissao =
+            await Notifications.requestPermissionsAsync();
 
-        status = permissao.status;
-      }
+          status = permissao.status;
+        }
 
-      if (status !== 'granted') return;
+        if (status !== 'granted') return;
 
-      // Envia a notificação imediatamente
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'Novo cardápio disponível! 🍝',
-          body: 'Confira as refeições preparadas para esta semana e confirme sua participação.',
-          sound: true,
-          data: {
-            tipo: 'novo_cardapio',
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Novo cardápio disponível! 🍝',
+            body: 'Confira as refeições preparadas para esta semana e confirme sua participação.',
+            sound: true,
+            data: {
+              tipo: 'novo_cardapio',
+            },
           },
-        },
-        trigger: null,
-      });
-    } catch (error) {
-      console.error('Erro ao enviar notificação:', error);
+          trigger: null,
+        });
+      } catch (error) {
+        console.error('Erro ao enviar notificação:', error);
+      }
     }
-  }
 
-  enviarNotificacao();
-}, []);
+    enviarNotificacao();
+  }, []);
 
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
@@ -169,10 +178,10 @@ function MarcarRefeicoesCard({
   const subtitulo = carregando
     ? 'Carregando as refeições de hoje...'
     : refeicoes.length === 0
-    ? 'Sem cardápio hoje, mas você pode conferir as opções'
-    : `${refeicoes.length} ${
-        refeicoes.length === 1 ? 'refeição' : 'refeições'
-      } hoje · escolha as que você vai comer`;
+      ? 'Sem cardápio hoje, mas você pode conferir as opções'
+      : `${refeicoes.length} ${
+          refeicoes.length === 1 ? 'refeição' : 'refeições'
+        } hoje · escolha as que você vai comer`;
 
   return (
     <Animated.View
@@ -214,7 +223,7 @@ function MarcarRefeicoesCard({
             </View>
           </View>
 
-          <View style={{ flex: 1 }}>
+          <View style={styles.marcarTextContainer}>
             <Text style={styles.marcarRefeicoesTitle}>
               Marcar refeições
             </Text>
@@ -264,21 +273,29 @@ function MarcarRefeicoesCard({
 
 export default function HomeAlunoScreen() {
   const { theme } = useAccessibility();
-  const styles = createStyles(theme);
+  const { isSmallScreen, fontScale } = useResponsive();
+
+  const compacto = isSmallScreen || fontScale >= 1.2;
+  const styles = createStyles(theme, compacto);
 
   const router = useRouter();
 
   const [refeicoesHoje, setRefeicoesHoje] = useState<Refeicao[]>([]);
   const [carregando, setCarregando] = useState(true);
 
-  const diaHoje = diaAbreviadoDeHoje(); // null se for fim de semana
-
+  const diaHoje = diaAbreviadoDeHoje();
   const hojeISO = dataISO();
 
   const {
     instituicaoId,
     carregando: carregandoInstituicao,
   } = useInstituicaoId();
+
+  useEffect(() => {
+    if (carregandoInstituicao || !instituicaoId) return;
+
+    registrarDispositivoParaNotificacoes(instituicaoId);
+  }, [carregandoInstituicao, instituicaoId]);
 
   useEffect(() => {
     if (carregandoInstituicao) return;
@@ -304,85 +321,91 @@ export default function HomeAlunoScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
-        <View>
-          <Text style={styles.hello}>Olá, Aluno!</Text>
-          <Text style={styles.brand}>Merenda Já</Text>
-        </View>
+        <ResponsiveContainer style={styles.headerContent}>
+          <View style={styles.headerText}>
+            <Text style={styles.hello}>Olá, Aluno!</Text>
+            <Text style={styles.brand}>Merenda Já</Text>
+          </View>
 
-        <Pressable
-          testID="notifications-button"
-          style={styles.bell}
-        >
-          <Ionicons
-            name="notifications-outline"
-            size={22}
-            color={theme.text}
-          />
-        </Pressable>
+          <Pressable
+            testID="notifications-button"
+            style={styles.bell}
+            accessibilityRole="button"
+            accessibilityLabel="Notificações"
+          >
+            <Ionicons
+              name="notifications-outline"
+              size={22}
+              color={theme.text}
+            />
+          </Pressable>
+        </ResponsiveContainer>
       </View>
 
       <ScrollView
         contentContainerStyle={styles.body}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable testID="day-banner" style={styles.dayBanner}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.dayTitle}>
-              {nomeDiaSemanaPtBR()}
-            </Text>
+        <ResponsiveContainer>
+          <Pressable testID="day-banner" style={styles.dayBanner}>
+            <View style={styles.dayBannerText}>
+              <Text style={styles.dayTitle}>
+                {nomeDiaSemanaPtBR()}
+              </Text>
 
-            <Text style={styles.dayDate}>
-              {dataPorExtensoPtBR()}
-            </Text>
-          </View>
+              <Text style={styles.dayDate}>
+                {dataPorExtensoPtBR()}
+              </Text>
+            </View>
 
-          <MaterialCommunityIcons
-            name="food-apple"
-            size={44}
-            color="#fff"
-          />
-        </Pressable>
-
-        <MarcarRefeicoesCard
-          refeicoes={refeicoesHoje}
-          carregando={carregando}
-          onPress={() => router.push('/RefeicoesDia')}
-        />
-
-        <Text style={styles.section}>Próximas refeições</Text>
-
-        <View style={styles.mealsCard}>
-          {carregando ? (
-            <ActivityIndicator
-              color={theme.primary}
-              style={{ padding: 20 }}
+            <MaterialCommunityIcons
+              name="food-apple"
+              size={44}
+              color="#fff"
             />
-          ) : !diaHoje ? (
-            <Text style={styles.emptyText}>
-              Hoje é fim de semana, sem cardápio cadastrado.
-            </Text>
-          ) : refeicoesHoje.length === 0 ? (
-            <Text style={styles.emptyText}>
-              A instituição ainda não cadastrou o cardápio de hoje.
-            </Text>
-          ) : (
-            refeicoesHoje.map((refeicao, i) => (
-              <React.Fragment key={i}>
-                <MealRow {...refeicao} />
+          </Pressable>
 
-                {i < refeicoesHoje.length - 1 && (
-                  <View style={styles.divider} />
-                )}
-              </React.Fragment>
-            ))
-          )}
-        </View>
+          <MarcarRefeicoesCard
+            refeicoes={refeicoesHoje}
+            carregando={carregando}
+            onPress={() => router.push('/RefeicoesDia')}
+          />
+
+          <Text style={styles.section}>Próximas refeições</Text>
+
+          <View style={styles.mealsCard}>
+            {carregando ? (
+              <ActivityIndicator
+                color={theme.primary}
+                style={{ padding: 20 }}
+              />
+            ) : !diaHoje ? (
+              <Text style={styles.emptyText}>
+                Hoje é fim de semana, sem cardápio cadastrado.
+              </Text>
+            ) : refeicoesHoje.length === 0 ? (
+              <Text style={styles.emptyText}>
+                A instituição ainda não cadastrou o cardápio de hoje.
+              </Text>
+            ) : (
+              refeicoesHoje.map((refeicao, i) => (
+                <React.Fragment key={i}>
+                  <MealRow {...refeicao} />
+
+                  {i < refeicoesHoje.length - 1 && (
+                    <View style={styles.divider} />
+                  )}
+                </React.Fragment>
+              ))
+            )}
+          </View>
+        </ResponsiveContainer>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const createStyles = (theme: any) =>
+const createStyles = (theme: any, compacto = false) =>
   StyleSheet.create({
     safe: {
       flex: 1,
@@ -390,13 +413,21 @@ const createStyles = (theme: any) =>
     },
 
     header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 20,
-      paddingVertical: 12,
       backgroundColor: theme.header,
       borderBottomLeftRadius: 24,
       borderBottomRightRadius: 24,
+    },
+
+    headerContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 12,
+    },
+
+    headerText: {
+      flex: 1,
+      minWidth: 0,
     },
 
     hello: {
@@ -412,9 +443,10 @@ const createStyles = (theme: any) =>
     },
 
     bell: {
-      marginLeft: 'auto',
+      marginLeft: 12,
       width: 40,
       height: 40,
+      flexShrink: 0,
       borderRadius: 20,
       backgroundColor: theme.card,
       alignItems: 'center',
@@ -424,16 +456,22 @@ const createStyles = (theme: any) =>
     },
 
     body: {
-      padding: 18,
+      paddingTop: 18,
       paddingBottom: 40,
     },
 
     dayBanner: {
       backgroundColor: theme.primary,
       borderRadius: 16,
-      padding: 16,
+      padding: compacto ? 14 : 16,
       flexDirection: 'row',
       alignItems: 'center',
+      gap: 12,
+    },
+
+    dayBannerText: {
+      flex: 1,
+      minWidth: 0,
     },
 
     dayTitle: {
@@ -448,25 +486,31 @@ const createStyles = (theme: any) =>
       marginTop: 4,
     },
 
-    // Card "Marcar refeições"
-
     marcarTop: {
       flexDirection: 'row',
       alignItems: 'center',
+      flexWrap: 'wrap',
       gap: 12,
     },
 
     marcarIconWrap: {
       width: 48,
       height: 48,
+      flexShrink: 0,
       alignItems: 'center',
       justifyContent: 'center',
+    },
+
+    marcarTextContainer: {
+      flex: 1,
+      flexShrink: 1,
+      minWidth: compacto ? 130 : 110,
     },
 
     marcarCard: {
       backgroundColor: theme.card,
       borderRadius: 18,
-      padding: 16,
+      padding: compacto ? 13 : 16,
       borderWidth: theme.borderWidth || 1,
       borderColor: theme.borderWidth ? theme.border : theme.soft,
       elevation: 4,
@@ -511,11 +555,13 @@ const createStyles = (theme: any) =>
     marcarCta: {
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'center',
       backgroundColor: theme.primary,
       borderRadius: 20,
-      paddingVertical: 6,
-      paddingLeft: 12,
-      paddingRight: 6,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      minHeight: 36,
+      flexShrink: 0,
     },
 
     marcarCtaText: {
@@ -543,11 +589,13 @@ const createStyles = (theme: any) =>
       paddingRight: 10,
       paddingLeft: 4,
       gap: 6,
+      maxWidth: '100%',
     },
 
     chipDot: {
       width: 20,
       height: 20,
+      flexShrink: 0,
       borderRadius: 10,
       alignItems: 'center',
       justifyContent: 'center',
@@ -557,6 +605,7 @@ const createStyles = (theme: any) =>
       color: theme.text,
       fontSize: 11,
       fontWeight: '600',
+      flexShrink: 1,
     },
 
     section: {
@@ -585,28 +634,41 @@ const createStyles = (theme: any) =>
     mealRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      padding: 12,
+      padding: compacto ? 10 : 12,
       gap: 12,
+    },
+
+    mealInfo: {
+      flex: 1,
+      minWidth: 0,
     },
 
     mealTitle: {
       fontSize: 15,
       fontWeight: '700',
       color: theme.text,
+      flexShrink: 1,
     },
 
     mealTime: {
       fontSize: 12,
       color: theme.textMuted,
       marginTop: 2,
+      flexShrink: 1,
     },
 
     mealIcon: {
       width: 52,
       height: 52,
+      flexShrink: 0,
       borderRadius: 12,
       alignItems: 'center',
       justifyContent: 'center',
+    },
+
+    mealIconCompact: {
+      width: 46,
+      height: 46,
     },
 
     divider: {

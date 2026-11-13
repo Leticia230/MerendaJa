@@ -10,7 +10,6 @@ import {
 type Props = {
   children: React.ReactNode;
   contentContainerStyle?: StyleProp<ViewStyle>;
-  // Use se houver um cabeçalho fixo acima (altura dele)
   keyboardVerticalOffset?: number;
 };
 

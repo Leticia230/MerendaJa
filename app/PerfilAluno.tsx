@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+
 import {
   View,
   StyleSheet,
@@ -8,12 +9,15 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import ScreenHeader from '../components/ScreenHeader';
 import LabeledInput from '../components/LabeledInput';
 import BotaoPrimario from '../components/BotaoPrimario';
+import ResponsiveContainer from '../components/ResponsiveContainer';
+import { useResponsive } from '../hooks/useResponsive';
 import { useAccessibility } from '../components/AccessibilityContext';
 
 import {
@@ -26,7 +30,19 @@ import Text from '../components/AppText';
 
 export default function ProfileScreen() {
   const { theme } = useAccessibility();
-  const styles = createStyles(theme);
+
+  const {
+    isSmallScreen,
+    fontScale,
+    horizontalPadding,
+  } = useResponsive();
+
+  const compacto = isSmallScreen || fontScale >= 1.2;
+
+  const styles = useMemo(
+    () => createStyles(theme, compacto),
+    [theme, compacto]
+  );
 
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
@@ -70,6 +86,7 @@ export default function ProfileScreen() {
       setRm(perfil.rm ?? '');
       setTurma(perfil.turmaNome ?? '');
       setPeriodo(perfil.periodo ?? '');
+
       setDietaryRestrictions(
         perfil.restricoesAlimentares ?? ''
       );
@@ -86,6 +103,8 @@ export default function ProfileScreen() {
   }
 
   async function salvarPerfil() {
+    if (salvando) return;
+
     try {
       const alunoId = auth.currentUser?.uid;
 
@@ -144,7 +163,7 @@ export default function ProfileScreen() {
       <ScreenHeader title="Meu perfil" />
 
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={styles.keyboardView}
         behavior={
           Platform.OS === 'ios'
             ? 'padding'
@@ -152,98 +171,122 @@ export default function ProfileScreen() {
         }
       >
         <ScrollView
-          contentContainerStyle={styles.body}
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.avatar}>
-            <Ionicons
-              name="person"
-              size={44}
-              color="#fff"
+          <ResponsiveContainer
+            style={[
+              styles.body,
+              { paddingHorizontal: horizontalPadding },
+            ]}
+          >
+            <View style={styles.avatar}>
+              <Ionicons
+                name="person"
+                size={compacto ? 38 : 44}
+                color="#fff"
+              />
+            </View>
+
+            <LabeledInput
+              testID="profile-name-input"
+              label="Nome"
+              placeholder="Nome completo"
+              value={nome}
+              onChangeText={setNome}
             />
-          </View>
 
-          <LabeledInput
-            testID="profile-name-input"
-            label="Nome"
-            placeholder="Nome completo"
-            value={nome}
-            onChangeText={setNome}
-          />
+            <LabeledInput
+              testID="profile-email-input"
+              label="E-mail"
+              placeholder="seu@email.com"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              value={email}
+              onChangeText={setEmail}
+            />
 
-          <LabeledInput
-            testID="profile-email-input"
-            label="E-mail"
-            placeholder="seu@email.com"
-            autoCapitalize="none"
-            keyboardType="email-address"
-            value={email}
-            onChangeText={setEmail}
-          />
+            <LabeledInput
+              testID="profile-rm-input"
+              label="RM"
+              placeholder="Registro do aluno"
+              value={rm}
+              onChangeText={setRm}
+            />
 
-          <LabeledInput
-            testID="profile-rm-input"
-            label="RM"
-            placeholder="Registro do aluno"
-            value={rm}
-            onChangeText={setRm}
-          />
+            <LabeledInput
+              testID="profile-dietary-restrictions-input"
+              label="Restrições alimentares"
+              placeholder="Ex.: Sem glúten, sem lactose"
+              autoCapitalize="sentences"
+              keyboardType="default"
+              value={dietaryRestrictions}
+              onChangeText={setDietaryRestrictions}
+            />
 
-          <LabeledInput
-            testID="profile-dietary-restrictions-input"
-            label="Restrições alimentares"
-            placeholder="Ex.: Sem glúten, sem lactose"
-            autoCapitalize="sentences"
-            keyboardType="default"
-            value={dietaryRestrictions}
-            onChangeText={setDietaryRestrictions}
-          />
+            <Text style={styles.helperText}>
+              Informe alergias, intolerâncias ou outras
+              restrições alimentares importantes.
+            </Text>
 
-          <Text style={styles.helperText}>
-            Informe alergias, intolerâncias ou outras
-            restrições alimentares importantes.
-          </Text>
-
-          <BotaoPrimario
-            testID="profile-save-button"
-            title={
-              salvando
-                ? 'Salvando...'
-                : 'Salvar alterações'
-            }
-            onPress={salvarPerfil}
-            style={{ marginTop: 16 }}
-          />
+            <BotaoPrimario
+              testID="profile-save-button"
+              title={
+                salvando
+                  ? 'Salvando...'
+                  : 'Salvar alterações'
+              }
+              onPress={salvarPerfil}
+              disabled={salvando}
+              style={styles.button}
+            />
+          </ResponsiveContainer>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const createStyles = (theme: any) =>
+const createStyles = (theme: any, compacto: boolean) =>
   StyleSheet.create({
     safe: {
       flex: 1,
       backgroundColor: theme.background,
     },
 
+    keyboardView: {
+      flex: 1,
+    },
+
+    scroll: {
+      flex: 1,
+    },
+
+    scrollContent: {
+      flexGrow: 1,
+      paddingBottom: 24,
+    },
+
     body: {
-      padding: 22,
+      flex: 0,
+      paddingTop: compacto ? 8 : 12,
       paddingBottom: 40,
     },
 
     avatar: {
-      width: 100,
-      height: 100,
-      borderRadius: 50,
+      width: compacto ? 84 : 100,
+      height: compacto ? 84 : 100,
+      borderRadius: compacto ? 42 : 50,
       alignSelf: 'center',
-      marginBottom: 20,
+      marginBottom: compacto ? 16 : 20,
       backgroundColor: theme.primary,
       alignItems: 'center',
       justifyContent: 'center',
       shadowColor: theme.primary,
       shadowOpacity: 0.25,
-      shadowRadius: 10,
+      shadowRadius: compacto ? 7 : 10,
       shadowOffset: {
         width: 0,
         height: 4,
@@ -252,22 +295,28 @@ const createStyles = (theme: any) =>
     },
 
     helperText: {
-      fontSize: 11,
+      fontSize: compacto ? 10 : 11,
       color: theme.textMuted,
       marginTop: -8,
       marginBottom: 12,
-      lineHeight: 16,
+      lineHeight: compacto ? 15 : 16,
+    },
+
+    button: {
+      marginTop: compacto ? 12 : 16,
     },
 
     loading: {
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
+      paddingHorizontal: 20,
     },
 
     loadingText: {
       marginTop: 12,
-      fontSize: 14,
+      fontSize: compacto ? 13 : 14,
       color: theme.textMuted,
+      textAlign: 'center',
     },
   });

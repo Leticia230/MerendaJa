@@ -1,5 +1,5 @@
+import React, { useMemo, useRef, useState } from 'react';
 
-import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -19,11 +19,12 @@ import { useRouter } from 'expo-router';
 import ScreenHeader from '../components/ScreenHeader';
 import LabeledInput from '../components/LabeledInput';
 import BotaoPrimario from '../components/BotaoPrimario';
+import ResponsiveContainer from '../components/ResponsiveContainer';
+import { useResponsive } from '../hooks/useResponsive';
 import { useAccessibility } from '../components/AccessibilityContext';
 
 import { login } from '../components/auth';
 
-// Mapa de erros do Firebase Auth (e da checagem de tipo) para mensagens amigáveis
 const ERROS_LOGIN: Record<string, { titulo: string; mensagem: string }> = {
   'auth/user-not-found': {
     titulo: 'Conta não encontrada',
@@ -62,21 +63,29 @@ const ERROS_LOGIN: Record<string, { titulo: string; mensagem: string }> = {
 export default function LoginInstitution() {
   const router = useRouter();
   const { theme } = useAccessibility();
-  const styles = createStyles(theme);
+
+  const {
+    isSmallScreen,
+    fontScale,
+    horizontalPadding,
+  } = useResponsive();
+
+  const compacto = isSmallScreen || fontScale >= 1.2;
+
+  const styles = useMemo(
+    () => createStyles(theme, compacto),
+    [theme, compacto]
+  );
 
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
   const [carregando, setCarregando] = useState(false);
 
-  // Ref para permitir que o "próximo" do teclado pule do e-mail pra senha.
-  // Só funciona se LabeledInput encaminhar a ref para o TextInput interno
-  // (React.forwardRef). Se não encaminhar, isso é ignorado sem quebrar nada.
   const passInputRef = useRef<TextInput>(null);
 
   async function realizarLogin() {
     const emailNormalizado = email.trim().toLowerCase();
 
-    // Verifica se os campos estão preenchidos
     if (!emailNormalizado || !pass) {
       Alert.alert(
         'Campos obrigatórios',
@@ -85,20 +94,15 @@ export default function LoginInstitution() {
       return;
     }
 
-    if (carregando) return; // evita múltiplos toques/envios simultâneos
+    if (carregando) return;
 
     setCarregando(true);
 
     try {
-      // Firebase verifica o e-mail e a senha, e confirma que a conta
-      // é do tipo 'instituicao' — senão lança 'app/tipo-incorreto'.
       await login(emailNormalizado, pass, 'instituicao');
 
-      // Navega imediatamente após o sucesso — não depende do onPress
-      // do Alert, que não dispara de forma confiável no Expo Web.
       router.replace('/(tabs-instituicao)/Home');
 
-      // Alert é só feedback visual, sem lógica de navegação dentro dele
       if (Platform.OS !== 'web') {
         Alert.alert('Login realizado!', 'Bem-vindo ao Merenda Já.');
       }
@@ -130,102 +134,112 @@ export default function LoginInstitution() {
         }
       >
         <ScrollView
-          contentContainerStyle={styles.body}
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.iconWrap}>
-            <Ionicons
-              name="business"
-              size={38}
-              color="#fff"
-            />
-          </View>
-
-          <Text style={styles.title}>
-            Login da Instituição
-          </Text>
-
-          <LabeledInput
-            testID="loginst-email-input"
-            label="E-mail institucional"
-            placeholder="seu@email.com"
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            autoComplete="email"
-            textContentType="username"
-            returnKeyType="next"
-            onSubmitEditing={() => passInputRef.current?.focus()}
-            blurOnSubmit={false}
-            editable={!carregando}
-            value={email}
-            onChangeText={setEmail}
-            containerStyle={styles.firstInput}
-          />
-
-          <LabeledInput
-            ref={passInputRef}
-            testID="loginst-pass-input"
-            label="Senha"
-            placeholder="Digite sua senha"
-            isPassword
-            autoComplete="password"
-            textContentType="password"
-            returnKeyType="done"
-            onSubmitEditing={realizarLogin}
-            editable={!carregando}
-            value={pass}
-            onChangeText={setPass}
-          />
-
-          <Pressable
-            onPress={() => router.push('/RecuperarSenha')}
-            accessibilityRole="link"
-            accessibilityLabel="Esqueceu a senha?"
+          <ResponsiveContainer
+            style={[
+              styles.body,
+              { paddingHorizontal: horizontalPadding },
+            ]}
           >
-            <Text style={styles.link}>
-              Esqueceu a senha?
-            </Text>
-          </Pressable>
+            <View style={styles.iconWrap}>
+              <Ionicons
+                name="business"
+                size={compacto ? 34 : 38}
+                color="#fff"
+              />
+            </View>
 
-          <BotaoPrimario
-            testID="loginst-submit-button"
-            title={carregando ? 'Entrando...' : 'Entrar'}
-            onPress={realizarLogin}
-            disabled={carregando}
-            style={styles.button}
-          />
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              Não tem uma conta?{' '}
+            <Text style={styles.title}>
+              Login da Instituição
             </Text>
+
+            <LabeledInput
+              testID="loginst-email-input"
+              label="E-mail institucional"
+              placeholder="seu@email.com"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              autoComplete="email"
+              textContentType="username"
+              returnKeyType="next"
+              onSubmitEditing={() => passInputRef.current?.focus()}
+              blurOnSubmit={false}
+              editable={!carregando}
+              value={email}
+              onChangeText={setEmail}
+              containerStyle={styles.firstInput}
+            />
+
+            <LabeledInput
+              ref={passInputRef}
+              testID="loginst-pass-input"
+              label="Senha"
+              placeholder="Digite sua senha"
+              isPassword
+              autoComplete="password"
+              textContentType="password"
+              returnKeyType="done"
+              onSubmitEditing={realizarLogin}
+              editable={!carregando}
+              value={pass}
+              onChangeText={setPass}
+            />
 
             <Pressable
-              onPress={() =>
-                router.push('/CadastroInstituicao')
-              }
+              onPress={() => router.push('/RecuperarSenha')}
               accessibilityRole="link"
-              accessibilityLabel="Criar conta"
-              disabled={carregando}
+              accessibilityLabel="Esqueceu a senha?"
+              style={styles.linkContainer}
             >
-              <Text
-                style={[
-                  styles.footerText,
-                  styles.footerLink,
-                ]}
-              >
-                Criar conta
+              <Text style={styles.link}>
+                Esqueceu a senha?
               </Text>
             </Pressable>
-          </View>
+
+            <BotaoPrimario
+              testID="loginst-submit-button"
+              title={carregando ? 'Entrando...' : 'Entrar'}
+              onPress={realizarLogin}
+              disabled={carregando}
+              style={styles.button}
+            />
+
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>
+                Não tem uma conta?{' '}
+              </Text>
+
+              <Pressable
+                onPress={() =>
+                  router.push('/CadastroInstituicao')
+                }
+                accessibilityRole="link"
+                accessibilityLabel="Criar conta"
+                disabled={carregando}
+              >
+                <Text
+                  style={[
+                    styles.footerText,
+                    styles.footerLink,
+                  ]}
+                >
+                  Criar conta
+                </Text>
+              </Pressable>
+            </View>
+          </ResponsiveContainer>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const createStyles = (theme: any) =>
+const createStyles = (theme: any, compacto: boolean) =>
   StyleSheet.create({
     safe: {
       flex: 1,
@@ -236,38 +250,54 @@ const createStyles = (theme: any) =>
       flex: 1,
     },
 
+    scroll: {
+      flex: 1,
+    },
+
+    scrollContent: {
+      flexGrow: 1,
+      paddingBottom: 24,
+    },
+
     body: {
-      padding: 22,
-      paddingTop: 4,
+      flex: 0,
+      paddingTop: compacto ? 4 : 8,
       paddingBottom: 30,
     },
 
     iconWrap: {
-      width: 78,
-      height: 78,
-      borderRadius: 39,
+      width: compacto ? 68 : 78,
+      height: compacto ? 68 : 78,
+      borderRadius: compacto ? 34 : 39,
       backgroundColor: theme.primary,
       alignSelf: 'center',
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: 10,
+      marginBottom: compacto ? 8 : 10,
     },
 
     title: {
-      fontSize: 20,
+      fontSize: compacto ? 18 : 20,
       fontWeight: '800',
       color: theme.text,
       textAlign: 'center',
+      marginBottom: compacto ? 2 : 4,
     },
 
     firstInput: {
-      marginTop: 20,
+      marginTop: compacto ? 16 : 20,
+    },
+
+    linkContainer: {
+      alignSelf: 'flex-end',
+      paddingVertical: 4,
+      paddingLeft: 12,
     },
 
     link: {
       color: theme.primary,
       fontWeight: '600',
-      fontSize: 13,
+      fontSize: compacto ? 12 : 13,
       textAlign: 'right',
       textDecorationLine: 'underline',
       marginTop: 2,
@@ -275,17 +305,19 @@ const createStyles = (theme: any) =>
     },
 
     button: {
-      marginTop: 16,
+      marginTop: compacto ? 12 : 16,
     },
 
     footer: {
       flexDirection: 'row',
+      flexWrap: 'wrap',
       justifyContent: 'center',
-      marginTop: 18,
+      alignItems: 'center',
+      marginTop: compacto ? 16 : 18,
     },
 
     footerText: {
-      fontSize: 13,
+      fontSize: compacto ? 12 : 13,
       color: theme.textMuted,
     },
 

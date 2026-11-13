@@ -1,6 +1,10 @@
-
 import React from 'react';
-import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -8,6 +12,8 @@ import { signOut } from 'firebase/auth';
 import { auth } from '../../components/firebaseConfig';
 import Text from '../../components/AppText';
 import { useAccessibility } from '../../components/AccessibilityContext';
+import { useResponsive } from '../../hooks/useResponsive';
+import ResponsiveContainer from '../../components/ResponsiveContainer';
 
 const ITEMS = [
   { icon: 'person', label: 'Perfil', route: '/PerfilAluno', color: '#FFB27A' },
@@ -21,7 +27,10 @@ const ITEMS = [
 export default function ConfigScreen() {
   const router = useRouter();
   const { theme } = useAccessibility();
-  const styles = createStyles(theme);
+  const { isSmallScreen, fontScale } = useResponsive();
+
+  const compacto = isSmallScreen || fontScale >= 1.2;
+  const styles = createStyles(theme, compacto);
 
   async function sair() {
     try {
@@ -34,136 +43,159 @@ export default function ConfigScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.headerWrap}>
-        <Text style={styles.headerTitle}>Configurações</Text>
+        <ResponsiveContainer style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Configurações</Text>
 
-        <Ionicons
-          name="settings-outline"
-          size={20}
-          color={theme.text}
-        />
+          <Ionicons
+            name="settings-outline"
+            size={20}
+            color={theme.text}
+          />
+        </ResponsiveContainer>
       </View>
 
       <ScrollView
         contentContainerStyle={styles.body}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.card}>
-          {ITEMS.map((it, i) => (
-            <Pressable
-              key={it.label}
-              testID={`config-${it.label}`}
-              onPress={() => it.route && router.push(it.route as any)}
-              style={[
-                styles.row,
-                i < ITEMS.length - 1 && styles.rowBorder,
-              ]}
-            >
-              <View style={[styles.iconWrap, { backgroundColor: it.color }]}>
+        <ResponsiveContainer>
+          <View style={styles.card}>
+            {ITEMS.map((it, i) => (
+              <Pressable
+                key={it.label}
+                testID={`config-${it.label}`}
+                onPress={() => it.route && router.push(it.route as any)}
+                style={[
+                  styles.row,
+                  i < ITEMS.length - 1 && styles.rowBorder,
+                ]}
+              >
+                <View style={[styles.iconWrap, { backgroundColor: it.color }]}>
+                  <Ionicons
+                    name={it.icon as any}
+                    size={18}
+                    color="#fff"
+                  />
+                </View>
+
+                <Text style={styles.label}>{it.label}</Text>
+
                 <Ionicons
-                  name={it.icon as any}
+                  name="chevron-forward"
                   size={18}
-                  color="#fff"
+                  color={theme.textMuted}
+                  style={styles.chevron}
                 />
-              </View>
+              </Pressable>
+            ))}
+          </View>
 
-              <Text style={styles.label}>{it.label}</Text>
-
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={theme.textMuted}
-              />
-            </Pressable>
-          ))}
-        </View>
-
-        <Pressable
-          testID="logout-button"
-          style={styles.logout}
-          onPress={sair}
-        >
-          <Text style={styles.logoutText}>Sair da conta</Text>
-        </Pressable>
+          <Pressable
+            testID="logout-button"
+            style={styles.logout}
+            onPress={sair}
+          >
+            <Text style={styles.logoutText}>Sair da conta</Text>
+          </Pressable>
+        </ResponsiveContainer>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const createStyles = (theme: any) => StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: theme.background,
-  },
+const createStyles = (theme: any, compacto = false) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
 
-  headerWrap: {
-    backgroundColor: theme.header,
-    paddingTop: 20,
-    paddingBottom: 18,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
+    headerWrap: {
+      backgroundColor: theme.header,
+      paddingTop: 20,
+      paddingBottom: 18,
+      borderBottomLeftRadius: 24,
+      borderBottomRightRadius: 24,
+    },
 
-  headerTitle: {
-    flex: 1,
-    fontSize: 20,
-    fontWeight: '800',
-    color: theme.text,
-  },
+    headerContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
 
-  body: {
-    padding: 16,
-    paddingBottom: 40,
-  },
+    headerTitle: {
+      flex: 1,
+      fontSize: 20,
+      fontWeight: '800',
+      color: theme.text,
+    },
 
-  card: {
-    backgroundColor: theme.card,
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: theme.borderWidth,
-    borderColor: theme.border,
-  },
+    body: {
+      paddingTop: 16,
+      paddingBottom: 40,
+    },
 
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-    gap: 12,
-  },
+    card: {
+      backgroundColor: theme.card,
+      borderRadius: 16,
+      overflow: 'hidden',
+      borderWidth: theme.borderWidth,
+      borderColor: theme.border,
+    },
 
-  rowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: theme.divider,
-  },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: compacto ? 14 : 15,
+      paddingHorizontal: compacto ? 12 : 14,
+      gap: compacto ? 10 : 12,
+      minHeight: 62,
+    },
 
-  iconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    rowBorder: {
+      borderBottomWidth: 1,
+      borderBottomColor: theme.divider,
+    },
 
-  label: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
-    color: theme.text,
-  },
+    iconWrap: {
+      width: 36,
+      height: 36,
+      flexShrink: 0,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
 
-  logout: {
-    backgroundColor: theme.primary,
-    borderRadius: 14,
-    padding: 15,
-    alignItems: 'center',
-    marginTop: 20,
-  },
+    label: {
+      flex: 1,
+      minWidth: 0,
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.text,
+      flexShrink: 1,
+    },
 
-  logoutText: {
-    color: theme.onPrimary,
-    fontWeight: '700',
-    fontSize: 15,
-  },
-});
+    chevron: {
+      flexShrink: 0,
+    },
+
+    logout: {
+      backgroundColor: theme.primary,
+      borderRadius: 14,
+      paddingVertical: 15,
+      paddingHorizontal: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 20,
+      minHeight: 50,
+    },
+
+    logoutText: {
+      color: theme.onPrimary,
+      fontWeight: '700',
+      fontSize: 15,
+      textAlign: 'center',
+    },
+  });

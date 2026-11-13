@@ -11,7 +11,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import Text from '../../components/AppText';
-import { useAccessibility, AccessibilityTheme } from '../../components/AccessibilityContext';
+import {
+  useAccessibility,
+  AccessibilityTheme,
+} from '../../components/AccessibilityContext';
+import { useResponsive } from '../../hooks/useResponsive';
+import ResponsiveContainer from '../../components/ResponsiveContainer';
 import { listarAlunos } from '../services/alunos';
 import { listarTurmas } from '../services/turmas';
 import { assinarCardapioData, Refeicao } from '../services/cardapio';
@@ -42,7 +47,6 @@ Notifications.setNotificationHandler({
   }),
 });
 
-
 const DIAS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
 
 type ContagemRefeicao = {
@@ -50,8 +54,6 @@ type ContagemRefeicao = {
   nao: number;
 };
 
-// Soma as confirmações de "vou comer" e "não vou comer"
-// para cada tipo de refeição.
 function contarPorTipo(
   lista: ConfirmacaoDatada[]
 ): Record<string, ContagemRefeicao> {
@@ -78,8 +80,6 @@ function contarPorTipo(
   return contagem;
 }
 
-// Calcula a data correspondente ao dia selecionado
-// usando o mesmo intervalo semanal do planejamento dos alunos.
 function obterDataSelecionada(diaSelecionado: string): string {
   const [inicio] = intervaloDoPeriodo('semana');
   const [ano, mes, dia] = inicio.split('-').map(Number);
@@ -93,7 +93,6 @@ function obterDataSelecionada(diaSelecionado: string): string {
   return dataISO(data);
 }
 
-// Linha que representa cada refeição na Home.
 function MealRow({
   refeicao,
   contagem,
@@ -102,7 +101,14 @@ function MealRow({
   contagem: ContagemRefeicao;
 }) {
   const { theme } = useAccessibility();
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  const { isSmallScreen, fontScale } = useResponsive();
+
+  const compacto = isSmallScreen || fontScale >= 1.2;
+
+  const styles = useMemo(
+    () => createStyles(theme, compacto),
+    [theme, compacto]
+  );
 
   return (
     <View style={styles.mealRow} testID={`meal-${refeicao.titulo}`}>
@@ -114,7 +120,7 @@ function MealRow({
         />
       </View>
 
-      <View style={{ flex: 1 }}>
+      <View style={styles.mealInfo}>
         <Text style={styles.mealTitle}>{refeicao.titulo}</Text>
         <Text style={styles.mealTime}>{refeicao.horario}</Text>
       </View>
@@ -141,7 +147,14 @@ function MealRow({
 export default function HomeScreen() {
   const router = useRouter();
   const { theme } = useAccessibility();
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  const { isSmallScreen, fontScale } = useResponsive();
+
+  const compacto = isSmallScreen || fontScale >= 1.2;
+
+  const styles = useMemo(
+    () => createStyles(theme, compacto),
+    [theme, compacto]
+  );
 
   const [verificandoAssinatura, setVerificandoAssinatura] = useState(true);
 
@@ -160,8 +173,7 @@ export default function HomeScreen() {
     async function enviarNotificacao() {
       try {
         if (Platform.OS === 'web') return;
-  
-        // Configuração do canal de notificações no Android
+
         if (Platform.OS === 'android') {
           await Notifications.setNotificationChannelAsync('default', {
             name: 'Notificações',
@@ -170,43 +182,40 @@ export default function HomeScreen() {
             lightColor: '#F99033',
           });
         }
-  
-        // Verifica a permissão
+
         const { status: statusAtual } =
           await Notifications.getPermissionsAsync();
-  
+
         let status = statusAtual;
-  
+
         if (status !== 'granted') {
           const permissao =
             await Notifications.requestPermissionsAsync();
-  
+
           status = permissao.status;
         }
-  
+
         if (status !== 'granted') return;
-  
-        // Envia a notificação imediatamente
+
         await Notifications.scheduleNotificationAsync({
           content: {
-          title: 'Hora de atualizar o cardápio! 🍲',
-          body: 'Que tal cadastrar as refeições de hoje? Mantenha os alunos informados sobre o que será servido!',
-          sound: true,
-          data: {
-            tipo: 'lembrete_cardapio',
+            title: 'Hora de atualizar o cardápio! 🍲',
+            body: 'Que tal cadastrar as refeições de hoje? Mantenha os alunos informados sobre o que será servido!',
+            sound: true,
+            data: {
+              tipo: 'lembrete_cardapio',
+            },
           },
-        },
           trigger: null,
         });
       } catch (error) {
         console.error('Erro ao enviar notificação:', error);
       }
     }
-  
+
     enviarNotificacao();
   }, []);
 
-  // Verifica se a instituição possui uma assinatura ativa.
   useEffect(() => {
     let montado = true;
 
@@ -221,8 +230,6 @@ export default function HomeScreen() {
         }
       })
       .catch((e) => {
-        // Em caso de falha de rede ou permissão,
-        // não redireciona para os planos por engano.
         console.error('Erro ao verificar assinatura:', e);
 
         if (montado) {
@@ -235,8 +242,6 @@ export default function HomeScreen() {
     };
   }, [router]);
 
-  // Atualiza os totais de alunos e turmas
-  // sempre que a Home ganha foco.
   useFocusEffect(
     useCallback(() => {
       let ativo = true;
@@ -265,7 +270,6 @@ export default function HomeScreen() {
     }, [])
   );
 
-  // Carrega o cardápio do dia selecionado.
   useEffect(() => {
     setCarregandoRefeicoes(true);
     setRefeicoesDoDia([]);
@@ -290,7 +294,6 @@ export default function HomeScreen() {
     };
   }, [diaSelecionado]);
 
-  // Carrega as confirmações do dia selecionado em tempo real.
   useEffect(() => {
     setContagemPorTipo({});
 
@@ -312,12 +315,9 @@ export default function HomeScreen() {
     };
   }, [diaSelecionado]);
 
-  // Enquanto verifica a assinatura, exibe o carregamento.
   if (verificandoAssinatura) {
     return (
-      <SafeAreaView
-        style={[styles.safe, { alignItems: 'center', justifyContent: 'center' }]}
-      >
+      <SafeAreaView style={styles.loadingSafe}>
         <ActivityIndicator color={theme.primary} />
       </SafeAreaView>
     );
@@ -331,265 +331,392 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      {/* Cabeçalho */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.hello}>Olá, Admin!</Text>
-          <Text style={styles.brand}>Merenda Já</Text>
-        </View>
+        <ResponsiveContainer style={styles.headerContent}>
+          <View style={styles.headerTexts}>
+            <Text style={styles.hello}>Olá, Admin!</Text>
+            <Text style={styles.brand}>Merenda Já</Text>
+          </View>
 
-        <Pressable testID="notifications-button" style={styles.bell}>
-          <Ionicons
-            name="notifications-outline"
-            size={22}
-            color={theme.text}
-          />
-        </Pressable>
+          <Pressable
+            testID="notifications-button"
+            style={styles.bell}
+            accessibilityRole="button"
+            accessibilityLabel="Notificações"
+          >
+            <Ionicons
+              name="notifications-outline"
+              size={22}
+              color={theme.text}
+            />
+          </Pressable>
+        </ResponsiveContainer>
       </View>
 
       <ScrollView
         contentContainerStyle={styles.body}
         showsVerticalScrollIndicator={false}
       >
-        {/* Banner do dia */}
-        <View style={styles.dayBanner} testID="day-banner">
-          <View style={{ flex: 1 }}>
-            <Text style={styles.dayTitle}>{nomeDiaSemanaPtBR()}</Text>
-            <Text style={styles.dayDate}>{dataPorExtensoPtBR()}</Text>
-          </View>
+        <ResponsiveContainer style={styles.scrollContent}>
+          <View style={styles.dayBanner} testID="day-banner">
+            <View style={styles.bannerText}>
+              <Text style={styles.dayTitle}>{nomeDiaSemanaPtBR()}</Text>
+              <Text style={styles.dayDate}>{dataPorExtensoPtBR()}</Text>
+            </View>
 
-          <MaterialCommunityIcons name="food-apple" size={44} color="#fff" />
-        </View>
-
-        {/* Aviso de fim de semana */}
-        {!diaHoje && (
-          <View style={styles.avisoFimDeSemana}>
-            <Ionicons name="calendar-outline" size={16} color={theme.primary} />
-            <Text style={styles.avisoFimDeSemanaText}>
-              Hoje é fim de semana: mostrando os dados da próxima semana.
-            </Text>
-          </View>
-        )}
-
-        {/* Acesso às estatísticas */}
-        <Pressable
-          testID="estatisticas-button"
-          style={[styles.quickAction, { marginTop: 10 }]}
-          onPress={() => router.push('/Estatisticas')}
-        >
-          <View style={styles.quickActionIcon}>
-            <Ionicons name="stats-chart" size={22} color="#fff" />
-          </View>
-
-          <View style={{ flex: 1 }}>
-            <Text style={styles.quickActionTitle}>Estatísticas</Text>
-            <Text style={styles.quickActionSubtitle}>
-              Veja a demanda de refeições dos alunos
-            </Text>
-          </View>
-
-          <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
-        </Pressable>
-
-        <Text style={styles.section}>Ações rápidas</Text>
-
-        {/* Cadastro de aluno */}
-        <Pressable
-          testID="cadastrar-aluno-button"
-          style={styles.quickAction}
-          onPress={() => router.push('/CadastroAluno')}
-        >
-          <View style={styles.quickActionIcon}>
-            <Ionicons name="person-add" size={22} color="#fff" />
-          </View>
-
-          <View style={{ flex: 1 }}>
-            <Text style={styles.quickActionTitle}>Cadastrar aluno</Text>
-            <Text style={styles.quickActionSubtitle}>
-              Adicione um novo aluno à instituição
-            </Text>
-          </View>
-
-          <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
-        </Pressable>
-
-        {/* Restrições alimentares */}
-        <Pressable
-          testID="restricoes-alimentares-button"
-          style={[styles.quickAction, { marginTop: 10 }]}
-          onPress={() => router.push('../RestricoesAlimentares')}
-        >
-          <View style={styles.quickActionIcon}>
-            <Ionicons name="warning-outline" size={22} color="#fff" />
-          </View>
-
-          <View style={{ flex: 1 }}>
-            <Text style={styles.quickActionTitle}>Restrições alimentares</Text>
-            <Text style={styles.quickActionSubtitle}>
-              Consulte as restrições informadas pelos alunos
-            </Text>
-          </View>
-
-          <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
-        </Pressable>
-
-        {/* Resumo do dia */}
-        <Text style={styles.section}>Resumo do dia</Text>
-
-        <View style={styles.summaryRow}>
-          <View style={styles.summaryCard}>
-            {totalAlunos === null ? (
-              <ActivityIndicator color={theme.primary} />
-            ) : (
-              <Text style={styles.summaryValue}>{totalAlunos}</Text>
-            )}
-            <Text style={styles.summaryLabel}>Alunos</Text>
-          </View>
-
-          <View style={styles.summaryCard}>
-            {carregandoRefeicoes ? (
-              <ActivityIndicator color={theme.primary} />
-            ) : (
-              <Text style={styles.summaryValue}>{refeicoesDoDia.length}</Text>
-            )}
-            <Text style={styles.summaryLabel}>Refeições</Text>
-          </View>
-
-          <View style={styles.summaryCard}>
-            {totalTurmas === null ? (
-              <ActivityIndicator color={theme.primary} />
-            ) : (
-              <Text style={styles.summaryValue}>{totalTurmas}</Text>
-            )}
-            <Text style={styles.summaryLabel}>Turmas</Text>
-          </View>
-        </View>
-
-        {/* Refeições por dia */}
-        <Text style={styles.section}>{tituloSecao}</Text>
-
-        {/* Seleção dos dias da semana */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.diasRow}
-        >
-          {DIAS.map((d) => {
-            const ativo = d === diaSelecionado;
-            const ehHoje = d === diaHoje;
-
-            return (
-              <Pressable
-                key={d}
-                testID={`home-dia-${d}`}
-                onPress={() => setDiaSelecionado(d)}
-                style={[styles.diaChip, ativo && styles.diaChipAtivo]}
-              >
-                <Text
-                  style={[styles.diaChipText, ativo && styles.diaChipTextAtivo]}
-                >
-                  {d}
-                </Text>
-
-                {ehHoje && (
-                  <View
-                    style={[styles.pontoHoje, ativo && styles.pontoHojeAtivo]}
-                  />
-                )}
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-
-        {/* Cardápio e confirmações */}
-        <View style={styles.mealsCard}>
-          {carregandoRefeicoes ? (
-            <ActivityIndicator
-              color={theme.primary}
-              style={{ padding: 20 }}
+            <MaterialCommunityIcons
+              name="food-apple"
+              size={44}
+              color="#fff"
             />
-          ) : refeicoesDoDia.length === 0 ? (
-            <Text style={styles.emptyText}>
-              Nenhuma refeição cadastrada para{' '}
-              {NOME_COMPLETO_DIA[diaSelecionado].toLowerCase()} ainda.
-            </Text>
-          ) : (
-            <>
-              {/* Legenda */}
-              <View style={styles.legenda}>
-                <View style={styles.legendaItem}>
-                  <Ionicons name="checkmark-circle" size={13} color="#2E7D32" />
-                  <Text style={styles.legendaText}>Vão comer</Text>
-                </View>
+          </View>
 
-                <View style={styles.legendaItem}>
-                  <Ionicons name="close-circle" size={13} color="#B3261E" />
-                  <Text style={styles.legendaText}>Não vão</Text>
-                </View>
-              </View>
-
-              {/* Lista de refeições */}
-              {refeicoesDoDia.map((refeicao, i) => (
-                <React.Fragment key={i}>
-                  <MealRow
-                    refeicao={refeicao}
-                    contagem={
-                      contagemPorTipo[nomeTipoRefeicao(refeicao.titulo)] ?? {
-                        sim: 0,
-                        nao: 0,
-                      }
-                    }
-                  />
-
-                  {i < refeicoesDoDia.length - 1 && (
-                    <View style={styles.divider} />
-                  )}
-                </React.Fragment>
-              ))}
-            </>
+          {!diaHoje && (
+            <View style={styles.avisoFimDeSemana}>
+              <Ionicons
+                name="calendar-outline"
+                size={16}
+                color={theme.primary}
+              />
+              <Text style={styles.avisoFimDeSemanaText}>
+                Hoje é fim de semana: mostrando os dados da próxima semana.
+              </Text>
+            </View>
           )}
-        </View>
+
+          <Pressable
+            testID="estatisticas-button"
+            style={[styles.quickAction, { marginTop: 10 }]}
+            onPress={() => router.push('/Estatisticas')}
+            accessibilityRole="button"
+          >
+            <View style={styles.quickActionIcon}>
+              <Ionicons name="stats-chart" size={22} color="#fff" />
+            </View>
+
+            <View style={styles.quickActionInfo}>
+              <Text style={styles.quickActionTitle}>Estatísticas</Text>
+              <Text style={styles.quickActionSubtitle}>
+                Veja a demanda de refeições dos alunos
+              </Text>
+            </View>
+
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={theme.textMuted}
+            />
+          </Pressable>
+
+          <Text style={styles.section}>Ações rápidas</Text>
+
+          <Pressable
+            testID="cadastrar-aluno-button"
+            style={styles.quickAction}
+            onPress={() => router.push('/CadastroAluno')}
+            accessibilityRole="button"
+          >
+            <View style={styles.quickActionIcon}>
+              <Ionicons name="person-add" size={22} color="#fff" />
+            </View>
+
+            <View style={styles.quickActionInfo}>
+              <Text style={styles.quickActionTitle}>Cadastrar aluno</Text>
+              <Text style={styles.quickActionSubtitle}>
+                Adicione um novo aluno à instituição
+              </Text>
+            </View>
+
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={theme.textMuted}
+            />
+          </Pressable>
+
+          <Pressable
+            testID="restricoes-alimentares-button"
+            style={[styles.quickAction, { marginTop: 10 }]}
+            onPress={() => router.push('../RestricoesAlimentares')}
+            accessibilityRole="button"
+          >
+            <View style={styles.quickActionIcon}>
+              <Ionicons name="warning-outline" size={22} color="#fff" />
+            </View>
+
+            <View style={styles.quickActionInfo}>
+              <Text style={styles.quickActionTitle}>
+                Restrições alimentares
+              </Text>
+              <Text style={styles.quickActionSubtitle}>
+                Consulte as restrições informadas pelos alunos
+              </Text>
+            </View>
+
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={theme.textMuted}
+            />
+          </Pressable>
+
+          <Pressable
+            testID="prazos-confirmacao-button"
+            style={[styles.quickAction, { marginTop: 10 }]}
+            onPress={() => router.push('./PrazosConfirmacao')}
+            accessibilityRole="button"
+          >
+            <View style={styles.quickActionIcon}>
+              <Ionicons name="time-outline" size={22} color="#fff" />
+            </View>
+
+            <View style={styles.quickActionInfo}>
+              <Text style={styles.quickActionTitle}>
+                Prazos de confirmação
+              </Text>
+              <Text style={styles.quickActionSubtitle}>
+                Defina até quando os alunos podem confirmar as refeições
+              </Text>
+            </View>
+
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={theme.textMuted}
+            />
+          </Pressable>
+
+          <Text style={styles.section}>Resumo do dia</Text>
+
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryCard}>
+              {totalAlunos === null ? (
+                <ActivityIndicator color={theme.primary} />
+              ) : (
+                <Text style={styles.summaryValue}>{totalAlunos}</Text>
+              )}
+              <Text style={styles.summaryLabel}>Alunos</Text>
+            </View>
+
+            <View style={styles.summaryCard}>
+              {carregandoRefeicoes ? (
+                <ActivityIndicator color={theme.primary} />
+              ) : (
+                <Text style={styles.summaryValue}>
+                  {refeicoesDoDia.length}
+                </Text>
+              )}
+              <Text style={styles.summaryLabel}>Refeições</Text>
+            </View>
+
+            <View style={styles.summaryCard}>
+              {totalTurmas === null ? (
+                <ActivityIndicator color={theme.primary} />
+              ) : (
+                <Text style={styles.summaryValue}>{totalTurmas}</Text>
+              )}
+              <Text style={styles.summaryLabel}>Turmas</Text>
+            </View>
+          </View>
+
+          <Text style={styles.section}>{tituloSecao}</Text>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.diasRow}
+          >
+            {DIAS.map((d) => {
+              const ativo = d === diaSelecionado;
+              const ehHoje = d === diaHoje;
+
+              return (
+                <Pressable
+                  key={d}
+                  testID={`home-dia-${d}`}
+                  onPress={() => setDiaSelecionado(d)}
+                  style={[styles.diaChip, ativo && styles.diaChipAtivo]}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: ativo }}
+                  accessibilityLabel={
+                    ehHoje ? `${d}, hoje` : d
+                  }
+                >
+                  <Text
+                    style={[
+                      styles.diaChipText,
+                      ativo && styles.diaChipTextAtivo,
+                    ]}
+                  >
+                    {d}
+                  </Text>
+
+                  {ehHoje && (
+                    <View
+                      style={[
+                        styles.pontoHoje,
+                        ativo && styles.pontoHojeAtivo,
+                      ]}
+                    />
+                  )}
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+
+          <View style={styles.mealsCard}>
+            {carregandoRefeicoes ? (
+              <ActivityIndicator
+                color={theme.primary}
+                style={styles.loadingMeals}
+              />
+            ) : refeicoesDoDia.length === 0 ? (
+              <Text style={styles.emptyText}>
+                Nenhuma refeição cadastrada para{' '}
+                {NOME_COMPLETO_DIA[diaSelecionado].toLowerCase()} ainda.
+              </Text>
+            ) : (
+              <>
+                <View style={styles.legenda}>
+                  <View style={styles.legendaItem}>
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={13}
+                      color="#2E7D32"
+                    />
+                    <Text style={styles.legendaText}>Vão comer</Text>
+                  </View>
+
+                  <View style={styles.legendaItem}>
+                    <Ionicons
+                      name="close-circle"
+                      size={13}
+                      color="#B3261E"
+                    />
+                    <Text style={styles.legendaText}>Não vão</Text>
+                  </View>
+                </View>
+
+                {refeicoesDoDia.map((refeicao, i) => (
+                  <React.Fragment key={i}>
+                    <MealRow
+                      refeicao={refeicao}
+                      contagem={
+                        contagemPorTipo[
+                          nomeTipoRefeicao(refeicao.titulo)
+                        ] ?? {
+                          sim: 0,
+                          nao: 0,
+                        }
+                      }
+                    />
+
+                    {i < refeicoesDoDia.length - 1 && (
+                      <View style={styles.divider} />
+                    )}
+                  </React.Fragment>
+                ))}
+              </>
+            )}
+          </View>
+        </ResponsiveContainer>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const createStyles = (theme: AccessibilityTheme) =>
+const createStyles = (
+  theme: AccessibilityTheme,
+  compacto = false
+) =>
   StyleSheet.create({
-    safe: { flex: 1, backgroundColor: theme.background },
+    safe: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+
+    loadingSafe: {
+      flex: 1,
+      backgroundColor: theme.background,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
 
     header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 20,
-      paddingVertical: 12,
       backgroundColor: theme.header,
+      paddingVertical: 12,
       borderBottomLeftRadius: 24,
       borderBottomRightRadius: 24,
     },
-    hello: { fontSize: 13, color: theme.text, fontWeight: '600' },
-    brand: { fontSize: 20, fontWeight: '800', color: theme.primaryDark },
+
+    headerContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+
+    headerTexts: {
+      flex: 1,
+      minWidth: 0,
+    },
+
+    hello: {
+      fontSize: 13,
+      color: theme.text,
+      fontWeight: '600',
+    },
+
+    brand: {
+      fontSize: 20,
+      fontWeight: '800',
+      color: theme.primaryDark,
+    },
+
     bell: {
-      marginLeft: 'auto',
       width: 40,
       height: 40,
+      flexShrink: 0,
       borderRadius: 20,
       backgroundColor: theme.card,
       alignItems: 'center',
       justifyContent: 'center',
     },
 
-    body: { padding: 18, paddingBottom: 40 },
+    body: {
+      paddingTop: 18,
+      paddingBottom: 40,
+    },
+
+    scrollContent: {
+      flex: 0,
+    },
 
     dayBanner: {
       backgroundColor: theme.primary,
       borderRadius: 16,
-      padding: 16,
+      padding: compacto ? 14 : 16,
       flexDirection: 'row',
       alignItems: 'center',
+      gap: 10,
     },
-    dayTitle: { color: '#fff', fontSize: 18, fontWeight: '800' },
-    dayDate: { color: '#FFE0CE', fontSize: 12, marginTop: 4 },
+
+    bannerText: {
+      flex: 1,
+      minWidth: 0,
+    },
+
+    dayTitle: {
+      color: '#fff',
+      fontSize: 18,
+      fontWeight: '800',
+    },
+
+    dayDate: {
+      color: '#FFE0CE',
+      fontSize: 12,
+      marginTop: 4,
+    },
 
     avisoFimDeSemana: {
       flexDirection: 'row',
@@ -598,7 +725,13 @@ const createStyles = (theme: AccessibilityTheme) =>
       marginTop: 10,
       paddingHorizontal: 4,
     },
-    avisoFimDeSemanaText: { fontSize: 12, color: theme.textMuted, flex: 1 },
+
+    avisoFimDeSemanaText: {
+      fontSize: 12,
+      color: theme.textMuted,
+      flex: 1,
+      flexShrink: 1,
+    },
 
     section: {
       fontSize: 14,
@@ -613,48 +746,93 @@ const createStyles = (theme: AccessibilityTheme) =>
       alignItems: 'center',
       backgroundColor: theme.card,
       borderRadius: 14,
-      padding: 12,
-      gap: 12,
+      padding: compacto ? 10 : 12,
+      gap: compacto ? 9 : 12,
+      minHeight: 68,
+      borderWidth: theme.borderWidth,
+      borderColor: theme.border,
       shadowColor: '#000',
       shadowOpacity: 0.05,
       shadowRadius: 6,
       shadowOffset: { width: 0, height: 2 },
       elevation: 2,
     },
+
     quickActionIcon: {
       width: 44,
       height: 44,
+      flexShrink: 0,
       borderRadius: 12,
       backgroundColor: theme.primary,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    quickActionTitle: { fontSize: 14, fontWeight: '700', color: theme.text },
-    quickActionSubtitle: { fontSize: 12, color: theme.textMuted, marginTop: 2 },
 
-    summaryRow: { flexDirection: 'row', gap: 10 },
+    quickActionInfo: {
+      flex: 1,
+      minWidth: 0,
+    },
+
+    quickActionTitle: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: theme.text,
+      flexShrink: 1,
+    },
+
+    quickActionSubtitle: {
+      fontSize: 12,
+      color: theme.textMuted,
+      marginTop: 2,
+      flexShrink: 1,
+    },
+
+    summaryRow: {
+      flexDirection: 'row',
+      flexWrap: compacto ? 'wrap' : 'nowrap',
+      gap: 10,
+    },
+
     summaryCard: {
       flex: 1,
+      minWidth: compacto ? 90 : 0,
       backgroundColor: theme.card,
       borderRadius: 14,
-      padding: 14,
+      padding: compacto ? 11 : 14,
       alignItems: 'center',
       justifyContent: 'center',
       minHeight: 74,
+      borderWidth: theme.borderWidth,
+      borderColor: theme.border,
       shadowColor: '#000',
       shadowOpacity: 0.05,
       shadowRadius: 6,
       shadowOffset: { width: 0, height: 2 },
       elevation: 2,
     },
-    summaryValue: { fontSize: 22, fontWeight: '800', color: theme.primary },
-    summaryLabel: { fontSize: 12, color: theme.textMuted, marginTop: 2 },
 
-    diasRow: { gap: 8, paddingBottom: 10 },
+    summaryValue: {
+      fontSize: 22,
+      fontWeight: '800',
+      color: theme.primary,
+    },
+
+    summaryLabel: {
+      fontSize: 12,
+      color: theme.textMuted,
+      marginTop: 2,
+      textAlign: 'center',
+    },
+
+    diasRow: {
+      gap: 8,
+      paddingBottom: 10,
+    },
+
     diaChip: {
-      height: 34,
-      paddingHorizontal: 16,
-      borderRadius: 17,
+      minHeight: 36,
+      paddingHorizontal: compacto ? 14 : 16,
+      borderRadius: 18,
       backgroundColor: theme.card,
       borderWidth: 1,
       borderColor: theme.border,
@@ -663,25 +841,45 @@ const createStyles = (theme: AccessibilityTheme) =>
       flexDirection: 'row',
       gap: 5,
     },
+
     diaChipAtivo: {
       backgroundColor: theme.primary,
       borderColor: theme.primary,
     },
-    diaChipText: { color: theme.text, fontWeight: '700', fontSize: 13 },
-    diaChipTextAtivo: { color: '#fff' },
+
+    diaChipText: {
+      color: theme.text,
+      fontWeight: '700',
+      fontSize: 13,
+    },
+
+    diaChipTextAtivo: {
+      color: '#fff',
+    },
+
     pontoHoje: {
       width: 5,
       height: 5,
       borderRadius: 3,
       backgroundColor: theme.primary,
     },
-    pontoHojeAtivo: { backgroundColor: '#fff' },
+
+    pontoHojeAtivo: {
+      backgroundColor: '#fff',
+    },
 
     mealsCard: {
       backgroundColor: theme.card,
       borderRadius: 16,
-      padding: 8,
+      padding: compacto ? 6 : 8,
+      borderWidth: theme.borderWidth,
+      borderColor: theme.border,
     },
+
+    loadingMeals: {
+      padding: 20,
+    },
+
     emptyText: {
       textAlign: 'center',
       color: theme.textMuted,
@@ -691,31 +889,67 @@ const createStyles = (theme: AccessibilityTheme) =>
 
     legenda: {
       flexDirection: 'row',
+      flexWrap: 'wrap',
       gap: 16,
       paddingHorizontal: 12,
       paddingTop: 8,
       paddingBottom: 4,
     },
-    legendaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    legendaText: { fontSize: 11, color: theme.textMuted, fontWeight: '600' },
+
+    legendaItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+
+    legendaText: {
+      fontSize: 11,
+      color: theme.textMuted,
+      fontWeight: '600',
+    },
 
     mealRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      padding: 12,
-      gap: 12,
+      padding: compacto ? 9 : 12,
+      gap: compacto ? 8 : 12,
     },
+
     mealIcon: {
-      width: 48,
-      height: 48,
+      width: 44,
+      height: 44,
+      flexShrink: 0,
       borderRadius: 12,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    mealTitle: { fontSize: 15, fontWeight: '700', color: theme.text },
-    mealTime: { fontSize: 12, color: theme.textMuted, marginTop: 2 },
 
-    contagens: { flexDirection: 'row', gap: 6 },
+    mealInfo: {
+      flex: 1,
+      minWidth: 0,
+    },
+
+    mealTitle: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: theme.text,
+      flexShrink: 1,
+    },
+
+    mealTime: {
+      fontSize: 12,
+      color: theme.textMuted,
+      marginTop: 2,
+    },
+
+    contagens: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'flex-end',
+      gap: 6,
+      flexShrink: 0,
+    },
+
     badge: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -724,12 +958,27 @@ const createStyles = (theme: AccessibilityTheme) =>
       paddingHorizontal: 7,
       paddingVertical: 4,
     },
-    // Translúcidos: funcionam no claro e no escuro.
-    badgeSim: { backgroundColor: 'rgba(46, 125, 50, 0.18)' },
-    badgeNao: { backgroundColor: 'rgba(179, 38, 30, 0.18)' },
-    badgeText: { fontSize: 12, fontWeight: '800' },
-    badgeTextSim: { color: '#2E7D32' },
-    badgeTextNao: { color: '#B3261E' },
+
+    badgeSim: {
+      backgroundColor: 'rgba(46, 125, 50, 0.18)',
+    },
+
+    badgeNao: {
+      backgroundColor: 'rgba(179, 38, 30, 0.18)',
+    },
+
+    badgeText: {
+      fontSize: 12,
+      fontWeight: '800',
+    },
+
+    badgeTextSim: {
+      color: '#2E7D32',
+    },
+
+    badgeTextNao: {
+      color: '#B3261E',
+    },
 
     divider: {
       height: 1,

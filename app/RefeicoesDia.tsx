@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+
 import {
   View,
   StyleSheet,
@@ -6,10 +7,14 @@ import {
   Pressable,
   ActivityIndicator,
 } from 'react-native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import ScreenHeader from '../components/ScreenHeader';
+import ResponsiveContainer from '../components/ResponsiveContainer';
+import { useResponsive } from '../hooks/useResponsive';
+
 import { auth } from '../components/firebaseConfig';
 import { useAccessibility } from '../components/AccessibilityContext';
 
@@ -24,7 +29,19 @@ import {
   RespostasAluno,
 } from './services/confirmacoes';
 
-import { dataISO, nomeTipoRefeicao, intervaloDoPeriodo } from './services/refeicaoUtils';
+import {
+  assinarPrazosConfirmacao,
+  PrazosPorDia,
+  DiaSemana as DiaPrazo,
+  TipoRefeicao,
+} from './services/prazosConfirmacao';
+
+import {
+  dataISO,
+  nomeTipoRefeicao,
+  intervaloDoPeriodo,
+} from './services/refeicaoUtils';
+
 import { NOME_COMPLETO_DIA } from './services/data';
 import { useInstituicaoId } from './services/useInstituicaoId';
 import Text from '../components/AppText';
@@ -38,13 +55,34 @@ type DiaCardapio = {
   respostas: RespostasAluno;
 };
 
-const DIAS_UTEIS: DiaSemana[] = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
+type StatusPrazo = {
+  disponivel: boolean;
+  horario: string;
+  mensagem: string;
+};
 
-// Segunda-feira da semana "base" (a mesma usada na Home e nas Estatísticas).
-// Dias úteis: semana atual. Fim de semana: a base passa a ser a próxima semana.
+const DIAS_UTEIS: DiaSemana[] = [
+  'Seg',
+  'Ter',
+  'Qua',
+  'Qui',
+  'Sex',
+];
+
+const DIAS_PRAZO: DiaPrazo[] = [
+  'domingo',
+  'segunda',
+  'terca',
+  'quarta',
+  'quinta',
+  'sexta',
+  'sabado',
+];
+
 function obterSegundaDaSemana(): Date {
   const [segundaISO] = intervaloDoPeriodo('semana');
   const [ano, mes, dia] = segundaISO.split('-').map(Number);
+
   return new Date(ano, mes - 1, dia);
 }
 
@@ -71,20 +109,160 @@ function formatarData(data: Date): string {
   }).format(data);
 }
 
-// Resposta do aluno para a refeição na posição `indice` daquele dia
-function respostaDe(dia: DiaCardapio, indice: number): boolean | undefined {
+function respostaDe(
+  dia: DiaCardapio,
+  indice: number
+): boolean | undefined {
   const refeicao = dia.refeicoes[indice];
+
   if (!refeicao) return undefined;
+
   return dia.respostas[nomeTipoRefeicao(refeicao.titulo)];
+}
+
+function obterTipoPrazo(titulo: string): TipoRefeicao | null {
+  const texto = titulo
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  if (texto.includes('cafe') || texto.includes('manha')) {
+    return 'cafe';
+  }
+
+  if (texto.includes('almoco')) {
+    return 'almoco';
+  }
+
+  if (texto.includes('jantar') || texto.includes('janta')) {
+    return 'jantar';
+  }
+
+  return null;
+}
+
+function verificarStatusPrazo(
+  data: Date,
+  tituloRefeicao: string,
+  prazos: PrazosPorDia | null,
+  agora: Date
+): StatusPrazo {
+  if (!prazos) {
+    return {
+      disponivel: false,
+      horario: '',
+      mensagem: 'Não foi possível carregar o prazo desta refeição.',
+    };
+  }
+
+  const tipoRefeicao = obterTipoPrazo(tituloRefeicao);
+
+  if (!tipoRefeicao) {
+    return {
+      disponivel: false,
+      horario: '',
+      mensagem: 'Não foi possível identificar esta refeição.',
+    };
+  }
+
+  const diaSemana = DIAS_PRAZO[data.getDay()];
+  const prazo = prazos[diaSemana]?.[tipoRefeicao];
+
+  if (!prazo) {
+    return {
+      disponivel: false,
+      horario: '',
+      mensagem: 'Prazo não configurado para esta refeição.',
+    };
+  }
+
+  if (!prazo.ativo) {
+    return {
+      disponivel: false,
+      horario: prazo.horario,
+      mensagem: 'Esta refeição não está disponível neste dia.',
+    };
+  }
+
+  const dataRefeicao = dataISO(data);
+  const dataHoje = dataISO(agora);
+
+  if (dataRefeicao < dataHoje) {
+    return {
+      disponivel: false,
+      horario: prazo.horario,
+      mensagem: 'Prazo encerrado. Esta data já passou.',
+    };
+  }
+
+  if (dataRefeicao > dataHoje) {
+    return {
+      disponivel: true,
+      horario: prazo.horario,
+      mensagem: `Você pode responder até ${prazo.horario}.`,
+    };
+  }
+
+  const partesHorario = prazo.horario.split(':').map(Number);
+  const horaLimite = partesHorario[0];
+  const minutoLimite = partesHorario[1];
+
+  if (
+    partesHorario.length !== 2 ||
+    !Number.isInteger(horaLimite) ||
+    !Number.isInteger(minutoLimite) ||
+    horaLimite < 0 ||
+    horaLimite > 23 ||
+    minutoLimite < 0 ||
+    minutoLimite > 59
+  ) {
+    return {
+      disponivel: false,
+      horario: '',
+      mensagem: 'O horário limite desta refeição está inválido.',
+    };
+  }
+
+  const minutosAtuais = agora.getHours() * 60 + agora.getMinutes();
+  const minutosLimite = horaLimite * 60 + minutoLimite;
+
+  if (minutosAtuais >= minutosLimite) {
+    return {
+      disponivel: false,
+      horario: prazo.horario,
+      mensagem: `Prazo encerrado às ${prazo.horario}.`,
+    };
+  }
+
+  return {
+    disponivel: true,
+    horario: prazo.horario,
+    mensagem: `Você pode responder até ${prazo.horario}.`,
+  };
 }
 
 export default function RefeicoesDia() {
   const { theme } = useAccessibility();
-  const styles = createStyles(theme);
+
+  const {
+    isSmallScreen,
+    fontScale,
+    horizontalPadding,
+  } = useResponsive();
+
+  const compacto = isSmallScreen || fontScale >= 1.2;
+
+  const styles = useMemo(
+    () => createStyles(theme, compacto),
+    [theme, compacto]
+  );
 
   const alunoId = auth.currentUser?.uid;
-  const { instituicaoId, carregando: carregandoInstituicao } =
-    useInstituicaoId();
+
+  const {
+    instituicaoId,
+    carregando: carregandoInstituicao,
+  } = useInstituicaoId();
 
   const [dias, setDias] = useState<DiaCardapio[]>(obterSemana());
 
@@ -92,8 +270,47 @@ export default function RefeicoesDia() {
   const [salvando, setSalvando] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
-  // Cardápio da instituição do aluno
-  // Cardápio da instituição do aluno, organizado por data
+  const [prazos, setPrazos] = useState<PrazosPorDia | null>(null);
+  const [carregandoPrazos, setCarregandoPrazos] = useState(true);
+  const [agora, setAgora] = useState(new Date());
+
+  useEffect(() => {
+    const intervalo = setInterval(() => {
+      setAgora(new Date());
+    }, 15000);
+
+    return () => clearInterval(intervalo);
+  }, []);
+
+  useEffect(() => {
+    if (carregandoInstituicao) return;
+
+    if (!instituicaoId) {
+      setPrazos(null);
+      setCarregandoPrazos(false);
+      return;
+    }
+
+    setPrazos(null);
+    setCarregandoPrazos(true);
+
+    const unsubscribe = assinarPrazosConfirmacao(
+      (novosPrazos) => {
+        setPrazos(novosPrazos);
+        setCarregandoPrazos(false);
+      },
+      (erro) => {
+        console.error('Erro ao carregar prazos:', erro);
+        setPrazos(null);
+        setCarregandoPrazos(false);
+        setErro('Não foi possível carregar os prazos de confirmação.');
+      },
+      instituicaoId
+    );
+
+    return unsubscribe;
+  }, [instituicaoId, carregandoInstituicao]);
+
   useEffect(() => {
     if (carregandoInstituicao) return;
 
@@ -104,10 +321,8 @@ export default function RefeicoesDia() {
 
     setCarregando(true);
 
-    // Gera somente os cinco dias úteis da semana correspondente
     const semana = obterSemana();
 
-    // Limpa os dados anteriores antes de carregar a nova semana
     setDias(semana);
 
     const unsubscribeList: (() => void)[] = [];
@@ -161,7 +376,6 @@ export default function RefeicoesDia() {
     };
   }, [instituicaoId, carregandoInstituicao]);
 
-  // Respostas (Vou comer / Não vou) do aluno, uma assinatura por data
   useEffect(() => {
     if (!alunoId || !instituicaoId) return;
 
@@ -172,12 +386,17 @@ export default function RefeicoesDia() {
         (respostas) => {
           setDias((atual) =>
             atual.map((dia) =>
-              dia.codigo === codigo ? { ...dia, respostas } : dia
+              dia.codigo === codigo
+                ? { ...dia, respostas }
+                : dia
             )
           );
         },
         (erro) => {
-          console.error(`Erro ao carregar respostas de ${codigo}:`, erro);
+          console.error(
+            `Erro ao carregar respostas de ${codigo}:`,
+            erro
+          );
         },
         instituicaoId
       )
@@ -188,14 +407,33 @@ export default function RefeicoesDia() {
     };
   }, [alunoId, instituicaoId]);
 
-  async function escolher(dia: DiaCardapio, indice: number, vaiComer: boolean) {
+  async function escolher(
+    dia: DiaCardapio,
+    indice: number,
+    vaiComer: boolean
+  ) {
     if (!alunoId || !instituicaoId) {
-      setErro('Não foi possível identificar seu usuário. Faça login novamente.');
+      setErro(
+        'Não foi possível identificar seu usuário. Faça login novamente.'
+      );
       return;
     }
 
     const refeicao = dia.refeicoes[indice];
+
     if (!refeicao) return;
+
+    const status = verificarStatusPrazo(
+      dia.data,
+      refeicao.titulo,
+      prazos,
+      new Date()
+    );
+
+    if (!status.disponivel) {
+      setErro(status.mensagem);
+      return;
+    }
 
     const chave = `${dia.codigo}-${indice}`;
 
@@ -204,7 +442,7 @@ export default function RefeicoesDia() {
 
     try {
       await definirConfirmacao(
-        dataISO(dia.data), // data do dia que está sendo marcado
+        dataISO(dia.data),
         alunoId,
         nomeTipoRefeicao(refeicao.titulo),
         vaiComer,
@@ -212,313 +450,464 @@ export default function RefeicoesDia() {
       );
     } catch (e) {
       console.error('Erro ao salvar confirmação:', e);
-      setErro('Não foi possível salvar sua escolha. Tente novamente.');
+
+      setErro(
+        e instanceof Error
+          ? e.message
+          : 'Não foi possível salvar sua escolha. Tente novamente.'
+      );
     } finally {
       setSalvando(null);
     }
   }
 
-  const totalRefeicoes = dias.reduce((total, dia) => total + dia.refeicoes.length, 0);
-
-  const refeicoesRespondidas = dias.reduce(
-    (total, dia) =>
-      total + dia.refeicoes.filter((_, indice) => respostaDe(dia, indice) !== undefined).length,
+  const totalRefeicoes = dias.reduce(
+    (total, dia) => total + dia.refeicoes.length,
     0
   );
 
-  const refeicoesPendentes = totalRefeicoes - refeicoesRespondidas;
+  const refeicoesRespondidas = dias.reduce(
+    (total, dia) =>
+      total +
+      dia.refeicoes.filter(
+        (_, indice) => respostaDe(dia, indice) !== undefined
+      ).length,
+    0
+  );
+
+  const refeicoesPendentes =
+    totalRefeicoes - refeicoesRespondidas;
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScreenHeader title="Planeje suas refeições" />
 
       <ScrollView
-        contentContainerStyle={styles.body}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.introducao}>
-          <View style={styles.introducaoIcone}>
-            <MaterialCommunityIcons
-              name="calendar-check-outline"
-              size={25}
-              color={theme.primary}
-            />
-          </View>
-
-          <Text style={styles.introducaoTitulo}>Organize sua semana</Text>
-
-          <Text style={styles.introducaoTexto}>
-            Confira o cardápio e escolha em cada refeição se você vai comer ou não.
-          </Text>
-        </View>
-
-        {!carregando && totalRefeicoes > 0 && (
-          <View style={styles.resumo}>
-            <View style={styles.resumoItem}>
-              <Text style={styles.resumoNumero}>{totalRefeicoes}</Text>
-              <Text style={styles.resumoLegenda}>Refeições</Text>
+        <ResponsiveContainer
+          style={[
+            styles.body,
+            { paddingHorizontal: horizontalPadding },
+          ]}
+        >
+          <View style={styles.introducao}>
+            <View style={styles.introducaoIcone}>
+              <MaterialCommunityIcons
+                name="calendar-check-outline"
+                size={compacto ? 22 : 25}
+                color={theme.primary}
+              />
             </View>
 
-            <View style={styles.resumoDivisor} />
+            <Text style={styles.introducaoTitulo}>
+              Organize sua semana
+            </Text>
 
-            <View style={styles.resumoItem}>
-              <Text style={[styles.resumoNumero, { color: theme.success }]}>
-                {refeicoesRespondidas}
-              </Text>
-              <Text style={styles.resumoLegenda}>Respondidas</Text>
-            </View>
-
-            <View style={styles.resumoDivisor} />
-
-            <View style={styles.resumoItem}>
-              <Text
-                style={[
-                  styles.resumoNumero,
-                  {
-                    color: refeicoesPendentes > 0
-                      ? theme.warning
-                      : theme.success,
-                  },
-                ]}
-              >
-                {refeicoesPendentes}
-              </Text>
-              <Text style={styles.resumoLegenda}>Pendentes</Text>
-            </View>
+            <Text style={styles.introducaoTexto}>
+              Confira o cardápio e escolha em cada refeição se você vai comer ou não.
+            </Text>
           </View>
-        )}
 
-        {erro && (
-          <View style={styles.bannerErro} testID="refeicoesdia-erro">
-            <MaterialCommunityIcons
-              name="alert-circle"
-              size={18}
-              color={theme.error}
-            />
-
-            <Text style={styles.bannerErroText}>{erro}</Text>
-          </View>
-        )}
-
-        {carregando ? (
-          <ActivityIndicator
-            color={theme.primary}
-            style={{ marginTop: 24 }}
-          />
-        ) : (
-          dias.map((dia) => (
-            <View key={dia.codigo} style={styles.diaContainer}>
-              <View style={styles.dateWrap}>
-                <View style={styles.dateTextos}>
-                  <Text style={styles.dateTitle}>
-                    {NOME_COMPLETO_DIA[dia.codigo]}
-                  </Text>
-
-                  <Text style={styles.dateSub}>
-                    {formatarData(dia.data)}
-                  </Text>
-                </View>
-
-                <View style={styles.contagemDia}>
-                  <Text style={styles.contagemDiaTexto}>
-                    {dia.refeicoes.filter((_, indice) => respostaDe(dia, indice) !== undefined).length}/{dia.refeicoes.length}
-                  </Text>
-
-                  <Text style={styles.contagemDiaLegenda}>feitas</Text>
-                </View>
+          {!carregando && totalRefeicoes > 0 && (
+            <View style={styles.resumo}>
+              <View style={styles.resumoItem}>
+                <Text style={styles.resumoNumero}>
+                  {totalRefeicoes}
+                </Text>
+                <Text style={styles.resumoLegenda}>
+                  Refeições
+                </Text>
               </View>
 
-              {dia.refeicoes.length === 0 ? (
-                <View style={styles.semRefeicao}>
-                  <MaterialCommunityIcons
-                    name="calendar-blank-outline"
-                    size={22}
-                    color={theme.textMuted}
-                  />
+              <View style={styles.resumoDivisor} />
 
-                  <Text style={styles.semRefeicaoTexto}>
-                    Nenhuma refeição cadastrada para este dia.
-                  </Text>
+              <View style={styles.resumoItem}>
+                <Text
+                  style={[
+                    styles.resumoNumero,
+                    { color: theme.success },
+                  ]}
+                >
+                  {refeicoesRespondidas}
+                </Text>
+                <Text style={styles.resumoLegenda}>
+                  Respondidas
+                </Text>
+              </View>
+
+              <View style={styles.resumoDivisor} />
+
+              <View style={styles.resumoItem}>
+                <Text
+                  style={[
+                    styles.resumoNumero,
+                    {
+                      color:
+                        refeicoesPendentes > 0
+                          ? theme.warning
+                          : theme.success,
+                    },
+                  ]}
+                >
+                  {refeicoesPendentes}
+                </Text>
+                <Text style={styles.resumoLegenda}>
+                  Pendentes
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {erro && (
+            <View
+              style={styles.bannerErro}
+              testID="refeicoesdia-erro"
+            >
+              <MaterialCommunityIcons
+                name="alert-circle"
+                size={18}
+                color={theme.error}
+              />
+
+              <Text style={styles.bannerErroText}>
+                {erro}
+              </Text>
+            </View>
+          )}
+
+          {carregando ? (
+            <ActivityIndicator
+              color={theme.primary}
+              style={styles.carregando}
+            />
+          ) : (
+            dias.map((dia) => (
+              <View
+                key={dia.codigo}
+                style={styles.diaContainer}
+              >
+                <View style={styles.dateWrap}>
+                  <View style={styles.dateTextos}>
+                    <Text style={styles.dateTitle}>
+                      {NOME_COMPLETO_DIA[dia.codigo]}
+                    </Text>
+
+                    <Text style={styles.dateSub}>
+                      {formatarData(dia.data)}
+                    </Text>
+                  </View>
+
+                  <View style={styles.contagemDia}>
+                    <Text style={styles.contagemDiaTexto}>
+                      {dia.refeicoes.filter(
+                        (_, indice) =>
+                          respostaDe(dia, indice) !== undefined
+                      ).length}/{dia.refeicoes.length}
+                    </Text>
+
+                    <Text style={styles.contagemDiaLegenda}>
+                      feitas
+                    </Text>
+                  </View>
                 </View>
-              ) : (
-                dia.refeicoes.map((refeicao, i) => {
-                  const resposta = respostaDe(dia, i);
-                  const chave = `${dia.codigo}-${i}`;
-                  const estaSalvando = salvando === chave;
 
-                  return (
-                    <View
-                      key={i}
-                      style={styles.card}
-                      testID={`refeicao-${dia.codigo}-${i}`}
-                    >
-                      <View style={styles.cardHeader}>
+                {dia.refeicoes.length === 0 ? (
+                  <View style={styles.semRefeicao}>
+                    <MaterialCommunityIcons
+                      name="calendar-blank-outline"
+                      size={22}
+                      color={theme.textMuted}
+                    />
+
+                    <Text style={styles.semRefeicaoTexto}>
+                      Nenhuma refeição cadastrada para este dia.
+                    </Text>
+                  </View>
+                ) : (
+                  dia.refeicoes.map((refeicao, i) => {
+                    const resposta = respostaDe(dia, i);
+                    const chave = `${dia.codigo}-${i}`;
+                    const estaSalvando = salvando === chave;
+
+                    const statusPrazo = verificarStatusPrazo(
+                      dia.data,
+                      refeicao.titulo,
+                      prazos,
+                      agora
+                    );
+
+                    const podeResponder =
+                      !carregandoPrazos &&
+                      statusPrazo.disponivel;
+
+                    const botoesDesabilitados =
+                      estaSalvando || !podeResponder;
+
+                    return (
+                      <View
+                        key={i}
+                        style={styles.card}
+                        testID={`refeicao-${dia.codigo}-${i}`}
+                      >
+                        <View style={styles.cardHeader}>
+                          <View
+                            style={[
+                              styles.icon,
+                              { backgroundColor: refeicao.color },
+                            ]}
+                          >
+                            <MaterialCommunityIcons
+                              name={refeicao.icon as any}
+                              size={compacto ? 20 : 22}
+                              color="#fff"
+                            />
+                          </View>
+
+                          <View style={styles.cardHeaderTexto}>
+                            <Text style={styles.titulo}>
+                              {refeicao.titulo}
+                            </Text>
+
+                            <Text style={styles.horario}>
+                              {refeicao.horario}
+                            </Text>
+                          </View>
+                        </View>
+
+                        <Text style={styles.desc}>
+                          {refeicao.desc}
+                        </Text>
+
                         <View
                           style={[
-                            styles.icon,
-                            { backgroundColor: refeicao.color },
+                            styles.statusPrazo,
+                            !podeResponder &&
+                              styles.statusPrazoFechado,
                           ]}
                         >
                           <MaterialCommunityIcons
-                            name={refeicao.icon as any}
-                            size={22}
-                            color="#fff"
-                          />
-                        </View>
-
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.titulo}>{refeicao.titulo}</Text>
-                          <Text style={styles.horario}>{refeicao.horario}</Text>
-                        </View>
-                      </View>
-
-                      <Text style={styles.desc}>{refeicao.desc}</Text>
-
-                      <View style={styles.pergunta}>
-                        <MaterialCommunityIcons
-                          name="help-circle-outline"
-                          size={16}
-                          color={theme.textMuted}
-                        />
-
-                        <Text style={styles.perguntaTexto}>
-                          Você vai consumir esta refeição?
-                        </Text>
-                      </View>
-
-                      <View style={styles.opcoes}>
-                        <Pressable
-                          testID={`refeicao-${dia.codigo}-${i}-sim`}
-                          style={[
-                            styles.opcaoBtn,
-                            resposta === true && styles.opcaoBtnSimAtivo,
-                          ]}
-                          onPress={() => escolher(dia, i, true)}
-                          disabled={estaSalvando}
-                        >
-                          <MaterialCommunityIcons
-                            name="check-circle"
-                            size={16}
-                            color={resposta === true ? '#fff' : theme.success}
+                            name={
+                              carregandoPrazos
+                                ? 'clock-outline'
+                                : podeResponder
+                                  ? 'timer-outline'
+                                  : 'lock-outline'
+                            }
+                            size={15}
+                            color={
+                              carregandoPrazos
+                                ? theme.textMuted
+                                : podeResponder
+                                  ? theme.success
+                                  : theme.error
+                            }
                           />
 
                           <Text
                             style={[
-                              styles.opcaoText,
-                              resposta === true && styles.opcaoTextAtivo,
-                            ]}
-                          >
-                            Vou comer
-                          </Text>
-                        </Pressable>
-
-                        <Pressable
-                          testID={`refeicao-${dia.codigo}-${i}-nao`}
-                          style={[
-                            styles.opcaoBtn,
-                            resposta === false && styles.opcaoBtnNaoAtivo,
-                          ]}
-                          onPress={() => escolher(dia, i, false)}
-                          disabled={estaSalvando}
-                        >
-                          <MaterialCommunityIcons
-                            name="close-circle"
-                            size={16}
-                            color={resposta === false ? '#fff' : theme.error}
-                          />
-
-                          <Text
-                            style={[
-                              styles.opcaoText,
-                              resposta === false && styles.opcaoTextAtivo,
-                            ]}
-                          >
-                            Não vou
-                          </Text>
-                        </Pressable>
-                      </View>
-
-                      {resposta === undefined ? (
-                        <View style={styles.statusPendente}>
-                          <MaterialCommunityIcons
-                            name="clock-outline"
-                            size={14}
-                            color={theme.warning}
-                          />
-
-                          <Text style={styles.pendenteText}>
-                            Aguardando sua resposta
-                          </Text>
-                        </View>
-                      ) : (
-                        <View style={styles.statusRespondido}>
-                          <MaterialCommunityIcons
-                            name="check-circle-outline"
-                            size={14}
-                            color={resposta ? theme.success : theme.error}
-                          />
-
-                          <Text
-                            style={[
-                              styles.respondidoText,
+                              styles.statusPrazoTexto,
                               {
-                                color: resposta ? theme.success : theme.error,
+                                color: carregandoPrazos
+                                  ? theme.textMuted
+                                  : podeResponder
+                                    ? theme.success
+                                    : theme.error,
                               },
                             ]}
                           >
-                            {resposta
-                              ? 'Você confirmou que vai comer'
-                              : 'Você informou que não vai comer'}
+                            {carregandoPrazos
+                              ? 'Carregando prazo de confirmação...'
+                              : statusPrazo.mensagem}
                           </Text>
                         </View>
-                      )}
 
-                      {estaSalvando && (
-                        <ActivityIndicator
-                          size="small"
-                          color={theme.primary}
-                          style={{ marginTop: 8 }}
-                        />
-                      )}
-                    </View>
-                  );
-                })
-              )}
-            </View>
-          ))
-        )}
+                        <View style={styles.pergunta}>
+                          <MaterialCommunityIcons
+                            name="help-circle-outline"
+                            size={16}
+                            color={theme.textMuted}
+                          />
+
+                          <Text style={styles.perguntaTexto}>
+                            Você vai consumir esta refeição?
+                          </Text>
+                        </View>
+
+                        <View style={styles.opcoes}>
+                          <Pressable
+                            testID={`refeicao-${dia.codigo}-${i}-sim`}
+                            style={[
+                              styles.opcaoBtn,
+                              resposta === true &&
+                                styles.opcaoBtnSimAtivo,
+                              botoesDesabilitados &&
+                                styles.opcaoBtnDesabilitado,
+                            ]}
+                            onPress={() => escolher(dia, i, true)}
+                            disabled={botoesDesabilitados}
+                            accessibilityRole="button"
+                            accessibilityState={{
+                              disabled: botoesDesabilitados,
+                              selected: resposta === true,
+                            }}
+                          >
+                            <MaterialCommunityIcons
+                              name="check-circle"
+                              size={16}
+                              color={
+                                resposta === true
+                                  ? '#fff'
+                                  : theme.success
+                              }
+                            />
+
+                            <Text
+                              style={[
+                                styles.opcaoText,
+                                resposta === true &&
+                                  styles.opcaoTextAtivo,
+                              ]}
+                            >
+                              Vou comer
+                            </Text>
+                          </Pressable>
+
+                          <Pressable
+                            testID={`refeicao-${dia.codigo}-${i}-nao`}
+                            style={[
+                              styles.opcaoBtn,
+                              resposta === false &&
+                                styles.opcaoBtnNaoAtivo,
+                              botoesDesabilitados &&
+                                styles.opcaoBtnDesabilitado,
+                            ]}
+                            onPress={() => escolher(dia, i, false)}
+                            disabled={botoesDesabilitados}
+                            accessibilityRole="button"
+                            accessibilityState={{
+                              disabled: botoesDesabilitados,
+                              selected: resposta === false,
+                            }}
+                          >
+                            <MaterialCommunityIcons
+                              name="close-circle"
+                              size={16}
+                              color={
+                                resposta === false
+                                  ? '#fff'
+                                  : theme.error
+                              }
+                            />
+
+                            <Text
+                              style={[
+                                styles.opcaoText,
+                                resposta === false &&
+                                  styles.opcaoTextAtivo,
+                              ]}
+                            >
+                              Não vou
+                            </Text>
+                          </Pressable>
+                        </View>
+
+                        {resposta === undefined ? (
+                          <View style={styles.statusPendente}>
+                            <MaterialCommunityIcons
+                              name="clock-outline"
+                              size={14}
+                              color={theme.warning}
+                            />
+
+                            <Text style={styles.pendenteText}>
+                              {podeResponder
+                                ? 'Aguardando sua resposta'
+                                : 'Nenhuma resposta registrada'}
+                            </Text>
+                          </View>
+                        ) : (
+                          <View style={styles.statusRespondido}>
+                            <MaterialCommunityIcons
+                              name="check-circle-outline"
+                              size={14}
+                              color={
+                                resposta
+                                  ? theme.success
+                                  : theme.error
+                              }
+                            />
+
+                            <Text
+                              style={[
+                                styles.respondidoText,
+                                {
+                                  color: resposta
+                                    ? theme.success
+                                    : theme.error,
+                                },
+                              ]}
+                            >
+                              {resposta
+                                ? 'Você confirmou que vai comer'
+                                : 'Você informou que não vai comer'}
+                            </Text>
+                          </View>
+                        )}
+
+                        {estaSalvando && (
+                          <ActivityIndicator
+                            size="small"
+                            color={theme.primary}
+                            style={styles.salvando}
+                          />
+                        )}
+                      </View>
+                    );
+                  })
+                )}
+              </View>
+            ))
+          )}
+        </ResponsiveContainer>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const createStyles = (theme: any) =>
+const createStyles = (theme: any, compacto: boolean) =>
   StyleSheet.create({
     safe: {
       flex: 1,
       backgroundColor: theme.background,
     },
 
+    scrollContent: {
+      flexGrow: 1,
+      paddingBottom: compacto ? 24 : 40,
+    },
+
     body: {
-      paddingHorizontal: 18,
-      paddingTop: 16,
-      paddingBottom: 40,
+      flex: 0,
+      paddingTop: compacto ? 12 : 16,
+      paddingBottom: compacto ? 24 : 40,
     },
 
     introducao: {
       alignItems: 'center',
       backgroundColor: theme.card,
       borderRadius: 20,
-      paddingHorizontal: 20,
-      paddingVertical: 22,
-      marginBottom: 14,
+      paddingHorizontal: compacto ? 14 : 20,
+      paddingVertical: compacto ? 17 : 22,
+      marginBottom: compacto ? 12 : 14,
       borderWidth: theme.borderWidth,
       borderColor: theme.border,
     },
 
     introducaoIcone: {
-      width: 48,
-      height: 48,
+      width: compacto ? 44 : 48,
+      height: compacto ? 44 : 48,
       borderRadius: 16,
       backgroundColor: theme.warningBg,
       alignItems: 'center',
@@ -527,17 +916,17 @@ const createStyles = (theme: any) =>
     },
 
     introducaoTitulo: {
-      fontSize: 20,
+      fontSize: compacto ? 18 : 20,
       fontWeight: '800',
       color: theme.text,
       textAlign: 'center',
     },
 
     introducaoTexto: {
-      fontSize: 13,
+      fontSize: compacto ? 12 : 13,
       color: theme.textMuted,
       marginTop: 7,
-      lineHeight: 19,
+      lineHeight: compacto ? 18 : 19,
       textAlign: 'center',
     },
 
@@ -547,9 +936,9 @@ const createStyles = (theme: any) =>
       justifyContent: 'space-around',
       backgroundColor: theme.card,
       borderRadius: 16,
-      paddingVertical: 14,
-      paddingHorizontal: 8,
-      marginBottom: 22,
+      paddingVertical: compacto ? 11 : 14,
+      paddingHorizontal: 6,
+      marginBottom: compacto ? 18 : 22,
       borderWidth: theme.borderWidth,
       borderColor: theme.border,
     },
@@ -557,16 +946,17 @@ const createStyles = (theme: any) =>
     resumoItem: {
       flex: 1,
       alignItems: 'center',
+      minWidth: 0,
     },
 
     resumoNumero: {
-      fontSize: 20,
+      fontSize: compacto ? 18 : 20,
       fontWeight: '800',
       color: theme.text,
     },
 
     resumoLegenda: {
-      fontSize: 11,
+      fontSize: compacto ? 10 : 11,
       color: theme.textMuted,
       marginTop: 3,
       textAlign: 'center',
@@ -579,7 +969,7 @@ const createStyles = (theme: any) =>
     },
 
     diaContainer: {
-      marginBottom: 22,
+      marginBottom: compacto ? 18 : 22,
     },
 
     dateWrap: {
@@ -588,20 +978,22 @@ const createStyles = (theme: any) =>
       justifyContent: 'space-between',
       marginBottom: 12,
       paddingHorizontal: 2,
+      gap: 10,
     },
 
     dateTextos: {
       flex: 1,
+      minWidth: 0,
     },
 
     dateTitle: {
-      fontSize: 19,
+      fontSize: compacto ? 17 : 19,
       fontWeight: '800',
       color: theme.text,
     },
 
     dateSub: {
-      fontSize: 13,
+      fontSize: compacto ? 12 : 13,
       color: theme.textMuted,
       marginTop: 3,
     },
@@ -609,8 +1001,8 @@ const createStyles = (theme: any) =>
     contagemDia: {
       alignItems: 'center',
       justifyContent: 'center',
-      minWidth: 56,
-      paddingHorizontal: 10,
+      minWidth: 54,
+      paddingHorizontal: 9,
       paddingVertical: 7,
       borderRadius: 12,
       backgroundColor: theme.warningBg,
@@ -618,7 +1010,7 @@ const createStyles = (theme: any) =>
 
     contagemDiaTexto: {
       color: theme.text,
-      fontSize: 14,
+      fontSize: compacto ? 13 : 14,
       fontWeight: '800',
     },
 
@@ -631,7 +1023,7 @@ const createStyles = (theme: any) =>
     semRefeicao: {
       backgroundColor: theme.card,
       borderRadius: 16,
-      padding: 20,
+      padding: compacto ? 16 : 20,
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: 4,
@@ -642,15 +1034,16 @@ const createStyles = (theme: any) =>
     semRefeicaoTexto: {
       textAlign: 'center',
       color: theme.textMuted,
-      fontSize: 13,
-      lineHeight: 19,
+      fontSize: compacto ? 12 : 13,
+      lineHeight: compacto ? 18 : 19,
       marginTop: 8,
     },
 
     card: {
+      width: '100%',
       backgroundColor: theme.card,
       borderRadius: 18,
-      padding: 15,
+      padding: compacto ? 12 : 15,
       marginBottom: 12,
       borderWidth: theme.borderWidth,
       borderColor: theme.border,
@@ -659,35 +1052,64 @@ const createStyles = (theme: any) =>
     cardHeader: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 12,
+      gap: compacto ? 9 : 12,
+    },
+
+    cardHeaderTexto: {
+      flex: 1,
+      minWidth: 0,
     },
 
     icon: {
-      width: 48,
-      height: 48,
+      width: compacto ? 44 : 48,
+      height: compacto ? 44 : 48,
       borderRadius: 14,
       alignItems: 'center',
       justifyContent: 'center',
+      flexShrink: 0,
     },
 
     titulo: {
-      fontSize: 15,
+      fontSize: compacto ? 14 : 15,
       fontWeight: '800',
       color: theme.text,
     },
 
     horario: {
-      fontSize: 12,
+      fontSize: compacto ? 11 : 12,
       color: theme.primary,
       fontWeight: '700',
       marginTop: 4,
     },
 
     desc: {
-      fontSize: 13,
+      fontSize: compacto ? 12 : 13,
       color: theme.textMuted,
       marginTop: 12,
-      lineHeight: 19,
+      lineHeight: compacto ? 18 : 19,
+    },
+
+    statusPrazo: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 7,
+      marginTop: 13,
+      paddingHorizontal: 10,
+      paddingVertical: 9,
+      borderRadius: 9,
+      backgroundColor: theme.successBg,
+    },
+
+    statusPrazoFechado: {
+      backgroundColor: theme.errorBg,
+    },
+
+    statusPrazoTexto: {
+      flex: 1,
+      minWidth: 0,
+      fontSize: compacto ? 11 : 12,
+      fontWeight: '700',
+      lineHeight: compacto ? 16 : 17,
     },
 
     pergunta: {
@@ -700,18 +1122,22 @@ const createStyles = (theme: any) =>
 
     perguntaTexto: {
       flex: 1,
+      minWidth: 0,
       color: theme.text,
-      fontSize: 12,
+      fontSize: compacto ? 11 : 12,
       fontWeight: '700',
     },
 
     opcoes: {
       flexDirection: 'row',
-      gap: 10,
+      flexWrap: 'wrap',
+      gap: 8,
     },
 
     opcaoBtn: {
       flex: 1,
+      minWidth: compacto ? 105 : 120,
+      minHeight: compacto ? 43 : 46,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
@@ -720,8 +1146,8 @@ const createStyles = (theme: any) =>
       borderWidth: 1,
       borderColor: theme.inputBorder,
       backgroundColor: theme.card,
-      paddingVertical: 12,
-      paddingHorizontal: 8,
+      paddingVertical: 10,
+      paddingHorizontal: 6,
     },
 
     opcaoBtnSimAtivo: {
@@ -734,10 +1160,16 @@ const createStyles = (theme: any) =>
       borderColor: theme.error,
     },
 
+    opcaoBtnDesabilitado: {
+      opacity: 0.45,
+    },
+
     opcaoText: {
-      fontSize: 13,
+      flexShrink: 1,
+      fontSize: compacto ? 11 : 13,
       fontWeight: '700',
       color: theme.text,
+      textAlign: 'center',
     },
 
     opcaoTextAtivo: {
@@ -754,10 +1186,12 @@ const createStyles = (theme: any) =>
       paddingVertical: 6,
       borderRadius: 8,
       backgroundColor: theme.warningBg,
+      maxWidth: '100%',
     },
 
     pendenteText: {
-      fontSize: 11,
+      flexShrink: 1,
+      fontSize: compacto ? 10 : 11,
       color: theme.warning,
       fontWeight: '600',
     },
@@ -772,10 +1206,12 @@ const createStyles = (theme: any) =>
       paddingVertical: 6,
       borderRadius: 8,
       backgroundColor: theme.successBg,
+      maxWidth: '100%',
     },
 
     respondidoText: {
-      fontSize: 11,
+      flexShrink: 1,
+      fontSize: compacto ? 10 : 11,
       fontWeight: '600',
     },
 
@@ -791,8 +1227,18 @@ const createStyles = (theme: any) =>
 
     bannerErroText: {
       flex: 1,
+      minWidth: 0,
       color: theme.error,
-      fontSize: 13,
+      fontSize: compacto ? 12 : 13,
       fontWeight: '600',
+      lineHeight: compacto ? 17 : 19,
+    },
+
+    carregando: {
+      marginTop: 24,
+    },
+
+    salvando: {
+      marginTop: 8,
     },
   });

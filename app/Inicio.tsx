@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -13,24 +12,46 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+
 import ChefLogo from '../components/ChefLogo';
 import BotaoPrimario from '../components/BotaoPrimario';
 import { useAccessibility } from '../components/AccessibilityContext';
+import ResponsiveContainer from '../components/ResponsiveContainer';
+import { useResponsive } from '../hooks/useResponsive';
 
 export default function InicioScreen() {
   const router = useRouter();
   const { theme } = useAccessibility();
-  const styles = createStyles(theme);
+
+  const {
+    width,
+    isSmallScreen,
+    fontScale,
+  } = useResponsive();
+
+  const compacto = isSmallScreen || fontScale >= 1.2;
+
+  const styles = useMemo(
+    () => createStyles(theme, compacto),
+    [theme, compacto]
+  );
 
   const [agreed, setAgreed] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [cardWidth, setCardWidth] = useState(0);
 
+  const logoSize = Math.min(
+    width * (compacto ? 0.48 : 0.62),
+    compacto ? 210 : 280
+  );
+
   const handleScroll = (
     event: NativeSyntheticEvent<NativeScrollEvent>
   ) => {
     const { contentOffset, layoutMeasurement } = event.nativeEvent;
+
+    if (layoutMeasurement.width <= 0) return;
 
     const page = Math.round(
       contentOffset.x / layoutMeasurement.width
@@ -39,7 +60,6 @@ export default function InicioScreen() {
     setCurrentPage(page);
   };
 
-  // Aceita os termos e fecha somente o Modal
   const acceptTerms = () => {
     setAgreed(true);
     setShowTerms(false);
@@ -47,150 +67,152 @@ export default function InicioScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.container} testID="inicio-screen">
+      <ScrollView
+        contentContainerStyle={styles.screenScroll}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <ResponsiveContainer style={styles.container}>
+          <View style={styles.top}>
+            <ChefLogo size={logoSize} />
 
-        {/* LOGO E TÍTULO */}
-        <View style={styles.top}>
-          <ChefLogo size={400} />
+            <Text style={styles.title}>
+              Merenda Já
+            </Text>
 
-          <Text style={styles.title}>
-            Merenda Já
-          </Text>
-
-          <Text style={styles.subtitle}>
-            GESTÃO DE ALIMENTAÇÃO
-          </Text>
-        </View>
-
-        {/* CARROSSEL */}
-        <View
-          style={styles.card}
-          onLayout={(event) => {
-            setCardWidth(event.nativeEvent.layout.width);
-          }}
-        >
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={handleScroll}
-            bounces={false}
-            style={styles.scroll}
-            contentContainerStyle={styles.scrollContent}
-          >
-            <View style={[styles.cardPage, { width: cardWidth }]}>
-              <Text style={styles.welcome}>
-                Bem-vindo!
-              </Text>
-
-              <Text style={styles.desc}>
-                Gerencie seu cardápio, alunos, turmas e
-                refeições de forma simples, rápida e
-                eficiente.
-              </Text>
-            </View>
-
-            <View style={[styles.cardPage, { width: cardWidth }]}>
-              <Text style={styles.welcome}>
-                Organize suas refeições
-              </Text>
-
-              <Text style={styles.desc}>
-                Consulte o cardápio escolar e acompanhe
-                quais refeições serão oferecidas aos
-                alunos.
-              </Text>
-            </View>
-
-            <View style={[styles.cardPage, { width: cardWidth }]}>
-              <Text style={styles.welcome}>
-                Gerencie seus alunos 👩‍🎓
-              </Text>
-
-              <Text style={styles.desc}>
-                Organize alunos e turmas de maneira
-                prática, facilitando o gerenciamento da
-                alimentação escolar.
-              </Text>
-            </View>
-
-            <View style={[styles.cardPage, { width: cardWidth }]}>
-              <Text style={styles.welcome}>
-                Tudo em um só lugar!
-              </Text>
-
-              <Text style={styles.desc}>
-                O Merenda Já facilita a gestão da
-                alimentação escolar de forma rápida,
-                simples e eficiente.
-              </Text>
-            </View>
-          </ScrollView>
-
-          <View style={styles.dots}>
-            {[0, 1, 2, 3].map((index) => (
-              <View
-                key={index}
-                style={[
-                  styles.dot,
-                  currentPage === index && styles.dotActive,
-                ]}
-              />
-            ))}
+            <Text style={styles.subtitle}>
+              GESTÃO DE ALIMENTAÇÃO
+            </Text>
           </View>
-        </View>
 
-        {/* TERMOS DE USO */}
-        <Pressable
-          testID="terms-checkbox"
-          style={styles.termsRow}
-          onPress={() => setShowTerms(true)}
-        >
           <View
-            style={[
-              styles.checkbox,
-              agreed && styles.checkboxChecked,
-            ]}
+            style={styles.card}
+            onLayout={(event) => {
+              setCardWidth(event.nativeEvent.layout.width);
+            }}
           >
-            {agreed && (
-              <Ionicons
-                name="checkmark"
-                size={14}
-                color="#fff"
-              />
-            )}
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={handleScroll}
+              bounces={false}
+              style={styles.scroll}
+              contentContainerStyle={styles.scrollContent}
+            >
+              <View style={[styles.cardPage, { width: cardWidth }]}>
+                <Text style={styles.welcome}>
+                  Bem-vindo!
+                </Text>
+
+                <Text style={styles.desc}>
+                  Gerencie seu cardápio, alunos, turmas e
+                  refeições de forma simples, rápida e
+                  eficiente.
+                </Text>
+              </View>
+
+              <View style={[styles.cardPage, { width: cardWidth }]}>
+                <Text style={styles.welcome}>
+                  Organize suas refeições
+                </Text>
+
+                <Text style={styles.desc}>
+                  Consulte o cardápio escolar e acompanhe
+                  quais refeições serão oferecidas aos
+                  alunos.
+                </Text>
+              </View>
+
+              <View style={[styles.cardPage, { width: cardWidth }]}>
+                <Text style={styles.welcome}>
+                  Gerencie seus alunos 👩‍🎓
+                </Text>
+
+                <Text style={styles.desc}>
+                  Organize alunos e turmas de maneira
+                  prática, facilitando o gerenciamento da
+                  alimentação escolar.
+                </Text>
+              </View>
+
+              <View style={[styles.cardPage, { width: cardWidth }]}>
+                <Text style={styles.welcome}>
+                  Tudo em um só lugar!
+                </Text>
+
+                <Text style={styles.desc}>
+                  O Merenda Já facilita a gestão da
+                  alimentação escolar de forma rápida,
+                  simples e eficiente.
+                </Text>
+              </View>
+            </ScrollView>
+
+            <View style={styles.dots}>
+              {[0, 1, 2, 3].map((index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.dot,
+                    currentPage === index && styles.dotActive,
+                  ]}
+                />
+              ))}
+            </View>
           </View>
 
-          <Text style={styles.termsText}>
-            Li e concordo com os termos de uso
-          </Text>
+          <Pressable
+            testID="terms-checkbox"
+            style={styles.termsRow}
+            onPress={() => setShowTerms(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Ler e concordar com os termos de uso"
+            accessibilityState={{ checked: agreed }}
+          >
+            <View
+              style={[
+                styles.checkbox,
+                agreed && styles.checkboxChecked,
+              ]}
+            >
+              {agreed && (
+                <Ionicons
+                  name="checkmark"
+                  size={14}
+                  color="#fff"
+                />
+              )}
+            </View>
 
-          <Ionicons
-            name="document-text-outline"
-            size={19}
-            color={theme.primary}
+            <Text style={styles.termsText}>
+              Li e concordo com os termos de uso
+            </Text>
+
+            <Ionicons
+              name="document-text-outline"
+              size={19}
+              color={theme.primary}
+            />
+          </Pressable>
+
+          <BotaoPrimario
+            testID="splash-start-button"
+            title="Começar"
+            onPress={() => {
+              if (agreed) {
+                router.push('/Acesso');
+              }
+            }}
+            disabled={!agreed}
+            style={{
+              marginTop: 12,
+              opacity: agreed ? 1 : 0.5,
+            }}
           />
-        </Pressable>
+        </ResponsiveContainer>
+      </ScrollView>
 
-        {/* BOTÃO COMEÇAR */}
-        <BotaoPrimario
-          testID="splash-start-button"
-          title="Começar"
-          onPress={() => {
-            if (agreed) {
-              router.push('/Acesso');
-            }
-          }}
-          disabled={!agreed}
-          style={{
-            marginTop: 12,
-            opacity: agreed ? 1 : 0.5,
-          }}
-        />
-
-      </View>
-
-      {/* MODAL DOS TERMOS */}
       <Modal
         visible={showTerms}
         animationType="slide"
@@ -199,10 +221,8 @@ export default function InicioScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-
-            {/* CABEÇALHO */}
             <View style={styles.modalHeader}>
-              <View>
+              <View style={styles.modalHeaderText}>
                 <Text style={styles.modalTitle}>
                   Termos de Uso
                 </Text>
@@ -215,6 +235,8 @@ export default function InicioScreen() {
               <Pressable
                 onPress={() => setShowTerms(false)}
                 style={styles.closeButton}
+                accessibilityRole="button"
+                accessibilityLabel="Fechar termos de uso"
               >
                 <Ionicons
                   name="close"
@@ -224,7 +246,6 @@ export default function InicioScreen() {
               </Pressable>
             </View>
 
-            {/* CONTEÚDO DOS TERMOS */}
             <ScrollView
               style={styles.termsContent}
               showsVerticalScrollIndicator
@@ -452,11 +473,11 @@ export default function InicioScreen() {
               </Text>
             </ScrollView>
 
-            {/* BOTÕES DO MODAL */}
             <View style={styles.modalButtons}>
               <Pressable
                 style={styles.backButton}
                 onPress={() => setShowTerms(false)}
+                accessibilityRole="button"
               >
                 <Text style={styles.backButtonText}>
                   Voltar
@@ -466,6 +487,7 @@ export default function InicioScreen() {
               <Pressable
                 style={styles.acceptButton}
                 onPress={acceptTerms}
+                accessibilityRole="button"
               >
                 <Ionicons
                   name="checkmark-circle-outline"
@@ -478,274 +500,304 @@ export default function InicioScreen() {
                 </Text>
               </Pressable>
             </View>
-
           </View>
         </View>
       </Modal>
-
     </SafeAreaView>
   );
 }
 
-const createStyles = (theme: any) => StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: theme.background,
-  },
-
-  container: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    justifyContent: 'space-between',
-  },
-
-  top: {
-    alignItems: 'center',
-    marginTop: -10,
-    gap: 10,
-  },
-
-  title: {
-    fontSize: 30,
-    fontWeight: '800',
-    color: theme.primaryDark,
-    marginTop: 8,
-  },
-
-  subtitle: {
-    fontSize: 12,
-    color: theme.primary,
-    letterSpacing: 2,
-    fontWeight: '600',
-  },
-
-  card: {
-    backgroundColor: theme.card,
-    borderRadius: 20,
-    marginTop: 12,
-    minHeight: 170,
-    maxHeight: 200,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: {
-      width: 0,
-      height: 4,
+const createStyles = (theme: any, compacto: boolean) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: theme.background,
     },
-    elevation: 3,
-    overflow: 'hidden',
-    borderWidth: theme.borderWidth,
-    borderColor: theme.border,
-  },
 
-  scroll: {
-    width: '100%',
-  },
+    screenScroll: {
+      flexGrow: 1,
+      paddingBottom: compacto ? 16 : 24,
+    },
 
-  scrollContent: {
-    alignItems: 'stretch',
-  },
+    container: {
+      flex: 0,
+      width: '100%',
+      maxWidth: 560,
+      alignSelf: 'center',
+      paddingTop: compacto ? 12 : 20,
+      paddingBottom: compacto ? 12 : 20,
+      paddingHorizontal: compacto ? 0 : 4,
+      gap: compacto ? 12 : 16,
+    },
 
-  cardPage: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+    top: {
+      alignItems: 'center',
+      marginTop: 0,
+      gap: compacto ? 6 : 10,
+    },
 
-  welcome: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: theme.text,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
+    title: {
+      fontSize: compacto ? 26 : 30,
+      fontWeight: '800',
+      color: theme.primaryDark,
+      marginTop: 4,
+      textAlign: 'center',
+    },
 
-  desc: {
-    fontSize: 14,
-    color: theme.textMuted,
-    textAlign: 'center',
-    lineHeight: 20,
-    maxWidth: 300,
-  },
+    subtitle: {
+      fontSize: compacto ? 10 : 12,
+      color: theme.primary,
+      letterSpacing: compacto ? 1.5 : 2,
+      fontWeight: '600',
+      textAlign: 'center',
+    },
 
-  dots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 6,
-    paddingBottom: 14,
-    paddingTop: 6,
-  },
+    card: {
+      width: '100%',
+      backgroundColor: theme.card,
+      borderRadius: 20,
+      marginTop: 4,
+      minHeight: compacto ? 180 : 170,
+      shadowColor: '#000',
+      shadowOpacity: 0.06,
+      shadowRadius: 12,
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
+      elevation: 3,
+      overflow: 'hidden',
+      borderWidth: theme.borderWidth,
+      borderColor: theme.border,
+    },
 
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: theme.divider,
-  },
+    scroll: {
+      width: '100%',
+      flexGrow: 0,
+    },
 
-  dotActive: {
-    backgroundColor: theme.primary,
-    width: 18,
-  },
+    scrollContent: {
+      alignItems: 'stretch',
+    },
 
-  termsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-  },
+    cardPage: {
+      minHeight: compacto ? 150 : 145,
+      paddingHorizontal: compacto ? 14 : 20,
+      paddingTop: compacto ? 18 : 20,
+      paddingBottom: 10,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
 
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 5,
-    borderWidth: 1.5,
-    borderColor: theme.primary,
-    backgroundColor: theme.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    welcome: {
+      fontSize: compacto ? 17 : 20,
+      fontWeight: '700',
+      color: theme.text,
+      textAlign: 'center',
+      marginBottom: 8,
+      flexShrink: 1,
+    },
 
-  checkboxChecked: {
-    backgroundColor: theme.primary,
-  },
+    desc: {
+      fontSize: compacto ? 12 : 14,
+      color: theme.textMuted,
+      textAlign: 'center',
+      lineHeight: compacto ? 18 : 20,
+      maxWidth: 320,
+      flexShrink: 1,
+    },
 
-  termsText: {
-    fontSize: 13,
-    color: theme.text,
-    flex: 1,
-  },
+    dots: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 6,
+      paddingBottom: 12,
+      paddingTop: 6,
+    },
 
-  // MODAL
+    dot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: theme.divider,
+    },
 
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
+    dotActive: {
+      backgroundColor: theme.primary,
+      width: 18,
+    },
 
-  modalContainer: {
-    width: '100%',
-    maxHeight: '85%',
-    backgroundColor: theme.card,
-    borderRadius: 22,
-    padding: 20,
-    overflow: 'hidden',
-    borderWidth: theme.borderWidth,
-    borderColor: theme.border,
-  },
+    termsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingVertical: 8,
+      paddingHorizontal: 4,
+      minHeight: 42,
+    },
 
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 18,
-  },
+    checkbox: {
+      width: 20,
+      height: 20,
+      borderRadius: 5,
+      borderWidth: 1.5,
+      borderColor: theme.primary,
+      backgroundColor: theme.card,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
 
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: theme.primaryDark,
-  },
+    checkboxChecked: {
+      backgroundColor: theme.primary,
+    },
 
-  modalSubtitle: {
-    fontSize: 13,
-    color: theme.textMuted,
-    marginTop: 3,
-  },
+    termsText: {
+      fontSize: compacto ? 12 : 13,
+      color: theme.text,
+      flex: 1,
+      flexShrink: 1,
+      lineHeight: compacto ? 17 : 19,
+    },
 
-  closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: theme.soft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.45)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: compacto ? 10 : 20,
+    },
 
-  termsContent: {
-    flexGrow: 0,
-    flexShrink: 1,
-  },
+    modalContainer: {
+      width: '100%',
+      maxWidth: 560,
+      maxHeight: '90%',
+      backgroundColor: theme.card,
+      borderRadius: 22,
+      padding: compacto ? 14 : 20,
+      overflow: 'hidden',
+      borderWidth: theme.borderWidth,
+      borderColor: theme.border,
+    },
 
-  termsContentInner: {
-    paddingBottom: 10,
-  },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: compacto ? 12 : 18,
+      gap: 10,
+    },
 
-  termsHeading: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: theme.primaryDark,
-    marginTop: 16,
-    marginBottom: 7,
-  },
+    modalHeaderText: {
+      flex: 1,
+      flexShrink: 1,
+    },
 
-  termsSubheading: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: theme.primary,
-    marginTop: 10,
-    marginBottom: 5,
-  },
+    modalTitle: {
+      fontSize: compacto ? 19 : 22,
+      fontWeight: '800',
+      color: theme.primaryDark,
+    },
 
-  termsParagraph: {
-    fontSize: 13,
-    lineHeight: 21,
-    color: theme.textSecondary,
-    textAlign: 'justify',
-  },
+    modalSubtitle: {
+      fontSize: compacto ? 12 : 13,
+      color: theme.textMuted,
+      marginTop: 3,
+    },
 
-  lastUpdate: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: theme.text,
-    marginTop: 22,
-    marginBottom: 10,
-  },
+    closeButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: theme.soft,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
 
-  modalButtons: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 18,
-  },
+    termsContent: {
+      flexGrow: 0,
+      flexShrink: 1,
+    },
 
-  backButton: {
-    flex: 1,
-    height: 48,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: theme.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    termsContentInner: {
+      paddingBottom: 10,
+    },
 
-  backButtonText: {
-    color: theme.primary,
-    fontSize: 14,
-    fontWeight: '700',
-  },
+    termsHeading: {
+      fontSize: compacto ? 14 : 15,
+      fontWeight: '700',
+      color: theme.primaryDark,
+      marginTop: 16,
+      marginBottom: 7,
+    },
 
-  acceptButton: {
-    flex: 1.5,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: theme.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 7,
-  },
+    termsSubheading: {
+      fontSize: compacto ? 12 : 13,
+      fontWeight: '700',
+      color: theme.primary,
+      marginTop: 10,
+      marginBottom: 5,
+    },
 
-  acceptButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-});
+    termsParagraph: {
+      fontSize: compacto ? 12 : 13,
+      lineHeight: compacto ? 19 : 21,
+      color: theme.textSecondary,
+      textAlign: 'justify',
+    },
+
+    lastUpdate: {
+      fontSize: compacto ? 11 : 12,
+      fontWeight: '600',
+      color: theme.text,
+      marginTop: 22,
+      marginBottom: 10,
+    },
+
+    modalButtons: {
+      flexDirection: 'row',
+      gap: 10,
+      marginTop: compacto ? 12 : 18,
+    },
+
+    backButton: {
+      flex: 1,
+      minWidth: 0,
+      minHeight: 46,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 6,
+    },
+
+    backButtonText: {
+      color: theme.primary,
+      fontSize: compacto ? 12 : 14,
+      fontWeight: '700',
+    },
+
+    acceptButton: {
+      flex: 1.5,
+      minWidth: 0,
+      minHeight: 46,
+      borderRadius: 12,
+      backgroundColor: theme.primary,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 7,
+      paddingHorizontal: 6,
+    },
+
+    acceptButtonText: {
+      color: '#fff',
+      fontSize: compacto ? 12 : 14,
+      fontWeight: '700',
+      flexShrink: 1,
+      textAlign: 'center',
+    },
+  });

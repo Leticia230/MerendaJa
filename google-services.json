@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "184963829406",
+    "project_id": "merendaja",
+    "storage_bucket": "merendaja.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:184963829406:android:1c11d271f4b7b85971f58f",
+        "android_client_info": {
+          "package_name": "com.merendaja.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCi_TtTUE6kBn-VBgh7tF3YrbXkI3K--BU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

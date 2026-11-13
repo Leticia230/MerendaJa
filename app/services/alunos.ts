@@ -36,7 +36,6 @@ function mapearAluno(id: string, dados: any): Aluno {
   };
 }
 
-/** Lista só os alunos da instituição logada (ou da informada). */
 export async function listarAlunos(instituicaoId?: string): Promise<Aluno[]> {
   const id = instituicaoId ?? auth.currentUser?.uid;
   if (!id) throw new Error('Usuário não autenticado.');

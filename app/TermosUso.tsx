@@ -1,11 +1,18 @@
-import React, { useRef } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useMemo, useRef } from 'react';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
 import ScreenHeader from '../components/ScreenHeader';
 import Text from '../components/AppText';
 import { useAccessibility } from '../components/AccessibilityContext';
+import ResponsiveContainer from '../components/ResponsiveContainer';
+import { useResponsive } from '../hooks/useResponsive';
 
-// Cada bloco pode ter um "label" (subtópico em negrito) e o "text".
 type Block = {
   label?: string;
   text: string;
@@ -142,15 +149,26 @@ const SECTIONS: Section[] = [
 
 export default function TermsOfUseScreen() {
   const { theme } = useAccessibility();
-  const styles = createStyles(theme);
+
+  const { isSmallScreen, fontScale } = useResponsive();
+  const compacto = isSmallScreen || fontScale >= 1.2;
+
+  const styles = useMemo(
+    () => createStyles(theme, compacto),
+    [theme, compacto]
+  );
 
   const scrollRef = useRef<ScrollView>(null);
   const positions = useRef<Record<number, number>>({});
 
   const scrollToSection = (number: number) => {
     const y = positions.current[number];
+
     if (y !== undefined) {
-      scrollRef.current?.scrollTo({ y: y - 12, animated: true });
+      scrollRef.current?.scrollTo({
+        y: Math.max(0, y - 12),
+        animated: true,
+      });
     }
   };
 
@@ -158,92 +176,120 @@ export default function TermsOfUseScreen() {
     <SafeAreaView style={styles.safe}>
       <ScreenHeader title="Termos de Uso" />
 
-      <ScrollView ref={scrollRef} contentContainerStyle={styles.body}>
-        <Text style={styles.updatedAt}>
-          Última atualização: 23 de agosto de 2026
-        </Text>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <ResponsiveContainer style={styles.body}>
+          <Text style={styles.updatedAt}>
+            Última atualização: 23 de agosto de 2026
+          </Text>
 
-        {/* Índice */}
-        <View style={styles.indexCard}>
-          <Text style={styles.indexTitle}>Neste documento</Text>
+          <View style={styles.indexCard}>
+            <Text style={styles.indexTitle}>
+              Neste documento
+            </Text>
 
-          {SECTIONS.map((section) => (
-            <TouchableOpacity
-              key={section.number}
-              onPress={() => scrollToSection(section.number)}
-              style={styles.indexRow}
-              accessibilityRole="button"
-              accessibilityLabel={`Ir para ${section.title}`}
-            >
-              <Text style={styles.indexNumber}>{section.number}.</Text>
-              <Text style={styles.indexLink}>{section.title}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+            {SECTIONS.map((section) => (
+              <TouchableOpacity
+                key={section.number}
+                onPress={() => scrollToSection(section.number)}
+                style={styles.indexRow}
+                accessibilityRole="button"
+                accessibilityLabel={`Ir para ${section.title}`}
+              >
+                <Text style={styles.indexNumber}>
+                  {section.number}.
+                </Text>
 
-        {/* Seções */}
-        {SECTIONS.map((section) => (
-          <View
-            key={section.number}
-            style={styles.card}
-            onLayout={(e) => {
-              positions.current[section.number] = e.nativeEvent.layout.y;
-            }}
-          >
-            <View style={styles.cardHeader}>
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{section.number}</Text>
-              </View>
-
-              <Text style={styles.sectionTitle}>{section.title}</Text>
-            </View>
-
-            {section.blocks.map((block, index) => (
-              <View key={index} style={index > 0 ? styles.blockSpacing : null}>
-                {block.label ? (
-                  <Text style={styles.label}>{block.label}</Text>
-                ) : null}
-
-                <Text style={styles.paragraph}>{block.text}</Text>
-              </View>
+                <Text style={styles.indexLink}>
+                  {section.title}
+                </Text>
+              </TouchableOpacity>
             ))}
           </View>
-        ))}
+
+          {SECTIONS.map((section) => (
+            <View
+              key={section.number}
+              style={styles.card}
+              onLayout={(e) => {
+                positions.current[section.number] =
+                  e.nativeEvent.layout.y;
+              }}
+            >
+              <View style={styles.cardHeader}>
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>
+                    {section.number}
+                  </Text>
+                </View>
+
+                <Text style={styles.sectionTitle}>
+                  {section.title}
+                </Text>
+              </View>
+
+              {section.blocks.map((block, index) => (
+                <View
+                  key={index}
+                  style={index > 0 ? styles.blockSpacing : undefined}
+                >
+                  {block.label ? (
+                    <Text style={styles.label}>
+                      {block.label}
+                    </Text>
+                  ) : null}
+
+                  <Text style={styles.paragraph}>
+                    {block.text}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ))}
+        </ResponsiveContainer>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const createStyles = (theme: any) =>
+const createStyles = (theme: any, compacto: boolean) =>
   StyleSheet.create({
     safe: {
       flex: 1,
       backgroundColor: theme.background,
     },
 
+    scrollContent: {
+      flexGrow: 1,
+      paddingBottom: compacto ? 24 : 40,
+    },
+
     body: {
-      padding: 22,
-      paddingBottom: 40,
+      flex: 0,
+      paddingTop: compacto ? 14 : 18,
+      paddingBottom: compacto ? 12 : 20,
     },
 
     updatedAt: {
-      fontSize: 12,
+      fontSize: compacto ? 11 : 12,
       color: theme.textMuted,
       marginBottom: 16,
     },
 
-    // Índice
     indexCard: {
       backgroundColor: theme.card,
       borderRadius: 12,
-      padding: 16,
+      padding: compacto ? 13 : 16,
       marginBottom: 16,
       borderColor: theme.border,
       borderWidth: theme.borderWidth,
     },
 
     indexTitle: {
-      fontSize: 13,
+      fontSize: compacto ? 12 : 13,
       fontWeight: '700',
       color: theme.text,
       textTransform: 'uppercase',
@@ -253,26 +299,29 @@ const createStyles = (theme: any) =>
 
     indexRow: {
       flexDirection: 'row',
-      paddingVertical: 6,
+      alignItems: 'center',
+      paddingVertical: compacto ? 7 : 6,
+      minHeight: 36,
     },
 
     indexNumber: {
       width: 28,
-      fontSize: 14,
+      fontSize: compacto ? 13 : 14,
       color: theme.textMuted,
     },
 
     indexLink: {
       flex: 1,
-      fontSize: 14,
+      flexShrink: 1,
+      fontSize: compacto ? 13 : 14,
       color: theme.text,
     },
 
-    // Seções
     card: {
+      width: '100%',
       backgroundColor: theme.card,
       borderRadius: 12,
-      padding: 16,
+      padding: compacto ? 13 : 16,
       marginBottom: 12,
       borderColor: theme.border,
       borderWidth: theme.borderWidth,
@@ -282,6 +331,7 @@ const createStyles = (theme: any) =>
       flexDirection: 'row',
       alignItems: 'center',
       marginBottom: 12,
+      gap: 8,
     },
 
     badge: {
@@ -291,7 +341,7 @@ const createStyles = (theme: any) =>
       backgroundColor: theme.soft,
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: 10,
+      flexShrink: 0,
     },
 
     badgeText: {
@@ -302,25 +352,26 @@ const createStyles = (theme: any) =>
 
     sectionTitle: {
       flex: 1,
-      fontSize: 15,
+      flexShrink: 1,
+      fontSize: compacto ? 14 : 15,
       fontWeight: '700',
       color: theme.text,
     },
 
     blockSpacing: {
-      marginTop: 14,
+      marginTop: compacto ? 12 : 14,
     },
 
     label: {
-      fontSize: 14,
+      fontSize: compacto ? 13 : 14,
       fontWeight: '700',
       color: theme.text,
-      marginBottom: 2,
+      marginBottom: 3,
     },
 
     paragraph: {
-      fontSize: 14,
+      fontSize: compacto ? 13 : 14,
       color: theme.textSecondary,
-      lineHeight: 21,
+      lineHeight: compacto ? 20 : 21,
     },
   });

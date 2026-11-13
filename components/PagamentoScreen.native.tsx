@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
@@ -62,16 +61,16 @@ export default function PaymentScreen() {
         style: 'alwaysLight',
         appearance: {
           colors: {
-            primary: '#F5893C',              // destaque (foco, links)
-            background: '#FFFFFF',           // fundo do painel
-            componentBackground: '#FFFFFF',  // fundo dos campos
-            componentBorder: '#DDDDDD',      // borda dos campos
-            componentDivider: '#DDDDDD',     // linhas entre número, validade e CVC
-            componentText: '#000000',        // texto digitado
-            primaryText: '#000000',          // títulos e textos principais
-            secondaryText: '#555555',        // rótulos ("Número do cartão", "País ou região")
-            placeholderText: '#888888',      // "MM / AA", "CVC"
-            icon: '#000000',                 // seta do país e ícones
+            primary: '#F5893C',             
+            background: '#FFFFFF',           
+            componentBackground: '#FFFFFF',  
+            componentBorder: '#DDDDDD',     
+            componentDivider: '#DDDDDD',    
+            componentText: '#000000',       
+            primaryText: '#000000',         
+            secondaryText: '#555555',      
+            placeholderText: '#888888',      
+            icon: '#000000',                
           },
           primaryButton: {
             colors: {

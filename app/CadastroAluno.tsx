@@ -18,6 +18,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 import ScreenHeader from '../components/ScreenHeader';
+import ResponsiveContainer from '../components/ResponsiveContainer';
+import { useResponsive } from '../hooks/useResponsive';
 import LabeledInput from '../components/LabeledInput';
 import BotaoPrimario from '../components/BotaoPrimario';
 import { useAccessibility, AccessibilityTheme } from '../components/AccessibilityContext';
@@ -59,7 +61,14 @@ const ERROS_CADASTRO: Record<string, { titulo: string; mensagem: string }> = {
 export default function CadastroAluno() {
   const router = useRouter();
   const { theme } = useAccessibility();
-  const styles = useMemo(() => createStyles(theme), [theme]);
+
+  const { isSmallScreen, fontScale, horizontalPadding } = useResponsive();
+  const compacto = isSmallScreen || fontScale >= 1.2;
+
+  const styles = useMemo(
+    () => createStyles(theme, compacto),
+    [theme, compacto]
+  );
 
   const scrollRef = useRef<ScrollView>(null);
 
@@ -144,10 +153,17 @@ export default function CadastroAluno() {
         dadosExtras.periodo = periodo;
       }
 
-      const resultado = await cadastrarAluno(emailNormalizado, senha, dadosExtras);
+      const resultado = await cadastrarAluno(
+        emailNormalizado,
+        senha,
+        dadosExtras
+      );
 
       if (turmaSelecionada) {
-        await adicionarAlunoATurma(turmaSelecionada.id, resultado.user.uid);
+        await adicionarAlunoATurma(
+          turmaSelecionada.id,
+          resultado.user.uid
+        );
       }
 
       Alert.alert(
@@ -182,7 +198,7 @@ export default function CadastroAluno() {
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        keyboardVerticalOffset={0}
       >
         <ScrollView
           ref={scrollRef}
@@ -193,248 +209,302 @@ export default function CadastroAluno() {
           showsVerticalScrollIndicator={false}
           automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
         >
-          <View style={styles.avatar}>
-            <Ionicons name="person" size={38} color={theme.onPrimary} />
-          </View>
-
-          <Text style={styles.title}>Cadastro de Aluno</Text>
-
-          <Text style={styles.subtitle}>
-            Preencha os dados para adicionar um novo aluno.
-          </Text>
-
-          {erro && (
-            <View style={styles.bannerErro}>
-              <Ionicons name="alert-circle" size={18} color={theme.error} />
-              <Text style={styles.bannerErroText}>{erro}</Text>
-            </View>
-          )}
-
-          <LabeledInput
-            ref={nomeInputRef}
-            testID="aluno-nome-input"
-            label="Nome do aluno"
-            placeholder="Nome completo"
-            returnKeyType="next"
-            onSubmitEditing={() => rmInputRef.current?.focus()}
-            blurOnSubmit={false}
-            editable={!carregando}
-            value={nome}
-            onChangeText={setNome}
-            containerStyle={{ marginTop: 20 }}
-          />
-
-          <LabeledInput
-            ref={rmInputRef}
-            testID="aluno-rm-input"
-            label="RM"
-            placeholder="Número de matrícula"
-            keyboardType="number-pad"
-            returnKeyType="next"
-            onSubmitEditing={() => emailInputRef.current?.focus()}
-            blurOnSubmit={false}
-            editable={!carregando}
-            value={rm}
-            onChangeText={setRm}
-          />
-
-          <View style={styles.fieldContainer}>
-            <Text style={styles.label}>Turma (opcional)</Text>
-
-            <Pressable
-              testID="aluno-turma-select"
-              style={styles.select}
-              onPress={() => {
-                Keyboard.dismiss();
-                setTurmaAberta((v) => !v);
-                setPeriodoAberto(false);
-              }}
-              disabled={carregando}
-            >
-              <Text
-                style={[
-                  styles.selectText,
-                  turmaSelecionada && styles.selectTextPreenchido,
-                ]}
-              >
-                {turmaSelecionada ? turmaSelecionada.nome : 'Selecione a turma'}
-              </Text>
-
+          <ResponsiveContainer
+            style={[
+              styles.formulario,
+              { paddingHorizontal: horizontalPadding },
+            ]}
+          >
+            <View style={styles.avatar}>
               <Ionicons
-                name={turmaAberta ? 'chevron-up' : 'chevron-down'}
-                size={18}
-                color={theme.textMuted}
+                name="person"
+                size={compacto ? 34 : 38}
+                color={theme.onPrimary}
               />
-            </Pressable>
+            </View>
 
-            {turmaAberta && (
-              <View style={styles.dropdown}>
-                {carregandoTurmas ? (
-                  <ActivityIndicator color={theme.primary} style={{ padding: 16 }} />
-                ) : turmas.length === 0 ? (
-                  <Text style={styles.dropdownVazio}>
-                    Nenhuma turma cadastrada ainda. Você pode
-                    cadastrar o aluno e vinculá-lo depois.
-                  </Text>
-                ) : (
-                  turmas.map((turma) => (
+            <Text style={styles.title}>Cadastro de Aluno</Text>
+
+            <Text style={styles.subtitle}>
+              Preencha os dados para adicionar um novo aluno.
+            </Text>
+
+            {erro && (
+              <View style={styles.bannerErro}>
+                <Ionicons name="alert-circle" size={18} color={theme.error} />
+                <Text style={styles.bannerErroText}>{erro}</Text>
+              </View>
+            )}
+
+            <LabeledInput
+              ref={nomeInputRef}
+              testID="aluno-nome-input"
+              label="Nome do aluno"
+              placeholder="Nome completo"
+              returnKeyType="next"
+              onSubmitEditing={() => rmInputRef.current?.focus()}
+              blurOnSubmit={false}
+              editable={!carregando}
+              value={nome}
+              onChangeText={setNome}
+              containerStyle={{ marginTop: compacto ? 16 : 20 }}
+            />
+
+            <LabeledInput
+              ref={rmInputRef}
+              testID="aluno-rm-input"
+              label="RM"
+              placeholder="Número de matrícula"
+              keyboardType="number-pad"
+              maxLength={10}
+              returnKeyType="next"
+              onSubmitEditing={() => emailInputRef.current?.focus()}
+              blurOnSubmit={false}
+              editable={!carregando}
+              value={rm}
+              onChangeText={(texto) =>
+                setRm(texto.replace(/[^0-9]/g, '').slice(0, 10))
+              }
+            />
+
+            <View style={styles.fieldContainer}>
+              <Text style={styles.label}>Turma (opcional)</Text>
+
+              <Pressable
+                testID="aluno-turma-select"
+                style={styles.select}
+                onPress={() => {
+                  Keyboard.dismiss();
+                  setTurmaAberta((v) => !v);
+                  setPeriodoAberto(false);
+                }}
+                disabled={carregando}
+              >
+                <Text
+                  style={[
+                    styles.selectText,
+                    turmaSelecionada && styles.selectTextPreenchido,
+                  ]}
+                >
+                  {turmaSelecionada
+                    ? turmaSelecionada.nome
+                    : 'Selecione a turma'}
+                </Text>
+
+                <Ionicons
+                  name={turmaAberta ? 'chevron-up' : 'chevron-down'}
+                  size={18}
+                  color={theme.textMuted}
+                />
+              </Pressable>
+
+              {turmaAberta && (
+                <View style={styles.dropdown}>
+                  {carregandoTurmas ? (
+                    <ActivityIndicator
+                      color={theme.primary}
+                      style={{ padding: 16 }}
+                    />
+                  ) : turmas.length === 0 ? (
+                    <Text style={styles.dropdownVazio}>
+                      Nenhuma turma cadastrada ainda. Você pode cadastrar o
+                      aluno e vinculá-lo depois.
+                    </Text>
+                  ) : (
+                    turmas.map((turma) => (
+                      <Pressable
+                        key={turma.id}
+                        testID={`turma-opcao-${turma.id}`}
+                        style={styles.dropdownRow}
+                        onPress={() => selecionarTurma(turma)}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.dropdownRowText}>
+                            {turma.nome}
+                          </Text>
+
+                          {turma.periodo ? (
+                            <Text style={styles.dropdownRowSub}>
+                              {turma.periodo}
+                            </Text>
+                          ) : null}
+                        </View>
+
+                        {turmaSelecionada?.id === turma.id && (
+                          <Ionicons
+                            name="checkmark"
+                            size={18}
+                            color={theme.primary}
+                          />
+                        )}
+                      </Pressable>
+                    ))
+                  )}
+                </View>
+              )}
+            </View>
+
+            <View style={styles.fieldContainer}>
+              <Text style={styles.label}>Período (opcional)</Text>
+
+              <Pressable
+                testID="aluno-periodo-select"
+                style={styles.select}
+                onPress={() => {
+                  Keyboard.dismiss();
+                  setPeriodoAberto((v) => !v);
+                  setTurmaAberta(false);
+                }}
+                disabled={carregando}
+              >
+                <Text
+                  style={[
+                    styles.selectText,
+                    periodo && styles.selectTextPreenchido,
+                  ]}
+                >
+                  {periodo || 'Selecione o período'}
+                </Text>
+
+                <Ionicons
+                  name={periodoAberto ? 'chevron-up' : 'chevron-down'}
+                  size={18}
+                  color={theme.textMuted}
+                />
+              </Pressable>
+
+              {periodoAberto && (
+                <View style={styles.dropdown}>
+                  {PERIODOS.map((p) => (
                     <Pressable
-                      key={turma.id}
-                      testID={`turma-opcao-${turma.id}`}
+                      key={p}
+                      testID={`periodo-opcao-${p}`}
                       style={styles.dropdownRow}
-                      onPress={() => selecionarTurma(turma)}
+                      onPress={() => {
+                        setPeriodo(p);
+                        setPeriodoAberto(false);
+                      }}
                     >
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.dropdownRowText}>{turma.nome}</Text>
+                      <Text style={styles.dropdownRowText}>{p}</Text>
 
-                        {turma.periodo ? (
-                          <Text style={styles.dropdownRowSub}>{turma.periodo}</Text>
-                        ) : null}
-                      </View>
-
-                      {turmaSelecionada?.id === turma.id && (
-                        <Ionicons name="checkmark" size={18} color={theme.primary} />
+                      {periodo === p && (
+                        <Ionicons
+                          name="checkmark"
+                          size={18}
+                          color={theme.primary}
+                        />
                       )}
                     </Pressable>
-                  ))
-                )}
-              </View>
-            )}
-          </View>
-
-          <View style={styles.fieldContainer}>
-            <Text style={styles.label}>Período (opcional)</Text>
-
-            <Pressable
-              testID="aluno-periodo-select"
-              style={styles.select}
-              onPress={() => {
-                Keyboard.dismiss();
-                setPeriodoAberto((v) => !v);
-                setTurmaAberta(false);
-              }}
-              disabled={carregando}
-            >
-              <Text style={[styles.selectText, periodo && styles.selectTextPreenchido]}>
-                {periodo || 'Selecione o período'}
-              </Text>
-
-              <Ionicons
-                name={periodoAberto ? 'chevron-up' : 'chevron-down'}
-                size={18}
-                color={theme.textMuted}
-              />
-            </Pressable>
-
-            {periodoAberto && (
-              <View style={styles.dropdown}>
-                {PERIODOS.map((p) => (
-                  <Pressable
-                    key={p}
-                    testID={`periodo-opcao-${p}`}
-                    style={styles.dropdownRow}
-                    onPress={() => {
-                      setPeriodo(p);
-                      setPeriodoAberto(false);
-                    }}
-                  >
-                    <Text style={styles.dropdownRowText}>{p}</Text>
-
-                    {periodo === p && (
-                      <Ionicons name="checkmark" size={18} color={theme.primary} />
-                    )}
-                  </Pressable>
-                ))}
-              </View>
-            )}
-          </View>
-
-          <LabeledInput
-            ref={emailInputRef}
-            testID="aluno-email-input"
-            label="E-mail institucional"
-            placeholder="aluno@email.com"
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            autoComplete="email"
-            textContentType="username"
-            returnKeyType="next"
-            onSubmitEditing={() => senhaInputRef.current?.focus()}
-            blurOnSubmit={false}
-            editable={!carregando}
-            value={email}
-            onChangeText={setEmail}
-            containerStyle={{ marginTop: 14 }}
-          />
-
-          <LabeledInput
-            ref={senhaInputRef}
-            testID="aluno-senha-input"
-            label="Senha"
-            placeholder="Digite uma senha"
-            isPassword
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoComplete="new-password"
-            textContentType="newPassword"
-            returnKeyType="done"
-            onSubmitEditing={realizarCadastro}
-            editable={!carregando}
-            value={senha}
-            onChangeText={(texto) => {
-              setSenha(texto);
-
-              if (texto.length >= 6) {
-                setErroSenha(false);
-
-                if (erro === 'A senha precisa ter pelo menos 6 caracteres.') {
-                  setErro(null);
-                }
-              }
-            }}
-            containerStyle={{ marginTop: 14 }}
-          />
-
-          {senha.length > 0 && senha.length < 6 && (
-            <View style={styles.avisoSenha}>
-              <Ionicons name="information-circle-outline" size={18} color={theme.error} />
-              <Text style={styles.avisoSenhaTexto}>
-                A senha deve ter pelo menos 6 caracteres.
-              </Text>
+                  ))}
+                </View>
+              )}
             </View>
-          )}
 
-          <BotaoPrimario
-            testID="aluno-submit-button"
-            title={carregando ? 'Cadastrando...' : 'Cadastrar aluno'}
-            onPress={realizarCadastro}
-            disabled={carregando}
-            style={{ marginTop: 22 }}
-          />
+            <LabeledInput
+              ref={emailInputRef}
+              testID="aluno-email-input"
+              label="E-mail institucional"
+              placeholder="aluno@email.com"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              autoComplete="email"
+              textContentType="username"
+              returnKeyType="next"
+              onSubmitEditing={() => senhaInputRef.current?.focus()}
+              blurOnSubmit={false}
+              editable={!carregando}
+              value={email}
+              onChangeText={setEmail}
+              containerStyle={{ marginTop: compacto ? 12 : 14 }}
+            />
 
-          <View style={styles.bottomSpace} />
+            <LabeledInput
+              ref={senhaInputRef}
+              testID="aluno-senha-input"
+              label="Senha"
+              placeholder="Digite uma senha"
+              isPassword
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="new-password"
+              textContentType="newPassword"
+              returnKeyType="done"
+              onSubmitEditing={realizarCadastro}
+              editable={!carregando}
+              value={senha}
+              onChangeText={(texto) => {
+                setSenha(texto);
+
+                if (texto.length >= 6) {
+                  setErroSenha(false);
+
+                  if (erro === 'A senha precisa ter pelo menos 6 caracteres.') {
+                    setErro(null);
+                  }
+                }
+              }}
+              containerStyle={{ marginTop: compacto ? 12 : 14 }}
+            />
+
+            {senha.length > 0 && senha.length < 6 && (
+              <View style={styles.avisoSenha}>
+                <Ionicons
+                  name="information-circle-outline"
+                  size={18}
+                  color={theme.error}
+                />
+                <Text style={styles.avisoSenhaTexto}>
+                  A senha deve ter pelo menos 6 caracteres.
+                </Text>
+              </View>
+            )}
+
+            <BotaoPrimario
+              testID="aluno-submit-button"
+              title={carregando ? 'Cadastrando...' : 'Cadastrar aluno'}
+              onPress={realizarCadastro}
+              disabled={carregando}
+              style={{ marginTop: compacto ? 18 : 22 }}
+            />
+
+            <View style={styles.bottomSpace} />
+          </ResponsiveContainer>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const createStyles = (theme: AccessibilityTheme) =>
+const createStyles = (
+  theme: AccessibilityTheme,
+  compacto: boolean
+) =>
   StyleSheet.create({
-    safe: { flex: 1, backgroundColor: theme.background },
-    keyboardView: { flex: 1 },
-    scroll: { flex: 1 },
+    safe: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    keyboardView: {
+      flex: 1,
+    },
+    scroll: {
+      flex: 1,
+    },
     body: {
-      paddingHorizontal: 22,
+      flexGrow: 1,
       paddingTop: 8,
       paddingBottom: 24,
-      flexGrow: 1,
+    },
+    formulario: {
+      flex: 0,
+      paddingTop: 0,
+      paddingBottom: 0,
     },
     avatar: {
-      width: 72,
-      height: 72,
-      borderRadius: 36,
+      width: compacto ? 64 : 72,
+      height: compacto ? 64 : 72,
+      borderRadius: compacto ? 32 : 36,
       backgroundColor: theme.primary,
       alignSelf: 'center',
       alignItems: 'center',
@@ -442,37 +512,52 @@ const createStyles = (theme: AccessibilityTheme) =>
       marginBottom: 10,
     },
     title: {
-      fontSize: 21,
+      fontSize: compacto ? 19 : 21,
       fontWeight: '800',
       color: theme.text,
       textAlign: 'center',
+      flexShrink: 1,
     },
     subtitle: {
-      fontSize: 13,
+      fontSize: compacto ? 12 : 13,
       color: theme.textMuted,
       textAlign: 'center',
       marginTop: 5,
       marginBottom: 4,
+      flexShrink: 1,
     },
     label: {
-      fontSize: 13,
+      fontSize: compacto ? 12 : 13,
       color: theme.text,
       fontWeight: '600',
       marginBottom: 7,
+      flexShrink: 1,
     },
-    fieldContainer: { marginTop: 16 },
+    fieldContainer: {
+      marginTop: compacto ? 13 : 16,
+    },
     select: {
       backgroundColor: theme.card,
       borderRadius: 12,
       borderWidth: 1,
       borderColor: theme.inputBorder,
-      minHeight: 50,
-      paddingHorizontal: 14,
+      minHeight: compacto ? 48 : 50,
+      paddingHorizontal: compacto ? 12 : 14,
+      paddingVertical: 8,
       flexDirection: 'row',
       alignItems: 'center',
+      gap: 8,
     },
-    selectText: { flex: 1, color: theme.placeholder, fontSize: 14 },
-    selectTextPreenchido: { color: theme.text, fontWeight: '600' },
+    selectText: {
+      flex: 1,
+      color: theme.placeholder,
+      fontSize: compacto ? 13 : 14,
+      flexShrink: 1,
+    },
+    selectTextPreenchido: {
+      color: theme.text,
+      fontWeight: '600',
+    },
     dropdown: {
       backgroundColor: theme.card,
       borderRadius: 12,
@@ -484,19 +569,29 @@ const createStyles = (theme: AccessibilityTheme) =>
     dropdownRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      padding: 14,
+      padding: compacto ? 12 : 14,
       borderBottomWidth: 1,
       borderBottomColor: theme.divider,
       gap: 10,
-      minHeight: 50,
+      minHeight: compacto ? 48 : 50,
     },
-    dropdownRowText: { fontSize: 14, color: theme.text, fontWeight: '600' },
-    dropdownRowSub: { fontSize: 12, color: theme.textMuted, marginTop: 3 },
+    dropdownRowText: {
+      fontSize: compacto ? 13 : 14,
+      color: theme.text,
+      fontWeight: '600',
+      flexShrink: 1,
+    },
+    dropdownRowSub: {
+      fontSize: compacto ? 11 : 12,
+      color: theme.textMuted,
+      marginTop: 3,
+    },
     dropdownVazio: {
       padding: 16,
       textAlign: 'center',
-      fontSize: 13,
+      fontSize: compacto ? 12 : 13,
       color: theme.textMuted,
+      flexShrink: 1,
     },
     bannerErro: {
       flexDirection: 'row',
@@ -510,8 +605,9 @@ const createStyles = (theme: AccessibilityTheme) =>
     bannerErroText: {
       flex: 1,
       color: theme.error,
-      fontSize: 13,
+      fontSize: compacto ? 12 : 13,
       fontWeight: '600',
+      flexShrink: 1,
     },
     avisoSenha: {
       flexDirection: 'row',
@@ -526,8 +622,11 @@ const createStyles = (theme: AccessibilityTheme) =>
     avisoSenhaTexto: {
       flex: 1,
       color: theme.error,
-      fontSize: 12,
+      fontSize: compacto ? 11 : 12,
       fontWeight: '600',
+      flexShrink: 1,
     },
-    bottomSpace: { height: 220 },
+    bottomSpace: {
+      height: compacto ? 180 : 220,
+    },
   });

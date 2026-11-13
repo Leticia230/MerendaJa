@@ -12,9 +12,6 @@ export type Assinatura = {
   diasRestantes: number;
 };
 
-// O Firebase restaura a sessão de forma assíncrona: logo depois de abrir o app,
-// auth.currentUser ainda pode ser null mesmo com o usuário logado.
-// Esta função espera o Firebase terminar de checar a sessão.
 function aguardarUsuario(): Promise<User | null> {
   if (auth.currentUser) return Promise.resolve(auth.currentUser);
 
@@ -47,8 +44,6 @@ export async function obterAssinatura(): Promise<Assinatura | null> {
   };
 }
 
-// Lança erro se não conseguir ler (rede, permissão). Quem chama decide o que fazer:
-// um erro de leitura NÃO deve ser tratado como "assinatura vencida".
 export async function assinaturaAtiva(): Promise<boolean> {
   const a = await obterAssinatura();
   return !!a && a.ativa;
@@ -61,7 +56,6 @@ export async function ativarPlano(plano: Plano) {
   const ref = doc(db, 'users', user.uid);
   const atual = (await getDoc(ref)).data()?.assinatura;
 
-  // Se já existe um plano pago em vigor, o novo começa quando o atual termina (não perde dias)
   let inicio = new Date();
   if (plano.id !== 'teste' && atual?.plano && atual.plano !== 'teste' && atual.fim) {
     const fimAtual = new Date(atual.fim);

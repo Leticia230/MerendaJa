@@ -33,8 +33,6 @@ function mapearTurma(id: string, dados: any): Turma {
   };
 }
 
-// Caminho: instituicoes/{instituicaoId}/turmas
-// Se não passar o id, usa o da instituição logada.
 function turmasCol(instituicaoId?: string) {
   const id = instituicaoId ?? auth.currentUser?.uid;
   if (!id) throw new Error('Usuário não autenticado.');
@@ -47,7 +45,6 @@ function turmaRef(turmaId: string, instituicaoId?: string) {
   return doc(db, 'instituicoes', id, 'turmas', turmaId);
 }
 
-/** Cria uma nova turma na instituição logada. */
 export async function criarTurma(turma: NovaTurmaInput) {
   await addDoc(turmasCol(), {
     ...turma,
@@ -55,13 +52,11 @@ export async function criarTurma(turma: NovaTurmaInput) {
   });
 }
 
-/** Lista as turmas de uma instituição (busca única). */
 export async function listarTurmas(instituicaoId?: string): Promise<Turma[]> {
   const snap = await getDocs(turmasCol(instituicaoId));
   return snap.docs.map((d) => mapearTurma(d.id, d.data()));
 }
 
-/** Escuta em tempo real as turmas da instituição logada. */
 export function assinarTurmas(
   onChange: (turmas: Turma[]) => void,
   onErro?: (erro: unknown) => void
@@ -85,7 +80,6 @@ export function assinarTurmas(
   );
 }
 
-/** Busca uma turma específica pelo ID. */
 export async function buscarTurma(
   id: string,
   instituicaoId?: string
@@ -95,12 +89,10 @@ export async function buscarTurma(
   return mapearTurma(snap.id, snap.data());
 }
 
-/** Atualiza nome, período e/ou alunos de uma turma existente. */
 export async function atualizarTurma(id: string, dados: Partial<NovaTurmaInput>) {
   await updateDoc(turmaRef(id), dados);
 }
 
-/** Adiciona um aluno à turma (usado no cadastro do aluno). */
 export async function adicionarAlunoATurma(
   turmaId: string,
   alunoId: string,
@@ -111,7 +103,6 @@ export async function adicionarAlunoATurma(
   });
 }
 
-/** Exclui uma turma da instituição logada. */
 export async function excluirTurma(id: string) {
   await deleteDoc(turmaRef(id));
 }

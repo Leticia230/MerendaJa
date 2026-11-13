@@ -1,4 +1,3 @@
-// context/AuthContext.tsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
@@ -28,7 +27,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(firebaseUser);
 
       if (firebaseUser) {
-        // Busca o tipo salvo no Firestore no momento do cadastro
         const snap = await getDoc(doc(db, 'users', firebaseUser.uid));
         setTipo((snap.data()?.tipo as TipoUsuario) ?? null);
       } else {

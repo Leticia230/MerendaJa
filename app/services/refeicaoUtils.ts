@@ -4,10 +4,9 @@ export const TIPOS = ['Café', 'Almoço', 'Jantar'] as const;
 
 const DIAS_UTEIS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
 
-/** Data (YYYY-MM-DD) do dia da semana na semana ATUAL, contando hoje. */
 export function dataDoDiaDaSemana(dia: string, semanasAFrente = 0): string {
   const hoje = new Date();
-  const hojeIdx = (hoje.getDay() + 6) % 7; // Seg=0 ... Dom=6
+  const hojeIdx = (hoje.getDay() + 6) % 7; 
   const idx = Math.max(DIAS_UTEIS.indexOf(dia), 0);
   const d = new Date(hoje);
   d.setDate(hoje.getDate() - hojeIdx + idx + semanasAFrente * 7);
@@ -29,7 +28,6 @@ export function nomeTipoRefeicao(titulo: string) {
   return titulo;
 }
 
-// "YYYY-MM-DD" no fuso local (toISOString converteria para UTC e erraria o dia à noite)
 export function dataISO(d = new Date()) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -39,8 +37,7 @@ export function dataISO(d = new Date()) {
 
 function segundaDaSemana(base: Date) {
   const d = new Date(base);
-  const dow = d.getDay(); // 0 = domingo
-  // Sábado/domingo: mostra a próxima semana, que é quando os alunos planejam
+  const dow = d.getDay();
   const deslocamento = dow === 0 ? 1 : dow === 6 ? 2 : -(dow - 1);
   d.setDate(d.getDate() + deslocamento);
   d.setHours(0, 0, 0, 0);

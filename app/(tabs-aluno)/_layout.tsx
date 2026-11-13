@@ -1,11 +1,19 @@
 import React, { useMemo } from 'react';
 import { Tabs } from 'expo-router';
-import { View, Pressable, StyleSheet, Platform } from 'react-native';
+import {
+  View,
+  Pressable,
+  StyleSheet,
+} from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Text from '../../components/AppText';
-import { useAccessibility, AccessibilityTheme } from '../../components/AccessibilityContext';
+import {
+  useAccessibility,
+  AccessibilityTheme,
+} from '../../components/AccessibilityContext';
+import { useResponsive } from '../../hooks/useResponsive';
 
-// Sem "Turmas" aqui — gerenciar turmas é uma função da Instituição, não do Aluno.
 const LABELS: Record<string, string> = {
   Home: 'Início',
   Cardapio: 'Cardápio',
@@ -16,9 +24,16 @@ const VISIBLE_TABS = ['Home', 'Cardapio', 'Configuracoes'];
 
 export default function TabsAlunoLayout() {
   const { theme } = useAccessibility();
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  const { isSmallScreen, fontScale } = useResponsive();
+  const insets = useSafeAreaInsets();
 
-  // Ícones ficam dentro do componente para acessar o theme.
+  const compacto = isSmallScreen || fontScale >= 1.2;
+
+  const styles = useMemo(
+    () => createStyles(theme, compacto),
+    [theme, compacto]
+  );
+
   const TAB_ICONS: Record<string, (focused: boolean) => React.ReactNode> = {
     Home: (f) => (
       <Ionicons
@@ -27,6 +42,7 @@ export default function TabsAlunoLayout() {
         color={f ? theme.primary : theme.textMuted}
       />
     ),
+
     Cardapio: (f) => (
       <MaterialCommunityIcons
         name="silverware-fork-knife"
@@ -34,6 +50,7 @@ export default function TabsAlunoLayout() {
         color={f ? theme.primary : theme.textMuted}
       />
     ),
+
     Configuracoes: (f) => (
       <Ionicons
         name={f ? 'settings' : 'settings-outline'}
@@ -49,7 +66,15 @@ export default function TabsAlunoLayout() {
         headerShown: false,
       }}
       tabBar={({ state, navigation }) => (
-        <View style={styles.bar} testID="bottom-tab-bar">
+        <View
+          style={[
+            styles.bar,
+            {
+              paddingBottom: Math.max(insets.bottom, 12) + 8,
+            },
+          ]}
+          testID="bottom-tab-bar"
+        >
           {state.routes
             .filter((route) => VISIBLE_TABS.includes(route.name))
             .map((route) => {
@@ -62,12 +87,26 @@ export default function TabsAlunoLayout() {
                   testID={`tab-${route.name}`}
                   style={styles.tabItem}
                   onPress={() => navigation.navigate(route.name)}
+                  accessibilityRole="tab"
+                  accessibilityLabel={label}
+                  accessibilityState={{ selected: focused }}
                 >
-                  <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
+                  <View
+                    style={[
+                      styles.iconWrap,
+                      focused && styles.iconWrapActive,
+                    ]}
+                  >
                     {TAB_ICONS[route.name]?.(focused)}
                   </View>
 
-                  <Text style={[styles.label, focused && styles.labelActive]}>
+                  <Text
+                    style={[
+                      styles.label,
+                      focused && styles.labelActive,
+                    ]}
+                    numberOfLines={1}
+                  >
                     {label}
                   </Text>
                 </Pressable>
@@ -83,37 +122,50 @@ export default function TabsAlunoLayout() {
   );
 }
 
-const createStyles = (theme: AccessibilityTheme) =>
+const createStyles = (
+  theme: AccessibilityTheme,
+  compacto = false
+) =>
   StyleSheet.create({
     bar: {
       flexDirection: 'row',
+      alignItems: 'center',
       backgroundColor: theme.card,
-      paddingTop: 10,
-      paddingBottom: Platform.OS === 'ios' ? 24 : 12,
-      paddingHorizontal: 8,
+      paddingTop: compacto ? 6 : 10,
+      paddingHorizontal: compacto ? 4 : 8,
       borderTopWidth: 1,
       borderTopColor: theme.divider,
     },
+
     tabItem: {
       flex: 1,
+      minWidth: 0,
       alignItems: 'center',
-      gap: 2,
+      justifyContent: 'center',
+      gap: compacto ? 1 : 2,
+      paddingVertical: 2,
     },
+
     iconWrap: {
-      width: 40,
-      height: 32,
+      width: compacto ? 36 : 40,
+      height: compacto ? 30 : 32,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: 12,
     },
+
     iconWrapActive: {
       backgroundColor: theme.soft,
     },
+
     label: {
-      fontSize: 11,
+      fontSize: compacto ? 10 : 11,
       color: theme.textMuted,
       fontWeight: '600',
+      textAlign: 'center',
+      flexShrink: 1,
     },
+
     labelActive: {
       color: theme.primary,
       fontWeight: '700',

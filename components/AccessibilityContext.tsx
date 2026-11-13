@@ -14,7 +14,6 @@ import {
   type AccessibilityTheme,
 } from '../constants/theme';
 
-// Reexporta o tipo para telas que o importam daqui.
 export type { AccessibilityTheme };
 
 export type AccessibilitySettings = {
@@ -57,7 +56,6 @@ export function AccessibilityProvider({
   const [settings, setSettings] = useState<AccessibilitySettings>(DEFAULTS);
   const [loaded, setLoaded] = useState(false);
 
-  // Carrega as preferências salvas.
   useEffect(() => {
     (async () => {
       try {
@@ -69,11 +67,9 @@ export function AccessibilityProvider({
 
           setSettings({
             ...DEFAULTS,
-            // Quem já usava o app e nunca escolheu o tema segue o do celular.
             darkMode: systemDark,
             ...savedSettings,
 
-            // Impede que uma configuração antiga reative o alto contraste.
             highContrast: false,
           });
         } else {
@@ -94,7 +90,6 @@ export function AccessibilityProvider({
     })();
   }, []);
 
-  // Salva as preferências depois do carregamento inicial.
   useEffect(() => {
     if (!loaded) return;
 
@@ -112,7 +107,6 @@ export function AccessibilityProvider({
       key: K,
       value: AccessibilitySettings[K]
     ) => {
-      // Impede a ativação do alto contraste.
       if (key === 'highContrast') return;
 
       setSettings((prev) => ({
@@ -125,7 +119,6 @@ export function AccessibilityProvider({
   );
 
   const value = useMemo<AccessibilityContextValue>(() => {
-    // Aumenta a fonte em 30% quando a opção está ativada.
     const scale = settings.largeText ? 1.3 : 1;
 
     return {

@@ -1,12 +1,11 @@
-
 const DIAS_ABREVIADOS: Record<number, string | null> = {
-  0: null, // domingo
+  0: null, 
   1: 'Seg',
   2: 'Ter',
   3: 'Qua',
   4: 'Qui',
   5: 'Sex',
-  6: null, // sábado
+  6: null, 
 };
 
 export function diaAbreviadoDeHoje(): string | null {

@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import {
   View,
@@ -16,13 +15,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 import ScreenHeader from '../components/ScreenHeader';
+import ResponsiveContainer from '../components/ResponsiveContainer';
+import { useResponsive } from '../hooks/useResponsive';
 import LabeledInput from '../components/LabeledInput';
 import BotaoPrimario from '../components/BotaoPrimario';
 
 import { useAccessibility } from '../components/AccessibilityContext';
 import { cadastrar } from '../components/auth';
 
-// Mapa de erros do Firebase Auth para mensagens amigáveis
 const ERROS_CADASTRO: Record<
   string,
   { titulo: string; mensagem: string }
@@ -58,8 +58,6 @@ const ERROS_CADASTRO: Record<
   },
 };
 
-// Mostra Alert no celular e window.alert no Expo Web.
-// O aviso específico da senha NÃO usa Alert.
 function mostrarAlerta(
   titulo: string,
   mensagem: string,
@@ -87,24 +85,29 @@ function mostrarAlerta(
 export default function RegisterInstitution() {
   const router = useRouter();
   const { theme } = useAccessibility();
-  const styles = createStyles(theme);
+
+  const { isSmallScreen, fontScale, horizontalPadding } =
+    useResponsive();
+
+  const compacto = isSmallScreen || fontScale >= 1.2;
+
+  const styles = useMemo(
+    () => createStyles(theme, compacto),
+    [theme, compacto]
+  );
 
   const [email, setEmail] = useState('');
   const [inep, setInep] = useState('');
   const [pass, setPass] = useState('');
   const [pass2, setPass2] = useState('');
 
-  // Evita cliques duplicados durante o cadastro
   const [carregando, setCarregando] = useState(false);
-
-  // Controla o aviso visual da senha
   const [erroSenha, setErroSenha] = useState(false);
 
   async function realizarCadastro() {
     const emailNormalizado = email.trim().toLowerCase();
     const inepNormalizado = inep.trim();
 
-    // Verifica campos obrigatórios
     if (
       !emailNormalizado ||
       !inepNormalizado ||
@@ -119,16 +122,13 @@ export default function RegisterInstitution() {
       return;
     }
 
-    // Verifica o tamanho mínimo da senha
     if (pass.length < 6) {
       setErroSenha(true);
       return;
     }
 
-    // Senha válida
     setErroSenha(false);
 
-    // Verifica se as senhas são iguais
     if (pass !== pass2) {
       mostrarAlerta(
         'Senhas diferentes',
@@ -138,7 +138,6 @@ export default function RegisterInstitution() {
       return;
     }
 
-    // Evita múltiplos envios simultâneos
     if (carregando) return;
 
     setCarregando(true);
@@ -146,13 +145,8 @@ export default function RegisterInstitution() {
     console.log('[cadastro] iniciando...');
 
     try {
-      console.log(
-        '[cadastro] chamando cadastrar()...'
-      );
+      console.log('[cadastro] chamando cadastrar()...');
 
-      // 'instituicao' é o tipo do usuário.
-      // O INEP é salvo como dado extra no documento
-      // do usuário no Firestore.
       const resultado = await cadastrar(
         emailNormalizado,
         pass,
@@ -167,16 +161,14 @@ export default function RegisterInstitution() {
         resultado.user.uid
       );
 
-      // No Web, espera o usuário fechar a mensagem
-      // antes de navegar.
       if (Platform.OS === 'web') {
         mostrarAlerta(
           'Cadastro realizado!',
           'A instituição foi cadastrada com sucesso.',
-          () => router.replace('/PlanosAssinaturas')
+          () => router.replace('./PlanosAssinaturas')
         );
       } else {
-        router.replace('/PlanosAssinaturas');
+        router.replace('./PlanosAssinaturas');
 
         mostrarAlerta(
           'Cadastro realizado!',
@@ -184,18 +176,12 @@ export default function RegisterInstitution() {
         );
       }
     } catch (error: any) {
-      console.log(
-        '[cadastro] ERRO CAPTURADO:',
-        error
-      );
+      console.log('[cadastro] ERRO CAPTURADO:', error);
 
-      const erroConhecido =
-        ERROS_CADASTRO[error?.code];
+      const erroConhecido = ERROS_CADASTRO[error?.code];
 
       mostrarAlerta(
-        erroConhecido?.titulo ??
-          'Erro no cadastro',
-
+        erroConhecido?.titulo ?? 'Erro no cadastro',
         erroConhecido?.mensagem ??
           `Não foi possível cadastrar a instituição. (${
             error?.code ?? 'erro desconhecido'
@@ -212,81 +198,85 @@ export default function RegisterInstitution() {
 
       <KeyboardAvoidingView
         style={styles.keyboardView}
-        behavior={
-          Platform.OS === 'ios'
-            ? 'padding'
-            : undefined
-        }
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
+          style={styles.scroll}
           contentContainerStyle={styles.body}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={
+            Platform.OS === 'ios' ? 'interactive' : 'on-drag'
+          }
+          showsVerticalScrollIndicator={false}
+          automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
         >
-          {/* Ícone */}
-          <View style={styles.iconWrap}>
-            <Ionicons
-              name="business"
-              size={38}
-              color="#fff"
+          <ResponsiveContainer
+            style={[
+              styles.formulario,
+              { paddingHorizontal: horizontalPadding },
+            ]}
+          >
+            <View style={styles.iconWrap}>
+              <Ionicons
+                name="business"
+                size={compacto ? 34 : 38}
+                color="#fff"
+              />
+            </View>
+
+            <Text style={styles.title}>
+              Cadastro da Instituição
+            </Text>
+
+            <LabeledInput
+              testID="reg-email-input"
+              label="E-mail institucional"
+              placeholder="seu@email.com"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              autoComplete="email"
+              textContentType="username"
+              editable={!carregando}
+              value={email}
+              onChangeText={setEmail}
+              containerStyle={styles.firstInput}
             />
-          </View>
 
-          {/* Título */}
-          <Text style={styles.title}>
-            Cadastro da Instituição
-          </Text>
-
-          {/* E-mail */}
-          <LabeledInput
-            testID="reg-email-input"
-            label="E-mail institucional"
-            placeholder="seu@email.com"
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            autoComplete="email"
-            textContentType="username"
-            editable={!carregando}
-            value={email}
-            onChangeText={setEmail}
-            containerStyle={styles.firstInput}
-          />
-
-          {/* INEP */}
-          <LabeledInput
-            testID="reg-inep-input"
-            label="Código de INEP"
-            placeholder="Digite o código do INEP"
-            keyboardType="number-pad"
-            editable={!carregando}
-            value={inep}
-            onChangeText={setInep}
-          />
-
-          {/* Senha */}
-          <LabeledInput
-            testID="reg-pass-input"
-            label="Senha"
-            placeholder="Digite sua senha"
-            isPassword
-            autoComplete="password-new"
-            textContentType="newPassword"
-            editable={!carregando}
-            value={pass}
-            onChangeText={(texto) => {
-              setPass(texto);
-
-              // Quando atingir 6 caracteres,
-              // remove o aviso.
-              if (texto.length >= 6) {
-                setErroSenha(false);
+            <LabeledInput
+              testID="reg-inep-input"
+              label="Código de INEP"
+              placeholder="Digite o código do INEP"
+              keyboardType="number-pad"
+              maxLength={8}
+              editable={!carregando}
+              value={inep}
+              onChangeText={(texto) =>
+                setInep(
+                  texto.replace(/[^0-9]/g, '').slice(0, 8)
+                )
               }
-            }}
-          />
+            />
 
-          {/* Aviso da senha */}
-          {pass.length > 0 &&
-            pass.length < 6 && (
+            <LabeledInput
+              testID="reg-pass-input"
+              label="Senha"
+              placeholder="Digite sua senha"
+              isPassword
+              autoComplete="password-new"
+              textContentType="newPassword"
+              editable={!carregando}
+              value={pass}
+              onChangeText={(texto) => {
+                setPass(texto);
+
+                if (texto.length >= 6) {
+                  setErroSenha(false);
+                }
+              }}
+            />
+
+            {pass.length > 0 && pass.length < 6 && (
               <View style={styles.avisoSenha}>
                 <Ionicons
                   name="information-circle-outline"
@@ -294,47 +284,43 @@ export default function RegisterInstitution() {
                   color={theme.error}
                 />
 
-                <Text
-                  style={styles.avisoSenhaTexto}
-                >
-                  A senha deve ter pelo menos 6
-                  caracteres.
+                <Text style={styles.avisoSenhaTexto}>
+                  A senha deve ter pelo menos 6 caracteres.
                 </Text>
               </View>
             )}
 
-          {/* Confirmar senha */}
-          <LabeledInput
-            testID="reg-pass2-input"
-            label="Confirmar senha"
-            placeholder="Confirme sua senha"
-            isPassword
-            autoComplete="password-new"
-            textContentType="newPassword"
-            editable={!carregando}
-            value={pass2}
-            onChangeText={setPass2}
-          />
+            <LabeledInput
+              testID="reg-pass2-input"
+              label="Confirmar senha"
+              placeholder="Confirme sua senha"
+              isPassword
+              autoComplete="password-new"
+              textContentType="newPassword"
+              editable={!carregando}
+              value={pass2}
+              onChangeText={setPass2}
+            />
 
-          {/* Botão */}
-          <BotaoPrimario
-            testID="reg-submit-button"
-            title={
-              carregando
-                ? 'Cadastrando...'
-                : 'Cadastrar'
-            }
-            onPress={realizarCadastro}
-            style={styles.button}
-            disabled={carregando}
-          />
+            <BotaoPrimario
+              testID="reg-submit-button"
+              title={
+                carregando ? 'Cadastrando...' : 'Cadastrar'
+              }
+              onPress={realizarCadastro}
+              style={styles.button}
+              disabled={carregando}
+            />
+
+            <View style={styles.bottomSpace} />
+          </ResponsiveContainer>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const createStyles = (theme: any) =>
+const createStyles = (theme: any, compacto: boolean) =>
   StyleSheet.create({
     safe: {
       flex: 1,
@@ -345,16 +331,26 @@ const createStyles = (theme: any) =>
       flex: 1,
     },
 
+    scroll: {
+      flex: 1,
+    },
+
     body: {
-      padding: 22,
+      flexGrow: 1,
       paddingTop: 4,
-      paddingBottom: 30,
+      paddingBottom: 24,
+    },
+
+    formulario: {
+      flex: 0,
+      paddingTop: 0,
+      paddingBottom: 0,
     },
 
     iconWrap: {
-      width: 78,
-      height: 78,
-      borderRadius: 39,
+      width: compacto ? 68 : 78,
+      height: compacto ? 68 : 78,
+      borderRadius: compacto ? 34 : 39,
       backgroundColor: theme.primary,
       alignSelf: 'center',
       alignItems: 'center',
@@ -363,21 +359,22 @@ const createStyles = (theme: any) =>
     },
 
     title: {
-      fontSize: 20,
+      fontSize: compacto ? 18 : 20,
       fontWeight: '800',
       color: theme.text,
       textAlign: 'center',
+      flexShrink: 1,
+      marginBottom: 4,
     },
 
     firstInput: {
-      marginTop: 20,
+      marginTop: compacto ? 16 : 20,
     },
 
     button: {
-      marginTop: 16,
+      marginTop: compacto ? 14 : 16,
     },
 
-    // Aviso visual da senha
     avisoSenha: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -392,7 +389,12 @@ const createStyles = (theme: any) =>
     avisoSenhaTexto: {
       flex: 1,
       color: theme.error,
-      fontSize: 12,
+      fontSize: compacto ? 11 : 12,
       fontWeight: '600',
+      flexShrink: 1,
+    },
+
+    bottomSpace: {
+      height: compacto ? 100 : 140,
     },
   });

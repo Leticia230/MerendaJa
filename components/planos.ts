@@ -23,16 +23,16 @@ export const PLANOS: Plano[] = [
     id: 'semestral',
     nome: 'Plano semestral',
     descricao: 'Acesso a todos os serviços por 6 meses',
-    valor: 74.0, // AJUSTE para o valor que você quiser cobrar
-    valorEmCentavos: 7400,
+    valor: 894.0,
+    valorEmCentavos: 89400,
     meses: 6,
   },
   {
     id: 'anual',
     nome: 'Plano anual',
     descricao: 'Acesso a todos os serviços por 12 meses',
-    valor: 124.0,
-    valorEmCentavos: 12400,
+    valor: 1780.0,
+    valorEmCentavos: 178000,
     meses: 12,
     destaque: 'Melhor valor',
   },
@@ -40,7 +40,6 @@ export const PLANOS: Plano[] = [
 
 export const getPlano = (id?: string) => PLANOS.find((p) => p.id === id);
 
-// Para a tela de pagamento: só planos pagos (se vier algo estranho, usa o anual)
 export const getPlanoPago = (id?: string): Plano => {
   const plano = getPlano(id);
   return plano && plano.valorEmCentavos > 0 ? plano : (getPlano('anual') as Plano);

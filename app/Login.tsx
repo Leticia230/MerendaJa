@@ -1,5 +1,5 @@
+import React, { useMemo, useRef, useState } from 'react';
 
-import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,8 @@ import { useRouter } from 'expo-router';
 import ScreenHeader from '../components/ScreenHeader';
 import LabeledInput from '../components/LabeledInput';
 import BotaoPrimario from '../components/BotaoPrimario';
+import ResponsiveContainer from '../components/ResponsiveContainer';
+import { useResponsive } from '../hooks/useResponsive';
 import { useAccessibility } from '../components/AccessibilityContext';
 
 import { login } from '../components/auth';
@@ -61,7 +63,19 @@ const ERROS_LOGIN: Record<string, { titulo: string; mensagem: string }> = {
 export default function LoginScreen() {
   const router = useRouter();
   const { theme } = useAccessibility();
-  const styles = createStyles(theme);
+
+  const {
+    isSmallScreen,
+    fontScale,
+    horizontalPadding,
+  } = useResponsive();
+
+  const compacto = isSmallScreen || fontScale >= 1.2;
+
+  const styles = useMemo(
+    () => createStyles(theme, compacto),
+    [theme, compacto]
+  );
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -120,79 +134,88 @@ export default function LoginScreen() {
         }
       >
         <ScrollView
-          contentContainerStyle={styles.body}
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.iconWrap}>
-            <Ionicons
-              name="school"
-              size={38}
-              color="#fff"
-            />
-          </View>
-
-          <Text style={styles.title}>
-            Login do Aluno
-          </Text>
-
-          <LabeledInput
-            testID="login-email-input"
-            label="E-mail institucional"
-            placeholder="seu@email.com"
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            autoComplete="email"
-            textContentType="username"
-            returnKeyType="next"
-            onSubmitEditing={() => passwordInputRef.current?.focus()}
-            blurOnSubmit={false}
-            editable={!carregando}
-            value={email}
-            onChangeText={setEmail}
-            containerStyle={styles.firstInput}
-          />
-
-          <LabeledInput
-            ref={passwordInputRef}
-            testID="login-password-input"
-            label="Senha"
-            placeholder="Digite sua senha"
-            isPassword
-            autoComplete="password"
-            textContentType="password"
-            returnKeyType="done"
-            onSubmitEditing={realizarLogin}
-            editable={!carregando}
-            value={password}
-            onChangeText={setPassword}
-          />
-
-          <Pressable
-            onPress={() => router.push('/RecuperarSenha')}
-            accessibilityRole="link"
-            accessibilityLabel="Esqueceu a senha?"
+          <ResponsiveContainer
+            style={[
+              styles.body,
+              { paddingHorizontal: horizontalPadding },
+            ]}
           >
-            <Text style={styles.link}>
-              Esqueceu a senha?
+            <View style={styles.iconWrap}>
+              <Ionicons
+                name="school"
+                size={compacto ? 34 : 38}
+                color="#fff"
+              />
+            </View>
+
+            <Text style={styles.title}>
+              Login do Aluno
             </Text>
-          </Pressable>
 
-          <BotaoPrimario
-            testID="login-submit-button"
-            title={carregando ? 'Entrando...' : 'Entrar'}
-            onPress={realizarLogin}
-            disabled={carregando}
-            style={styles.button}
-          />
+            <LabeledInput
+              testID="login-email-input"
+              label="E-mail institucional"
+              placeholder="seu@email.com"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              autoComplete="email"
+              textContentType="username"
+              returnKeyType="next"
+              onSubmitEditing={() => passwordInputRef.current?.focus()}
+              blurOnSubmit={false}
+              editable={!carregando}
+              value={email}
+              onChangeText={setEmail}
+              containerStyle={styles.firstInput}
+            />
 
+            <LabeledInput
+              ref={passwordInputRef}
+              testID="login-password-input"
+              label="Senha"
+              placeholder="Digite sua senha"
+              isPassword
+              autoComplete="password"
+              textContentType="password"
+              returnKeyType="done"
+              onSubmitEditing={realizarLogin}
+              editable={!carregando}
+              value={password}
+              onChangeText={setPassword}
+            />
+
+            <Pressable
+              onPress={() => router.push('/RecuperarSenha')}
+              accessibilityRole="link"
+              accessibilityLabel="Esqueceu a senha?"
+              style={styles.linkContainer}
+            >
+              <Text style={styles.link}>
+                Esqueceu a senha?
+              </Text>
+            </Pressable>
+
+            <BotaoPrimario
+              testID="login-submit-button"
+              title={carregando ? 'Entrando...' : 'Entrar'}
+              onPress={realizarLogin}
+              disabled={carregando}
+              style={styles.button}
+            />
+          </ResponsiveContainer>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const createStyles = (theme: any) =>
+const createStyles = (theme: any, compacto: boolean) =>
   StyleSheet.create({
     safe: {
       flex: 1,
@@ -203,38 +226,54 @@ const createStyles = (theme: any) =>
       flex: 1,
     },
 
+    scroll: {
+      flex: 1,
+    },
+
+    scrollContent: {
+      flexGrow: 1,
+      paddingBottom: 24,
+    },
+
     body: {
-      padding: 22,
-      paddingTop: 4,
+      flex: 0,
+      paddingTop: compacto ? 4 : 8,
       paddingBottom: 30,
     },
 
     iconWrap: {
-      width: 78,
-      height: 78,
-      borderRadius: 39,
+      width: compacto ? 68 : 78,
+      height: compacto ? 68 : 78,
+      borderRadius: compacto ? 34 : 39,
       backgroundColor: theme.primary,
       alignSelf: 'center',
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: 10,
+      marginBottom: compacto ? 8 : 10,
     },
 
     title: {
-      fontSize: 20,
+      fontSize: compacto ? 18 : 20,
       fontWeight: '800',
       color: theme.text,
       textAlign: 'center',
+      marginBottom: compacto ? 2 : 4,
     },
 
     firstInput: {
-      marginTop: 20,
+      marginTop: compacto ? 16 : 20,
+    },
+
+    linkContainer: {
+      alignSelf: 'flex-end',
+      paddingVertical: 4,
+      paddingLeft: 12,
     },
 
     link: {
       color: theme.primary,
       fontWeight: '600',
-      fontSize: 13,
+      fontSize: compacto ? 12 : 13,
       textAlign: 'right',
       textDecorationLine: 'underline',
       marginTop: 2,
@@ -242,6 +281,6 @@ const createStyles = (theme: any) =>
     },
 
     button: {
-      marginTop: 16,
+      marginTop: compacto ? 12 : 16,
     },
   });

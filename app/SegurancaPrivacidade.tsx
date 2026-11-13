@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   SafeAreaView,
   View,
@@ -23,10 +23,13 @@ import {
   deleteUser,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+
 import ScreenHeader from '../components/ScreenHeader';
 import Text from '../components/AppText';
 import { useAccessibility } from '../components/AccessibilityContext';
 import { auth, db } from '../components/firebaseConfig';
+import ResponsiveContainer from '../components/ResponsiveContainer';
+import { useResponsive } from '../hooks/useResponsive';
 
 type PrivacyField = 'compartilharDados' | 'mostrarAtividade';
 type ModalMode = 'password' | 'delete' | null;
@@ -52,20 +55,28 @@ function friendlyError(e: any): string {
 export default function SecurityPrivacyScreen() {
   const router = useRouter();
   const { theme } = useAccessibility();
-  const styles = createStyles(theme);
+
+  const { isSmallScreen, fontScale } = useResponsive();
+  const compacto = isSmallScreen || fontScale >= 1.2;
+
+  const styles = useMemo(
+    () => createStyles(theme, compacto),
+    [theme, compacto]
+  );
 
   const [shareUsageData, setShareUsageData] = useState(true);
   const [showActivity, setShowActivity] = useState(true);
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [exporting, setExporting] = useState(false);
 
-  // Carrega as preferências de privacidade salvas
   useEffect(() => {
     const user = auth.currentUser;
     if (!user) return;
+
     getDoc(doc(db, 'users', user.uid))
       .then((snap) => {
         const p = snap.data()?.privacidade;
+
         if (p) {
           setShareUsageData(p.compartilharDados ?? true);
           setShowActivity(p.mostrarAtividade ?? true);
@@ -81,11 +92,17 @@ export default function SecurityPrivacyScreen() {
   ) => {
     const user = auth.currentUser;
     if (!user) return;
-    setter(value); // atualiza na hora
+
+    setter(value);
+
     try {
-      await setDoc(doc(db, 'users', user.uid), { privacidade: { [field]: value } }, { merge: true });
+      await setDoc(
+        doc(db, 'users', user.uid),
+        { privacidade: { [field]: value } },
+        { merge: true }
+      );
     } catch {
-      setter(!value); // desfaz se não salvou
+      setter(!value);
       Alert.alert('Erro', 'Não foi possível salvar. Tente novamente.');
     }
   };
@@ -93,9 +110,12 @@ export default function SecurityPrivacyScreen() {
   const handleDownload = async () => {
     const user = auth.currentUser;
     if (!user) return;
+
     setExporting(true);
+
     try {
       const snap = await getDoc(doc(db, 'users', user.uid));
+
       const data = {
         exportadoEm: new Date().toISOString(),
         conta: {
@@ -105,12 +125,16 @@ export default function SecurityPrivacyScreen() {
         },
         perfil: snap.exists() ? snap.data() : null,
       };
+
       await Share.share({
         title: 'Meus dados - MerendaJá',
         message: JSON.stringify(data, null, 2),
       });
     } catch {
-      Alert.alert('Erro', 'Não foi possível gerar seus dados. Tente novamente.');
+      Alert.alert(
+        'Erro',
+        'Não foi possível gerar seus dados. Tente novamente.'
+      );
     } finally {
       setExporting(false);
     }
@@ -122,52 +146,71 @@ export default function SecurityPrivacyScreen() {
       'Sua conta e seus dados serão apagados e essa ação não pode ser desfeita. Deseja continuar?',
       [
         { text: 'Cancelar', style: 'cancel' },
-        { text: 'Continuar', style: 'destructive', onPress: () => setModalMode('delete') },
+        {
+          text: 'Continuar',
+          style: 'destructive',
+          onPress: () => setModalMode('delete'),
+        },
       ]
     );
   };
 
   const handleModalSuccess = () => {
     const wasDelete = modalMode === 'delete';
+
     setModalMode(null);
+
     if (wasDelete) {
-      Alert.alert('Conta excluída', 'Sua conta foi excluída com sucesso.');
-      router.replace('/Acesso' as any);;
+      Alert.alert(
+        'Conta excluída',
+        'Sua conta foi excluída com sucesso.'
+      );
+
+      router.replace('/Acesso' as any);
     } else {
-      Alert.alert('Senha alterada', 'Sua senha foi atualizada com sucesso.');
+      Alert.alert(
+        'Senha alterada',
+        'Sua senha foi atualizada com sucesso.'
+      );
     }
   };
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScreenHeader title="Segurança e Privacidade" />
-      <ScrollView contentContainerStyle={styles.body}>
-        <Text style={styles.sectionTitle}>Segurança</Text>
 
-        <SettingsAction
-          testID="security-change-password"
-          icon="key"
-          title="Alterar senha"
-          onPress={() => setModalMode('password')}
-        />
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <ResponsiveContainer style={styles.body}>
+          <Text style={styles.sectionTitle}>Segurança</Text>
 
-        <Text style={styles.sectionTitle}>Privacidade</Text>
+          <SettingsAction
+            testID="security-change-password"
+            icon="key"
+            title="Alterar senha"
+            onPress={() => setModalMode('password')}
+          />
 
-        <SettingsAction
-          testID="privacy-download-data"
-          icon="download"
-          title="Baixar meus dados"
-          loading={exporting}
-          onPress={handleDownload}
-        />
+          <Text style={styles.sectionTitle}>Privacidade</Text>
 
-        <SettingsAction
-          testID="privacy-delete-account"
-          icon="trash"
-          title="Excluir conta"
-          danger
-          onPress={handleDeletePress}
-        />
+          <SettingsAction
+            testID="privacy-download-data"
+            icon="download"
+            title="Baixar meus dados"
+            loading={exporting}
+            onPress={handleDownload}
+          />
+
+          <SettingsAction
+            testID="privacy-delete-account"
+            icon="trash"
+            title="Excluir conta"
+            danger
+            onPress={handleDeletePress}
+          />
+        </ResponsiveContainer>
       </ScrollView>
 
       {modalMode && (
@@ -181,8 +224,6 @@ export default function SecurityPrivacyScreen() {
   );
 }
 
-/* ---------- Linhas da tela ---------- */
-
 type ToggleProps = {
   testID: string;
   icon: keyof typeof Ionicons.glyphMap;
@@ -192,9 +233,23 @@ type ToggleProps = {
   onValueChange: (value: boolean) => void;
 };
 
-function SettingsToggle({ testID, icon, title, description, value, onValueChange }: ToggleProps) {
+function SettingsToggle({
+  testID,
+  icon,
+  title,
+  description,
+  value,
+  onValueChange,
+}: ToggleProps) {
   const { theme } = useAccessibility();
-  const styles = createStyles(theme);
+  const { isSmallScreen, fontScale } = useResponsive();
+
+  const compacto = isSmallScreen || fontScale >= 1.2;
+
+  const styles = useMemo(
+    () => createStyles(theme, compacto),
+    [theme, compacto]
+  );
 
   return (
     <TouchableOpacity
@@ -208,15 +263,20 @@ function SettingsToggle({ testID, icon, title, description, value, onValueChange
       <View style={styles.iconWrapper}>
         <Ionicons name={icon} size={22} color={theme.primary} />
       </View>
+
       <View style={styles.rowText}>
         <Text style={styles.rowTitle}>{title}</Text>
         <Text style={styles.rowDescription}>{description}</Text>
       </View>
+
       <Switch
         testID={testID}
         value={value}
         onValueChange={onValueChange}
-        trackColor={{ false: theme.divider, true: theme.primary }}
+        trackColor={{
+          false: theme.divider,
+          true: theme.primary,
+        }}
         thumbColor={theme.onPrimary}
         accessible={false}
       />
@@ -234,9 +294,24 @@ type ActionProps = {
   large?: boolean;
 };
 
-function SettingsAction({ testID, icon, title, onPress, danger, loading, large }: ActionProps) {
+function SettingsAction({
+  testID,
+  icon,
+  title,
+  onPress,
+  danger,
+  loading,
+  large,
+}: ActionProps) {
   const { theme } = useAccessibility();
-  const styles = createStyles(theme);
+  const { isSmallScreen, fontScale } = useResponsive();
+
+  const compacto = isSmallScreen || fontScale >= 1.2;
+
+  const styles = useMemo(
+    () => createStyles(theme, compacto),
+    [theme, compacto]
+  );
 
   return (
     <TouchableOpacity
@@ -247,13 +322,19 @@ function SettingsAction({ testID, icon, title, onPress, danger, loading, large }
       accessibilityRole="button"
       accessibilityLabel={title}
     >
-      <View style={[styles.iconWrapper, large && styles.iconWrapperLarge]}>
+      <View
+        style={[
+          styles.iconWrapper,
+          large && styles.iconWrapperLarge,
+        ]}
+      >
         <Ionicons
           name={icon}
           size={large ? 28 : 22}
           color={danger ? theme.error : theme.primary}
         />
       </View>
+
       <Text
         style={[
           styles.rowTitle,
@@ -263,21 +344,23 @@ function SettingsAction({ testID, icon, title, onPress, danger, loading, large }
       >
         {title}
       </Text>
+
       {loading ? (
-        <ActivityIndicator style={{ marginLeft: 'auto' }} color={theme.primary} />
+        <ActivityIndicator
+          style={styles.trailingIcon}
+          color={theme.primary}
+        />
       ) : (
         <Ionicons
           name="chevron-forward"
           size={large ? 22 : 18}
           color={theme.textSecondary}
-          style={{ marginLeft: 'auto' }}
+          style={styles.trailingIcon}
         />
       )}
     </TouchableOpacity>
   );
 }
-
-/* ---------- Campo de senha com botão de mostrar/ocultar ---------- */
 
 type PasswordFieldProps = {
   placeholder: string;
@@ -285,15 +368,30 @@ type PasswordFieldProps = {
   onChangeText: (text: string) => void;
 };
 
-function PasswordField({ placeholder, value, onChangeText }: PasswordFieldProps) {
+function PasswordField({
+  placeholder,
+  value,
+  onChangeText,
+}: PasswordFieldProps) {
   const { theme, fs } = useAccessibility();
-  const styles = createStyles(theme);
+  const { isSmallScreen, fontScale } = useResponsive();
+
+  const compacto = isSmallScreen || fontScale >= 1.2;
+
+  const styles = useMemo(
+    () => createStyles(theme, compacto),
+    [theme, compacto]
+  );
+
   const [visible, setVisible] = useState(false);
 
   return (
     <View style={styles.inputWrapper}>
       <TextInput
-        style={[styles.input, { fontSize: fs(16) }]}
+        style={[
+          styles.input,
+          { fontSize: fs(16) },
+        ]}
         placeholder={placeholder}
         placeholderTextColor={theme.placeholder}
         secureTextEntry={!visible}
@@ -302,20 +400,30 @@ function PasswordField({ placeholder, value, onChangeText }: PasswordFieldProps)
         value={value}
         onChangeText={onChangeText}
       />
+
       <TouchableOpacity
         style={styles.eyeButton}
         onPress={() => setVisible((v) => !v)}
         accessibilityRole="button"
-        accessibilityLabel={visible ? 'Ocultar senha' : 'Mostrar senha'}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityLabel={
+          visible ? 'Ocultar senha' : 'Mostrar senha'
+        }
+        hitSlop={{
+          top: 8,
+          bottom: 8,
+          left: 8,
+          right: 8,
+        }}
       >
-        <Ionicons name={visible ? 'eye-off' : 'eye'} size={24} color={theme.textSecondary} />
+        <Ionicons
+          name={visible ? 'eye-off' : 'eye'}
+          size={24}
+          color={theme.textSecondary}
+        />
       </TouchableOpacity>
     </View>
   );
 }
-
-/* ---------- Modal de senha (alterar senha e excluir conta) ---------- */
 
 type ModalProps = {
   mode: 'password' | 'delete';
@@ -323,9 +431,21 @@ type ModalProps = {
   onSuccess: () => void;
 };
 
-function PasswordModal({ mode, onClose, onSuccess }: ModalProps) {
+function PasswordModal({
+  mode,
+  onClose,
+  onSuccess,
+}: ModalProps) {
   const { settings, theme } = useAccessibility();
-  const styles = createStyles(theme);
+  const { isSmallScreen, fontScale } = useResponsive();
+
+  const compacto = isSmallScreen || fontScale >= 1.2;
+
+  const styles = useMemo(
+    () => createStyles(theme, compacto),
+    [theme, compacto]
+  );
+
   const isDelete = mode === 'delete';
 
   const [current, setCurrent] = useState('');
@@ -336,41 +456,56 @@ function PasswordModal({ mode, onClose, onSuccess }: ModalProps) {
 
   const submit = async () => {
     const user = auth.currentUser;
+
     if (!user || !user.email) {
       setError('Você precisa estar logado.');
       return;
     }
+
     if (!current) {
       setError('Digite sua senha atual.');
       return;
     }
+
     if (!isDelete) {
       if (next.length < 6) {
-        setError('A nova senha deve ter pelo menos 6 caracteres.');
+        setError(
+          'A nova senha deve ter pelo menos 6 caracteres.'
+        );
         return;
       }
+
       if (next !== confirm) {
-        setError('A confirmação não é igual à nova senha.');
+        setError(
+          'A confirmação não é igual à nova senha.'
+        );
         return;
       }
+
       if (next === current) {
-        setError('A nova senha deve ser diferente da atual.');
+        setError(
+          'A nova senha deve ser diferente da atual.'
+        );
         return;
       }
     }
 
     setLoading(true);
     setError('');
+
     try {
-      // O Firebase exige autenticar de novo antes de operações sensíveis
-      await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, current));
+      await reauthenticateWithCredential(
+        user,
+        EmailAuthProvider.credential(user.email, current)
+      );
 
       if (isDelete) {
-        await deleteDoc(doc(db, 'users', user.uid)); // primeiro os dados, enquanto ainda há login
+        await deleteDoc(doc(db, 'users', user.uid));
         await deleteUser(user);
       } else {
         await updatePassword(user, next);
       }
+
       onSuccess();
     } catch (e) {
       setError(friendlyError(e));
@@ -395,18 +530,30 @@ function PasswordModal({ mode, onClose, onSuccess }: ModalProps) {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>{isDelete ? 'Excluir conta' : 'Alterar senha'}</Text>
+            <Text style={styles.modalTitle}>
+              {isDelete ? 'Excluir conta' : 'Alterar senha'}
+            </Text>
+
             <Text style={styles.modalSubtitle}>
               {isDelete
                 ? 'Digite sua senha para confirmar a exclusão definitiva da conta.'
                 : 'Por segurança, confirme sua senha atual antes de definir a nova.'}
             </Text>
 
-            <PasswordField placeholder="Senha atual" value={current} onChangeText={setCurrent} />
+            <PasswordField
+              placeholder="Senha atual"
+              value={current}
+              onChangeText={setCurrent}
+            />
 
             {!isDelete && (
               <>
-                <PasswordField placeholder="Nova senha" value={next} onChangeText={setNext} />
+                <PasswordField
+                  placeholder="Nova senha"
+                  value={next}
+                  onChangeText={setNext}
+                />
+
                 <PasswordField
                   placeholder="Confirmar nova senha"
                   value={confirm}
@@ -415,26 +562,40 @@ function PasswordModal({ mode, onClose, onSuccess }: ModalProps) {
               </>
             )}
 
-            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {error ? (
+              <Text style={styles.error}>{error}</Text>
+            ) : null}
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
-                style={[styles.button, styles.buttonSecondary]}
+                style={[
+                  styles.button,
+                  styles.buttonSecondary,
+                ]}
                 onPress={onClose}
                 disabled={loading}
               >
-                <Text style={styles.buttonSecondaryText}>Cancelar</Text>
+                <Text style={styles.buttonSecondaryText}>
+                  Cancelar
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.button, isDelete ? styles.buttonDanger : styles.buttonPrimary]}
+                style={[
+                  styles.button,
+                  isDelete
+                    ? styles.buttonDanger
+                    : styles.buttonPrimary,
+                ]}
                 onPress={submit}
                 disabled={loading}
               >
                 {loading ? (
                   <ActivityIndicator color={theme.onPrimary} />
                 ) : (
-                  <Text style={styles.buttonText}>{isDelete ? 'Excluir' : 'Salvar'}</Text>
+                  <Text style={styles.buttonText}>
+                    {isDelete ? 'Excluir' : 'Salvar'}
+                  </Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -445,115 +606,216 @@ function PasswordModal({ mode, onClose, onSuccess }: ModalProps) {
   );
 }
 
-const createStyles = (theme: any) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: theme.background, top: 50 },
-  body: { padding: 22 },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: theme.textMuted,
-    textTransform: 'uppercase',
-    marginTop: 18,
-    marginBottom: 10,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.card,
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-    borderWidth: theme.borderWidth,
-    borderColor: theme.border,
-  },
-  rowLarge: {
-    minHeight: 76,
-    padding: 20,
-    borderRadius: 16,
-  },
-  iconWrapper: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: theme.soft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  iconWrapperLarge: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    marginRight: 14,
-  },
-  rowText: { flex: 1, marginRight: 8 },
-  rowTitle: { fontSize: 15, fontWeight: '600', color: theme.text },
-  rowTitleLarge: { fontSize: 18, fontWeight: '700' },
-  rowDescription: { fontSize: 12, color: theme.textSecondary, marginTop: 2 },
+const createStyles = (theme: any, compacto: boolean) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: theme.background,
+      paddingTop: 50,
+    },
 
-  // Modal
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  overlayContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 16,
-  },
-  modalCard: {
-    backgroundColor: theme.card,
-    borderRadius: 20,
-    padding: 24,
-    borderWidth: theme.borderWidth,
-    borderColor: theme.border,
-  },
-  modalTitle: { fontSize: 22, fontWeight: '700', color: theme.text, marginBottom: 8 },
-  modalSubtitle: { fontSize: 15, color: theme.textSecondary, marginBottom: 20, lineHeight: 22 },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: theme.inputBorder,
-    borderRadius: 12,
-    backgroundColor: theme.card,
-    minHeight: 56,
-    marginBottom: 14,
-  },
-  input: {
-    flex: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    color: theme.text,
-  },
-  eyeButton: {
-    height: 56,
-    paddingHorizontal: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  error: { fontSize: 14, color: theme.error, marginBottom: 10 },
-  modalButtons: { flexDirection: 'row', marginTop: 10 },
-  button: {
-    flex: 1,
-    minHeight: 54,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonPrimary: { backgroundColor: theme.primary, marginLeft: 6 },
-  buttonDanger: { backgroundColor: theme.error, marginLeft: 6 },
-  buttonSecondary: {
-    backgroundColor: theme.card,
-    borderWidth: 1,
-    borderColor: theme.inputBorder,
-    marginRight: 6,
-  },
-  buttonText: { fontSize: 16, fontWeight: '700', color: theme.onPrimary },
-  buttonSecondaryText: { fontSize: 16, fontWeight: '600', color: theme.text },
-});
+    scrollContent: {
+      flexGrow: 1,
+      paddingBottom: compacto ? 24 : 36,
+    },
+
+    body: {
+      flex: 0,
+      paddingTop: compacto ? 8 : 12,
+      paddingBottom: compacto ? 12 : 18,
+    },
+
+    sectionTitle: {
+      fontSize: compacto ? 12 : 13,
+      fontWeight: '700',
+      color: theme.textMuted,
+      textTransform: 'uppercase',
+      marginTop: compacto ? 14 : 18,
+      marginBottom: compacto ? 8 : 10,
+    },
+
+    row: {
+      width: '100%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.card,
+      borderRadius: 14,
+      padding: compacto ? 12 : 16,
+      marginBottom: compacto ? 10 : 12,
+      minHeight: compacto ? 60 : 68,
+      shadowColor: '#000',
+      shadowOpacity: 0.06,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
+      borderWidth: theme.borderWidth,
+      borderColor: theme.border,
+    },
+
+    rowLarge: {
+      minHeight: compacto ? 68 : 76,
+      padding: compacto ? 16 : 20,
+      borderRadius: 16,
+    },
+
+    iconWrapper: {
+      width: compacto ? 36 : 40,
+      height: compacto ? 36 : 40,
+      borderRadius: compacto ? 18 : 20,
+      backgroundColor: theme.soft,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: compacto ? 10 : 12,
+      flexShrink: 0,
+    },
+
+    iconWrapperLarge: {
+      width: compacto ? 46 : 52,
+      height: compacto ? 46 : 52,
+      borderRadius: compacto ? 23 : 26,
+      marginRight: compacto ? 12 : 14,
+    },
+
+    rowText: {
+      flex: 1,
+      minWidth: 0,
+      marginRight: 8,
+    },
+
+    rowTitle: {
+      flex: 1,
+      flexShrink: 1,
+      fontSize: compacto ? 14 : 15,
+      fontWeight: '600',
+      color: theme.text,
+    },
+
+    rowTitleLarge: {
+      fontSize: compacto ? 16 : 18,
+      fontWeight: '700',
+    },
+
+    rowDescription: {
+      fontSize: compacto ? 11 : 12,
+      color: theme.textSecondary,
+      marginTop: 2,
+      flexShrink: 1,
+    },
+
+    trailingIcon: {
+      marginLeft: 'auto',
+      flexShrink: 0,
+    },
+
+    overlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+
+    overlayContent: {
+      flexGrow: 1,
+      justifyContent: 'center',
+      padding: compacto ? 12 : 16,
+    },
+
+    modalCard: {
+      width: '100%',
+      maxWidth: 520,
+      alignSelf: 'center',
+      backgroundColor: theme.card,
+      borderRadius: 20,
+      padding: compacto ? 18 : 24,
+      borderWidth: theme.borderWidth,
+      borderColor: theme.border,
+    },
+
+    modalTitle: {
+      fontSize: compacto ? 20 : 22,
+      fontWeight: '700',
+      color: theme.text,
+      marginBottom: 8,
+    },
+
+    modalSubtitle: {
+      fontSize: compacto ? 13 : 15,
+      color: theme.textSecondary,
+      marginBottom: compacto ? 16 : 20,
+      lineHeight: compacto ? 20 : 22,
+    },
+
+    inputWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: theme.inputBorder,
+      borderRadius: 12,
+      backgroundColor: theme.card,
+      minHeight: 54,
+      marginBottom: 12,
+    },
+
+    input: {
+      flex: 1,
+      minWidth: 0,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      color: theme.text,
+    },
+
+    eyeButton: {
+      minHeight: 54,
+      paddingHorizontal: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    error: {
+      fontSize: compacto ? 13 : 14,
+      color: theme.error,
+      marginBottom: 10,
+    },
+
+    modalButtons: {
+      flexDirection: 'row',
+      marginTop: 10,
+      gap: 10,
+    },
+
+    button: {
+      flex: 1,
+      minWidth: 0,
+      minHeight: 50,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 8,
+    },
+
+    buttonPrimary: {
+      backgroundColor: theme.primary,
+    },
+
+    buttonDanger: {
+      backgroundColor: theme.error,
+    },
+
+    buttonSecondary: {
+      backgroundColor: theme.card,
+      borderWidth: 1,
+      borderColor: theme.inputBorder,
+    },
+
+    buttonText: {
+      fontSize: compacto ? 14 : 16,
+      fontWeight: '700',
+      color: theme.onPrimary,
+      textAlign: 'center',
+    },
+
+    buttonSecondaryText: {
+      fontSize: compacto ? 14 : 16,
+      fontWeight: '600',
+      color: theme.text,
+      textAlign: 'center',
+    },
+  });

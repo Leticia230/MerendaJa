@@ -1,4 +1,3 @@
-
 import React, { forwardRef, useState } from 'react';
 import {
   StyleSheet,

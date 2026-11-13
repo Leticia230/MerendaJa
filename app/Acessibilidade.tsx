@@ -1,10 +1,22 @@
-
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Switch, Pressable } from 'react-native';
+import React, { useMemo } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Switch,
+  Pressable,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+
 import ScreenHeader from '../components/ScreenHeader';
-import { useAccessibility, AccessibilitySettings } from '../components/AccessibilityContext';
+import {
+  useAccessibility,
+  AccessibilitySettings,
+} from '../components/AccessibilityContext';
+import ResponsiveContainer from '../components/ResponsiveContainer';
+import { useResponsive } from '../hooks/useResponsive';
 
 type OptionConfig = {
   setting: keyof AccessibilitySettings;
@@ -34,22 +46,41 @@ const OPTIONS: OptionConfig[] = [
 export default function AccessibilityScreen() {
   const { settings, setSetting, theme } = useAccessibility();
 
+  const { isSmallScreen, fontScale } = useResponsive();
+  const compacto = isSmallScreen || fontScale >= 1.2;
+
+  const styles = useMemo(
+    () => createStyles(compacto),
+    [compacto]
+  );
+
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]}>
+    <SafeAreaView
+      style={[
+        styles.safe,
+        { backgroundColor: theme.background },
+      ]}
+    >
       <ScreenHeader title="Acessibilidade" />
 
-      <ScrollView contentContainerStyle={styles.body}>
-        {OPTIONS.map((opt) => (
-          <AccessibilityOption
-            key={opt.testID}
-            testID={opt.testID}
-            icon={opt.icon}
-            title={opt.title}
-            description={opt.description}
-            value={settings[opt.setting]}
-            onValueChange={(v) => setSetting(opt.setting, v)}
-          />
-        ))}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <ResponsiveContainer style={styles.body}>
+          {OPTIONS.map((opt) => (
+            <AccessibilityOption
+              key={opt.testID}
+              testID={opt.testID}
+              icon={opt.icon}
+              title={opt.title}
+              description={opt.description}
+              value={settings[opt.setting]}
+              onValueChange={(v) => setSetting(opt.setting, v)}
+              compacto={compacto}
+            />
+          ))}
+        </ResponsiveContainer>
       </ScrollView>
     </SafeAreaView>
   );
@@ -58,6 +89,7 @@ export default function AccessibilityScreen() {
 type OptionProps = Omit<OptionConfig, 'setting'> & {
   value: boolean;
   onValueChange: (value: boolean) => void;
+  compacto: boolean;
 };
 
 function AccessibilityOption({
@@ -67,8 +99,14 @@ function AccessibilityOption({
   description,
   value,
   onValueChange,
+  compacto,
 }: OptionProps) {
   const { theme, fs, hint } = useAccessibility();
+
+  const styles = useMemo(
+    () => createStyles(compacto),
+    [compacto]
+  );
 
   return (
     <Pressable
@@ -86,19 +124,39 @@ function AccessibilityOption({
         },
       ]}
     >
-      <View style={[styles.iconWrapper, { backgroundColor: theme.background }]}>
-        <Ionicons name={icon} size={fs(22)} color={theme.primary} />
+      <View
+        style={[
+          styles.iconWrapper,
+          { backgroundColor: theme.background },
+        ]}
+      >
+        <Ionicons
+          name={icon}
+          size={fs(compacto ? 20 : 22)}
+          color={theme.primary}
+        />
       </View>
 
       <View style={styles.optionText}>
-        <Text style={[styles.optionTitle, { color: theme.text, fontSize: fs(15) }]}>
+        <Text
+          style={[
+            styles.optionTitle,
+            {
+              color: theme.text,
+              fontSize: fs(compacto ? 14 : 15),
+            },
+          ]}
+        >
           {title}
         </Text>
 
         <Text
           style={[
             styles.optionDescription,
-            { color: theme.textSecondary, fontSize: fs(12) },
+            {
+              color: theme.textSecondary,
+              fontSize: fs(compacto ? 11 : 12),
+            },
           ]}
         >
           {description}
@@ -109,7 +167,10 @@ function AccessibilityOption({
         testID={testID}
         value={value}
         onValueChange={onValueChange}
-        trackColor={{ false: '#999', true: theme.primary }}
+        trackColor={{
+          false: '#999',
+          true: theme.primary,
+        }}
         thumbColor="#fff"
         accessible={false}
       />
@@ -117,41 +178,61 @@ function AccessibilityOption({
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-  },
-  body: {
-    padding: 22,
-  },
-  option: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  iconWrapper: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  optionText: {
-    flex: 1,
-    marginRight: 8,
-  },
-  optionTitle: {
-    fontWeight: '600',
-  },
-  optionDescription: {
-    marginTop: 2,
-  },
-});
+const createStyles = (compacto: boolean) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+    },
+
+    scrollContent: {
+      flexGrow: 1,
+      paddingBottom: compacto ? 20 : 32,
+    },
+
+    body: {
+      flex: 0,
+      paddingTop: compacto ? 14 : 18,
+    },
+
+    option: {
+      width: '100%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderRadius: 14,
+      padding: compacto ? 12 : 16,
+      marginBottom: compacto ? 12 : 14,
+      minHeight: compacto ? 68 : 76,
+      shadowColor: '#000',
+      shadowOpacity: 0.06,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
+    },
+
+    iconWrapper: {
+      width: compacto ? 36 : 40,
+      height: compacto ? 36 : 40,
+      borderRadius: compacto ? 18 : 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: compacto ? 9 : 12,
+      flexShrink: 0,
+    },
+
+    optionText: {
+      flex: 1,
+      flexShrink: 1,
+      marginRight: compacto ? 4 : 8,
+    },
+
+    optionTitle: {
+      fontWeight: '600',
+      flexShrink: 1,
+    },
+
+    optionDescription: {
+      marginTop: 3,
+      lineHeight: compacto ? 16 : 18,
+      flexShrink: 1,
+    },
+  });

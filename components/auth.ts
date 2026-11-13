@@ -58,11 +58,6 @@ export async function recuperarSenha(email: string) {
   await sendPasswordResetEmail(auth, email.trim().toLowerCase());
 }
 
-/**
- * Cadastra um aluno SEM deslogar a instituição: a conta é criada por uma
- * segunda instância do Firebase, e o documento é gravado com a sessão
- * da instituição, já com o vínculo (instituicaoId).
- */
 export async function cadastrarAluno(
   email: string,
   senha: string,
@@ -93,7 +88,6 @@ export async function cadastrarAluno(
   }
 }
 
-/** Para o lado do aluno: descobre a qual instituição ele pertence. */
 export async function obterInstituicaoId(): Promise<string | null> {
   const user = auth.currentUser;
   if (!user) return null;
