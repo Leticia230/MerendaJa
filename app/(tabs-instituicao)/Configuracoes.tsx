@@ -98,7 +98,7 @@ export default function ConfigScreen() {
           <Pressable
             testID="logout-button"
             style={styles.logout}
-            onPress={() => router.replace('/')}
+            onPress={() => router.replace('/Acesso')}
             accessibilityRole="button"
             accessibilityLabel="Sair da conta"
           >

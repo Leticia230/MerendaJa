@@ -204,7 +204,7 @@ export default function PrazosConfirmacao() {
     return (
       <SafeAreaView style={styles.centralizado}>
         <ResponsiveContainer style={styles.estadoConteudo}>
-          <ActivityIndicator size="large" color="#2E7D32" />
+          <ActivityIndicator size="large" color="#fcac00" />
 
           <Text style={styles.textoCarregando}>
             Carregando prazos...
@@ -221,7 +221,7 @@ export default function PrazosConfirmacao() {
           <Ionicons
             name="alert-circle-outline"
             size={42}
-            color="#C62828"
+            color="#fcac00"
           />
 
           <Text style={styles.tituloErro}>
@@ -342,7 +342,7 @@ export default function PrazosConfirmacao() {
                     <Ionicons
                       name={refeicao.icone}
                       size={23}
-                      color="#2E7D32"
+                      color="#fcac00"
                     />
 
                     <Text style={styles.nomeRefeicao}>
@@ -357,9 +357,9 @@ export default function PrazosConfirmacao() {
                     }
                     trackColor={{
                       false: '#ccc',
-                      true: '#A5D6A7',
+                      true: '#e2d9c7',
                     }}
-                    thumbColor={prazo.ativo ? '#2E7D32' : '#f4f3f4'}
+                    thumbColor={prazo.ativo ? '#fcac00' : '#f4f3f4'}
                     accessibilityLabel={`Ativar prazo de ${refeicao.nome}`}
                   />
                 </View>
@@ -588,7 +588,7 @@ const createStyles = (compacto = false) =>
     },
 
     botaoDiaSelecionado: {
-      backgroundColor: '#2E7D32',
+      backgroundColor: '#ee932b',
     },
 
     textoDia: {
@@ -673,7 +673,7 @@ const createStyles = (compacto = false) =>
     horarioValor: {
       fontSize: 17,
       fontWeight: 'bold',
-      color: '#2E7D32',
+      color: '#f09936',
     },
 
     horarioDesativado: {
@@ -694,7 +694,7 @@ const createStyles = (compacto = false) =>
     },
 
     textoEditarHorario: {
-      color: '#2E7D32',
+      color: '#705722',
       fontSize: 13,
       fontWeight: 'bold',
     },
@@ -704,7 +704,7 @@ const createStyles = (compacto = false) =>
     },
 
     botaoSalvar: {
-      backgroundColor: '#2E7D32',
+      backgroundColor: '#f09936',
       borderRadius: 14,
       minHeight: 52,
       paddingVertical: 15,

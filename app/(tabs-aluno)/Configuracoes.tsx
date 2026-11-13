@@ -90,13 +90,16 @@ export default function ConfigScreen() {
             ))}
           </View>
 
-          <Pressable
-            testID="logout-button"
-            style={styles.logout}
-            onPress={sair}
-          >
-            <Text style={styles.logoutText}>Sair da conta</Text>
-          </Pressable>
+              <Pressable
+                testID="logout-button"
+                style={styles.logout}
+                onPress={() => router.replace('/Acesso')}
+                accessibilityRole="button"
+                accessibilityLabel="Sair da conta"
+                  >
+                <Text style={styles.logoutText}>Sair da conta</Text>
+              </Pressable>
+
         </ResponsiveContainer>
       </ScrollView>
     </SafeAreaView>

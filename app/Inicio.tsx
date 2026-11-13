@@ -192,6 +192,7 @@ export default function InicioScreen() {
             <Ionicons
               name="document-text-outline"
               size={19}
+              style={{ right: 20 }}
               color={theme.primary}
             />
           </Pressable>
@@ -208,6 +209,9 @@ export default function InicioScreen() {
             style={{
               marginTop: 12,
               opacity: agreed ? 1 : 0.5,
+              width: '90%',
+              position: 'relative',
+              alignSelf: 'center',
             }}
           />
         </ResponsiveContainer>
@@ -347,8 +351,184 @@ export default function InicioScreen() {
 
               <Text style={styles.termsParagraph}>
                 O uso do software está sujeito à Política de
-                Privacidade da ClubMeal, que pode ser acessada
-                em link para a Política de Privacidade.
+                Segurança da ClubMeal:
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Introdução
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                A segurança da informação é fundamental para a
+                integridade, confidencialidade e disponibilidade dos
+                dados e sistemas da ClubMeal. Esta política define as
+                diretrizes para proteger as informações da empresa
+                contra acesso não autorizado, uso indevido, divulgação,
+                alteração e destruição.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Objetivo
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Estabelecer um conjunto de regras para garantir a
+                proteção das informações da ClubMeal, minimizando riscos
+                e assegurando o cumprimento das leis e regulamentações
+                aplicáveis.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Escopo
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Aplica-se a todos os funcionários, contratados,
+                prestadores de serviços, parceiros e terceiros que
+                tenham acesso aos sistemas e informações da ClubMeal.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Diretrizes gerais
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Confidencialidade: informações sensíveis devem ser
+                acessíveis somente a indivíduos autorizados. O
+                compartilhamento deve ser limitado ao mínimo necessário.
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Integridade: as informações devem ser protegidas contra
+                alterações não autorizadas. Controle de versões e
+                backups regulares devem ser implementados.
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Disponibilidade: informações e sistemas devem estar
+                disponíveis aos usuários autorizados sempre que
+                necessário, com medidas de contingência para garantir a
+                continuidade dos negócios.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Classificação da informação
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                As informações são classificadas em níveis de
+                sensibilidade:
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Pública: podem ser divulgadas ao público sem restrições.
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Confidencial: podem causar danos à empresa se
+                divulgadas indevidamente.
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Restrita: altamente sensíveis, exigem o mais alto nível
+                de proteção.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Controle de acesso
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Autenticação e autorização: todos os usuários devem ter
+                credenciais únicas e seguras. O acesso é concedido com
+                base na necessidade de saber e no princípio do menor
+                privilégio.
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Gerenciamento de senhas: senhas devem ser complexas e
+                trocadas regularmente. É proibido compartilhá-las.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Segurança física
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Controle de acesso físico: somente pessoal autorizado
+                pode acessar áreas onde informações sensíveis são
+                armazenadas ou processadas.
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Proteção de equipamentos: todos os dispositivos devem
+                estar fisicamente seguros, especialmente quando
+                transportados.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Uso de dispositivo e rede
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Dispositivos pessoais: o uso para acessar informações da
+                empresa deve ser limitado e autorizado pela equipe de TI.
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Rede segura: evite redes públicas ou desconhecidas para
+                acessar informações da empresa. Use VPN quando
+                necessário.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Treinamento e conscientização
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Todos os funcionários devem participar de treinamentos
+                regulares em segurança da informação para entender suas
+                responsabilidades e as melhores práticas.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Resposta a incidentes
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Relatório: todo incidente de segurança deve ser
+                reportado imediatamente ao departamento de TI ou ao
+                responsável pela segurança da informação.
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Gestão: a equipe de resposta deve investigar, documentar
+                e mitigar os efeitos de qualquer incidente.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Conformidade e auditoria
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Conformidade: a ClubMeal deve cumprir todas as leis e
+                regulamentações aplicáveis à segurança da informação.
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Auditorias regulares: auditorias internas e externas
+                devem ser conduzidas regularmente para garantir a
+                aderência a esta política.
+              </Text>
+
+              <Text style={styles.termsSubheading}>
+                Revisão da política
+              </Text>
+
+              <Text style={styles.termsParagraph}>
+                Esta política deve ser revisada anualmente, ou sempre
+                que necessário, para garantir sua eficácia e
+                conformidade com mudanças legais e tecnológicas.
               </Text>
 
               <Text style={styles.termsSubheading}>
@@ -553,10 +733,13 @@ const createStyles = (theme: any, compacto: boolean) =>
     },
 
     card: {
-      width: '100%',
+      width: '90%',
       backgroundColor: theme.card,
       borderRadius: 20,
       marginTop: 4,
+      position: 'relative',
+      alignSelf: 'center',
+      alignItems: 'center',
       minHeight: compacto ? 180 : 170,
       shadowColor: '#000',
       shadowOpacity: 0.06,
@@ -644,6 +827,7 @@ const createStyles = (theme: any, compacto: boolean) =>
       borderWidth: 1.5,
       borderColor: theme.primary,
       backgroundColor: theme.card,
+      left: 20,
       alignItems: 'center',
       justifyContent: 'center',
       flexShrink: 0,
@@ -658,6 +842,7 @@ const createStyles = (theme: any, compacto: boolean) =>
       color: theme.text,
       flex: 1,
       flexShrink: 1,
+      left: 20,
       lineHeight: compacto ? 17 : 19,
     },
 
