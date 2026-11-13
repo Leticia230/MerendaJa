@@ -258,15 +258,6 @@ export default function PlanosScreen() {
               </TouchableOpacity>
             )}
 
-            <TouchableOpacity
-              style={styles.link}
-              onPress={() => router.back()}
-              accessibilityRole="button"
-            >
-              <Text style={styles.linkTexto}>
-                Voltar
-              </Text>
-            </TouchableOpacity>
           </ResponsiveContainer>
         </ScrollView>
       </SafeAreaView>

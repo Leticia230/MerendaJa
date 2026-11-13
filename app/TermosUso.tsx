@@ -79,7 +79,91 @@ const SECTIONS: Section[] = [
       },
       {
         label: 'Política de privacidade:',
-        text: 'O uso do software está sujeito à Política de Privacidade da ClubMeal, que pode ser acessada em link para a Política de Privacidade.',
+        text: 'O uso do software está sujeito à Política de Segurança da ClubMeal, descrita a seguir.',
+      },
+      {
+        label: 'Política de segurança — Introdução:',
+        text: 'A segurança da informação é fundamental para a integridade, confidencialidade e disponibilidade dos dados e sistemas da ClubMeal. Esta política define as diretrizes para proteger as informações da empresa contra acesso não autorizado, uso indevido, divulgação, alteração e destruição.',
+      },
+      {
+        label: 'Política de segurança — Objetivo:',
+        text: 'Estabelecer um conjunto de regras para garantir a proteção das informações da ClubMeal, minimizando riscos e assegurando o cumprimento das leis e regulamentações aplicáveis.',
+      },
+      {
+        label: 'Política de segurança — Escopo:',
+        text: 'Aplica-se a todos os funcionários, contratados, prestadores de serviços, parceiros e terceiros que tenham acesso aos sistemas e informações da ClubMeal.',
+      },
+      {
+        label: 'Diretrizes gerais — Confidencialidade:',
+        text: 'Informações sensíveis devem ser acessíveis somente a indivíduos autorizados. O compartilhamento deve ser limitado ao mínimo necessário.',
+      },
+      {
+        label: 'Diretrizes gerais — Integridade:',
+        text: 'As informações devem ser protegidas contra alterações não autorizadas. Controle de versões e backups regulares devem ser implementados.',
+      },
+      {
+        label: 'Diretrizes gerais — Disponibilidade:',
+        text: 'Informações e sistemas devem estar disponíveis aos usuários autorizados sempre que necessário, com medidas de contingência para garantir a continuidade dos negócios.',
+      },
+      {
+        label: 'Classificação da informação — Pública:',
+        text: 'Informações que podem ser divulgadas ao público sem restrições.',
+      },
+      {
+        label: 'Classificação da informação — Confidencial:',
+        text: 'Informações que podem causar danos à empresa se divulgadas indevidamente.',
+      },
+      {
+        label: 'Classificação da informação — Restrita:',
+        text: 'Informações altamente sensíveis, que exigem o mais alto nível de proteção.',
+      },
+      {
+        label: 'Controle de acesso — Autenticação e autorização:',
+        text: 'Todos os usuários devem ter credenciais únicas e seguras. O acesso é concedido com base na necessidade de saber e no princípio do menor privilégio.',
+      },
+      {
+        label: 'Controle de acesso — Gerenciamento de senhas:',
+        text: 'Senhas devem ser complexas e trocadas regularmente. É proibido compartilhá-las.',
+      },
+      {
+        label: 'Segurança física — Controle de acesso físico:',
+        text: 'Somente pessoal autorizado pode acessar áreas onde informações sensíveis são armazenadas ou processadas.',
+      },
+      {
+        label: 'Segurança física — Proteção de equipamentos:',
+        text: 'Todos os dispositivos devem estar fisicamente seguros, especialmente quando transportados.',
+      },
+      {
+        label: 'Uso de dispositivo e rede — Dispositivos pessoais:',
+        text: 'O uso de dispositivos pessoais para acessar informações da empresa deve ser limitado e autorizado pela equipe de TI.',
+      },
+      {
+        label: 'Uso de dispositivo e rede — Rede segura:',
+        text: 'A conexão a redes públicas ou desconhecidas para acessar informações da empresa deve ser evitada. Redes virtuais privadas (VPNs) devem ser usadas quando necessário.',
+      },
+      {
+        label: 'Treinamento e conscientização:',
+        text: 'Todos os funcionários devem participar de treinamentos regulares em segurança da informação para entender suas responsabilidades e as melhores práticas.',
+      },
+      {
+        label: 'Resposta a incidentes — Relatório:',
+        text: 'Todo incidente de segurança deve ser reportado imediatamente ao departamento de TI ou ao responsável pela segurança da informação.',
+      },
+      {
+        label: 'Resposta a incidentes — Gestão:',
+        text: 'A equipe de resposta deve investigar, documentar e mitigar os efeitos de qualquer incidente de segurança.',
+      },
+      {
+        label: 'Conformidade e auditoria — Conformidade:',
+        text: 'A ClubMeal deve cumprir todas as leis e regulamentações aplicáveis à segurança da informação.',
+      },
+      {
+        label: 'Conformidade e auditoria — Auditorias regulares:',
+        text: 'Auditorias internas e externas devem ser conduzidas regularmente para garantir a aderência a esta política.',
+      },
+      {
+        label: 'Revisão da política:',
+        text: 'Esta política deve ser revisada anualmente, ou sempre que necessário, para garantir sua eficácia e conformidade com mudanças legais e tecnológicas.',
       },
       {
         label: 'Consentimento do usuário:',
@@ -96,7 +180,7 @@ const SECTIONS: Section[] = [
     title: 'Limitação de responsabilidade',
     blocks: [
       {
-        text: 'Em nenhuma circunstância a ClubMeal será responsável por quaisquer danos diretos, indiretos, incidentais, especiais, consequenciais ou punitivos decorrentes do uso ou da incapacidade de usar o software, mesmo que a ClubMeal tenha sido avisada da possibilidade de tais danos',
+        text: 'Em nenhuma circunstância a ClubMeal será responsável por quaisquer danos diretos, indiretos, incidentais, especiais, consequenciais ou punitivos decorrentes do uso ou da incapacidade de usar o software, mesmo que a ClubMeal tenha sido avisada da possibilidade de tais danos.',
       },
     ],
   },
@@ -105,7 +189,7 @@ const SECTIONS: Section[] = [
     title: 'Garantia limitada',
     blocks: [
       {
-        text: 'O software é fornecido "como está", sem garantias de qualquer tipo, expressas ou implícitas, incluindo, mas não se limitando a garantias de comercialização, adequação a um propósito específico ou não violação',
+        text: 'O software é fornecido "como está", sem garantias de qualquer tipo, expressas ou implícitas, incluindo, mas não se limitando a garantias de comercialização, adequação a um propósito específico ou não violação.',
       },
     ],
   },
@@ -128,7 +212,7 @@ const SECTIONS: Section[] = [
       },
       {
         label: 'Alterações aos termos:',
-        text: 'A ClubMeal reserva-se o direito de modificar estes Termos de Uso a qualquer momento. As modificações serão efetivas quando publicadas no site da Club Meal ou quando notificadas a você por qualquer outro meio',
+        text: 'A ClubMeal reserva-se o direito de modificar estes Termos de Uso a qualquer momento. As modificações serão efetivas quando publicadas no site da Club Meal ou quando notificadas a você por qualquer outro meio.',
       },
       {
         label: 'Acordo integral:',
@@ -187,9 +271,7 @@ export default function TermsOfUseScreen() {
           </Text>
 
           <View style={styles.indexCard}>
-            <Text style={styles.indexTitle}>
-              Neste documento
-            </Text>
+            <Text style={styles.indexTitle}>Neste documento</Text>
 
             {SECTIONS.map((section) => (
               <TouchableOpacity
@@ -199,13 +281,9 @@ export default function TermsOfUseScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={`Ir para ${section.title}`}
               >
-                <Text style={styles.indexNumber}>
-                  {section.number}.
-                </Text>
+                <Text style={styles.indexNumber}>{section.number}.</Text>
 
-                <Text style={styles.indexLink}>
-                  {section.title}
-                </Text>
+                <Text style={styles.indexLink}>{section.title}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -215,20 +293,15 @@ export default function TermsOfUseScreen() {
               key={section.number}
               style={styles.card}
               onLayout={(e) => {
-                positions.current[section.number] =
-                  e.nativeEvent.layout.y;
+                positions.current[section.number] = e.nativeEvent.layout.y;
               }}
             >
               <View style={styles.cardHeader}>
                 <View style={styles.badge}>
-                  <Text style={styles.badgeText}>
-                    {section.number}
-                  </Text>
+                  <Text style={styles.badgeText}>{section.number}</Text>
                 </View>
 
-                <Text style={styles.sectionTitle}>
-                  {section.title}
-                </Text>
+                <Text style={styles.sectionTitle}>{section.title}</Text>
               </View>
 
               {section.blocks.map((block, index) => (
@@ -237,14 +310,10 @@ export default function TermsOfUseScreen() {
                   style={index > 0 ? styles.blockSpacing : undefined}
                 >
                   {block.label ? (
-                    <Text style={styles.label}>
-                      {block.label}
-                    </Text>
+                    <Text style={styles.label}>{block.label}</Text>
                   ) : null}
 
-                  <Text style={styles.paragraph}>
-                    {block.text}
-                  </Text>
+                  <Text style={styles.paragraph}>{block.text}</Text>
                 </View>
               ))}
             </View>

@@ -50,7 +50,7 @@ export default function SobreScreen() {
 
           <Text style={styles.section}>Equipe:</Text>
 
-          <Text style={styles.desc}>
+          <Text style={styles.names}>
             - Letícia Pires de Almeida{"\n"}
             - Lucas de Jesus Gonçalves{"\n"}
             - Milena de Bastos Miranda{"\n"}
@@ -165,6 +165,15 @@ const createStyles = (theme: any, compacto: boolean) =>
       fontSize: compacto ? 12 : 13,
       color: theme.text,
       textAlign: 'center',
+      marginTop: compacto ? 12 : 14,
+      lineHeight: compacto ? 19 : 21,
+    },
+
+    names: {
+      width: '100%',
+      fontSize: compacto ? 12 : 13,
+      color: theme.text,
+      textAlign: 'justify',
       marginTop: compacto ? 12 : 14,
       lineHeight: compacto ? 19 : 21,
     },
