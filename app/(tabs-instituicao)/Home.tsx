@@ -170,51 +170,40 @@ export default function HomeScreen() {
   >({});
 
   useEffect(() => {
-    async function enviarNotificacao() {
-      try {
-        if (Platform.OS === 'web') return;
+  async function configurarNotificacoes() {
+    try {
+      const { status: statusAtual } =
+        await Notifications.getPermissionsAsync();
 
-        if (Platform.OS === 'android') {
-          await Notifications.setNotificationChannelAsync('default', {
-            name: 'Notificações',
-            importance: Notifications.AndroidImportance.HIGH,
-            vibrationPattern: [0, 250, 250, 250],
-            lightColor: '#F99033',
-          });
-        }
+      let statusFinal = statusAtual;
 
-        const { status: statusAtual } =
-          await Notifications.getPermissionsAsync();
+      if (statusAtual !== 'granted') {
+        const { status } =
+          await Notifications.requestPermissionsAsync();
 
-        let status = statusAtual;
-
-        if (status !== 'granted') {
-          const permissao =
-            await Notifications.requestPermissionsAsync();
-
-          status = permissao.status;
-        }
-
-        if (status !== 'granted') return;
-
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: 'Hora de atualizar o cardápio! 🍲',
-            body: 'Que tal cadastrar as refeições de hoje? Mantenha os alunos informados sobre o que será servido!',
-            sound: true,
-            data: {
-              tipo: 'lembrete_cardapio',
-            },
-          },
-          trigger: null,
-        });
-      } catch (error) {
-        console.error('Erro ao enviar notificação:', error);
+        statusFinal = status;
       }
-    }
 
-    enviarNotificacao();
-  }, []);
+      if (statusFinal !== 'granted') {
+        console.log('Permissão para notificações não concedida.');
+        return;
+      }
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Crie seus cardápios!',
+          body: 'Se planeje, crie turmas, cadastre alunos e defina os cardápios da semana.',
+          sound: true,
+        },
+        trigger: null,
+      });
+    } catch (erro) {
+      console.error('Erro ao configurar notificações:', erro);
+    }
+  }
+
+  configurarNotificacoes();
+}, []);
 
   useEffect(() => {
     let montado = true;
@@ -338,18 +327,6 @@ export default function HomeScreen() {
             <Text style={styles.brand}>Merenda Já</Text>
           </View>
 
-          <Pressable
-            testID="notifications-button"
-            style={styles.bell}
-            accessibilityRole="button"
-            accessibilityLabel="Notificações"
-          >
-            <Ionicons
-              name="notifications-outline"
-              size={22}
-              color={theme.text}
-            />
-          </Pressable>
         </ResponsiveContainer>
       </View>
 

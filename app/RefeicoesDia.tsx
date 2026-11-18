@@ -21,6 +21,7 @@ import { useAccessibility } from '../components/AccessibilityContext';
 import {
   assinarCardapioData,
   Refeicao,
+  Periodo,
 } from './services/cardapio';
 
 import {
@@ -41,6 +42,12 @@ import {
   nomeTipoRefeicao,
   intervaloDoPeriodo,
 } from './services/refeicaoUtils';
+
+import { listarTurmas } from './services/turmas';
+import {
+  periodosDaTurma,
+  refeicaoVisivel,
+} from './services/periodo';
 
 import { NOME_COMPLETO_DIA } from './services/data';
 import { useInstituicaoId } from './services/useInstituicaoId';
@@ -109,6 +116,13 @@ function formatarData(data: Date): string {
   }).format(data);
 }
 
+function normalizarTexto(titulo: string): string {
+  return titulo
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
 function respostaDe(
   dia: DiaCardapio,
   indice: number
@@ -121,10 +135,11 @@ function respostaDe(
 }
 
 function obterTipoPrazo(titulo: string): TipoRefeicao | null {
-  const texto = titulo
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+  const texto = normalizarTexto(titulo);
+
+  if (texto.includes('lanche')) {
+    return 'lanche';
+  }
 
   if (texto.includes('cafe') || texto.includes('manha')) {
     return 'cafe';
@@ -147,6 +162,7 @@ function verificarStatusPrazo(
   prazos: PrazosPorDia | null,
   agora: Date
 ): StatusPrazo {
+ 
   if (!prazos) {
     return {
       disponivel: false,
@@ -274,6 +290,12 @@ export default function RefeicoesDia() {
   const [carregandoPrazos, setCarregandoPrazos] = useState(true);
   const [agora, setAgora] = useState(new Date());
 
+  // null = aluno sem período definido (vê todas as refeições)
+  const [periodosAluno, setPeriodosAluno] = useState<Periodo[] | null>(
+    null
+  );
+  const [carregandoTurmas, setCarregandoTurmas] = useState(true);
+
   useEffect(() => {
     const intervalo = setInterval(() => {
       setAgora(new Date());
@@ -281,6 +303,45 @@ export default function RefeicoesDia() {
 
     return () => clearInterval(intervalo);
   }, []);
+
+  useEffect(() => {
+    if (carregandoInstituicao) return;
+
+    if (!alunoId || !instituicaoId) {
+      setPeriodosAluno(null);
+      setCarregandoTurmas(false);
+      return;
+    }
+
+    let ativo = true;
+
+    setCarregandoTurmas(true);
+
+    listarTurmas(instituicaoId)
+      .then((turmas) => {
+        if (!ativo) return;
+
+        const periodos = turmas
+          .filter((turma) => turma.alunosIds.includes(alunoId))
+          .flatMap((turma) => periodosDaTurma(turma.periodo));
+
+        setPeriodosAluno(
+          periodos.length > 0 ? Array.from(new Set(periodos)) : null
+        );
+      })
+      .catch((e) => {
+        console.error('Erro ao carregar turma do aluno:', e);
+
+        if (ativo) setPeriodosAluno(null);
+      })
+      .finally(() => {
+        if (ativo) setCarregandoTurmas(false);
+      });
+
+    return () => {
+      ativo = false;
+    };
+  }, [alunoId, instituicaoId, carregandoInstituicao]);
 
   useEffect(() => {
     if (carregandoInstituicao) return;
@@ -407,6 +468,19 @@ export default function RefeicoesDia() {
     };
   }, [alunoId, instituicaoId]);
 
+  // Só as refeições do período do aluno (mais as de "Todos").
+  // Todo o resto da tela usa esta lista, então os índices ficam consistentes.
+  const diasVisiveis = useMemo(
+    () =>
+      dias.map((dia) => ({
+        ...dia,
+        refeicoes: dia.refeicoes.filter((refeicao) =>
+          refeicaoVisivel(refeicao.periodo, periodosAluno)
+        ),
+      })),
+    [dias, periodosAluno]
+  );
+
   async function escolher(
     dia: DiaCardapio,
     indice: number,
@@ -461,12 +535,12 @@ export default function RefeicoesDia() {
     }
   }
 
-  const totalRefeicoes = dias.reduce(
+  const totalRefeicoes = diasVisiveis.reduce(
     (total, dia) => total + dia.refeicoes.length,
     0
   );
 
-  const refeicoesRespondidas = dias.reduce(
+  const refeicoesRespondidas = diasVisiveis.reduce(
     (total, dia) =>
       total +
       dia.refeicoes.filter(
@@ -477,6 +551,8 @@ export default function RefeicoesDia() {
 
   const refeicoesPendentes =
     totalRefeicoes - refeicoesRespondidas;
+
+  const aguardando = carregando || carregandoTurmas;
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -510,7 +586,7 @@ export default function RefeicoesDia() {
             </Text>
           </View>
 
-          {!carregando && totalRefeicoes > 0 && (
+          {!aguardando && totalRefeicoes > 0 && (
             <View style={styles.resumo}>
               <View style={styles.resumoItem}>
                 <Text style={styles.resumoNumero}>
@@ -577,13 +653,13 @@ export default function RefeicoesDia() {
             </View>
           )}
 
-          {carregando ? (
+          {aguardando ? (
             <ActivityIndicator
               color={theme.primary}
               style={styles.carregando}
             />
           ) : (
-            dias.map((dia) => (
+            diasVisiveis.map((dia) => (
               <View
                 key={dia.codigo}
                 style={styles.diaContainer}

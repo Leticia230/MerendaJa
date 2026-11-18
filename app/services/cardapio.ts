@@ -12,7 +12,9 @@ import {
   arrayUnion,
 } from 'firebase/firestore';
 
-export type TipoRefeicao = 'cafe' | 'almoco' | 'jantar';
+export type TipoRefeicao = 'cafe' | 'almoco' | 'jantar' | 'lanche';
+
+export type Periodo = 'manha' | 'tarde' | 'noite' | 'todos';
 
 export type Refeicao = {
   titulo: string;
@@ -22,6 +24,7 @@ export type Refeicao = {
   color: string;
   data?: string;
   tipo?: TipoRefeicao;
+  periodo?: Periodo;
 };
 
 function cardapioRef(dia: string, instituicaoId?: string) {

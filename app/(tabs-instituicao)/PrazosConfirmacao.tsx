@@ -20,6 +20,8 @@ import DateTimePicker, {
 import Text from '../../components/AppText';
 import { useResponsive } from '../../hooks/useResponsive';
 import ResponsiveContainer from '../../components/ResponsiveContainer';
+import { useAccessibility } from '../../components/AccessibilityContext';
+import { DARK_THEME } from '../../constants/theme';
 
 import {
   DiaSemana,
@@ -47,18 +49,22 @@ const REFEICOES: {
   { id: 'cafe', nome: 'Café da manhã', icone: 'sunny-outline' },
   { id: 'almoco', nome: 'Almoço', icone: 'restaurant-outline' },
   { id: 'jantar', nome: 'Jantar', icone: 'moon-outline' },
+  { id: 'lanche', nome: 'Lanche', icone: 'cafe-outline' },
 ];
 
 export default function PrazosConfirmacao() {
   const router = useRouter();
+  const { theme } = useAccessibility();
 
   const { isSmallScreen, fontScale } = useResponsive();
   const compacto = isSmallScreen || fontScale >= 1.2;
 
   const styles = useMemo(
-    () => createStyles(compacto),
-    [compacto]
+    () => createStyles(theme, compacto),
+    [theme, compacto]
   );
+
+  const modoEscuro = theme.background === DARK_THEME.background;
 
   const [diaSelecionado, setDiaSelecionado] =
     useState<DiaSemana>('segunda');
@@ -204,7 +210,7 @@ export default function PrazosConfirmacao() {
     return (
       <SafeAreaView style={styles.centralizado}>
         <ResponsiveContainer style={styles.estadoConteudo}>
-          <ActivityIndicator size="large" color="#fcac00" />
+          <ActivityIndicator size="large" color={theme.primary} />
 
           <Text style={styles.textoCarregando}>
             Carregando prazos...
@@ -221,7 +227,7 @@ export default function PrazosConfirmacao() {
           <Ionicons
             name="alert-circle-outline"
             size={42}
-            color="#fcac00"
+            color={theme.primary}
           />
 
           <Text style={styles.tituloErro}>
@@ -271,7 +277,7 @@ export default function PrazosConfirmacao() {
             accessibilityRole="button"
             accessibilityLabel="Voltar"
           >
-            <Ionicons name="arrow-back" size={24} color="#222" />
+            <Ionicons name="arrow-back" size={24} color={theme.text} />
           </Pressable>
 
           <View style={styles.headerTexto}>
@@ -342,7 +348,7 @@ export default function PrazosConfirmacao() {
                     <Ionicons
                       name={refeicao.icone}
                       size={23}
-                      color="#fcac00"
+                      color={theme.primary}
                     />
 
                     <Text style={styles.nomeRefeicao}>
@@ -356,10 +362,12 @@ export default function PrazosConfirmacao() {
                       atualizarPrazo(refeicao.id, 'ativo', valor)
                     }
                     trackColor={{
-                      false: '#ccc',
-                      true: '#e2d9c7',
+                      false: theme.border,
+                      true: theme.soft,
                     }}
-                    thumbColor={prazo.ativo ? '#fcac00' : '#f4f3f4'}
+                    thumbColor={
+                      prazo.ativo ? theme.primary : theme.textMuted
+                    }
                     accessibilityLabel={`Ativar prazo de ${refeicao.nome}`}
                   />
                 </View>
@@ -374,7 +382,7 @@ export default function PrazosConfirmacao() {
                   <Ionicons
                     name="time-outline"
                     size={21}
-                    color="#666"
+                    color={theme.textSecondary}
                   />
 
                   <Text style={styles.horarioLabel}>
@@ -427,13 +435,13 @@ export default function PrazosConfirmacao() {
             accessibilityState={{ disabled: salvando }}
           >
             {salvando ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={theme.onPrimary} />
             ) : (
               <>
                 <Ionicons
                   name="save-outline"
                   size={21}
-                  color="#fff"
+                  color={theme.onPrimary}
                 />
 
                 <Text style={styles.textoSalvar}>
@@ -451,6 +459,8 @@ export default function PrazosConfirmacao() {
           mode="time"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
           is24Hour
+          themeVariant={modoEscuro ? 'dark' : 'light'}
+          textColor={Platform.OS === 'ios' ? theme.text : undefined}
           onChange={aoAlterarHorario}
         />
       )}
@@ -458,11 +468,11 @@ export default function PrazosConfirmacao() {
   );
 }
 
-const createStyles = (compacto = false) =>
+const createStyles = (theme: any, compacto = false) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#F5F7F5',
+      backgroundColor: theme.background,
     },
 
     centralizado: {
@@ -470,7 +480,7 @@ const createStyles = (compacto = false) =>
       alignItems: 'center',
       justifyContent: 'center',
       padding: 24,
-      backgroundColor: '#F5F7F5',
+      backgroundColor: theme.background,
     },
 
     estadoConteudo: {
@@ -481,7 +491,7 @@ const createStyles = (compacto = false) =>
 
     textoCarregando: {
       marginTop: 12,
-      color: '#555',
+      color: theme.textSecondary,
       fontSize: 15,
       textAlign: 'center',
     },
@@ -489,20 +499,20 @@ const createStyles = (compacto = false) =>
     tituloErro: {
       fontSize: 17,
       fontWeight: 'bold',
-      color: '#222',
+      color: theme.text,
       textAlign: 'center',
       marginTop: 14,
     },
 
     textoErro: {
       fontSize: 14,
-      color: '#777',
+      color: theme.textSecondary,
       textAlign: 'center',
       marginTop: 8,
     },
 
     botaoVoltarErro: {
-      backgroundColor: '#2E7D32',
+      backgroundColor: theme.primary,
       paddingHorizontal: 24,
       paddingVertical: 12,
       borderRadius: 10,
@@ -510,12 +520,12 @@ const createStyles = (compacto = false) =>
     },
 
     textoBotaoVoltarErro: {
-      color: '#fff',
+      color: theme.onPrimary,
       fontWeight: 'bold',
     },
 
     header: {
-      backgroundColor: '#fff',
+      backgroundColor: theme.header,
       paddingVertical: compacto ? 12 : 16,
     },
 
@@ -533,7 +543,7 @@ const createStyles = (compacto = false) =>
       borderRadius: 12,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: '#F0F2F0',
+      backgroundColor: theme.soft,
     },
 
     headerTexto: {
@@ -544,13 +554,13 @@ const createStyles = (compacto = false) =>
     titulo: {
       fontSize: compacto ? 18 : 20,
       fontWeight: 'bold',
-      color: '#222',
+      color: theme.text,
       flexShrink: 1,
     },
 
     subtitulo: {
       fontSize: 12,
-      color: '#777',
+      color: theme.textSecondary,
       marginTop: 3,
       flexShrink: 1,
     },
@@ -567,7 +577,7 @@ const createStyles = (compacto = false) =>
     labelSecao: {
       fontSize: 14,
       fontWeight: 'bold',
-      color: '#444',
+      color: theme.text,
       marginBottom: 10,
     },
 
@@ -582,40 +592,43 @@ const createStyles = (compacto = false) =>
       paddingVertical: 10,
       paddingHorizontal: compacto ? 10 : 12,
       borderRadius: 12,
-      backgroundColor: '#fff',
+      backgroundColor: theme.card,
+      borderWidth: 1,
+      borderColor: theme.border,
       alignItems: 'center',
       justifyContent: 'center',
     },
 
     botaoDiaSelecionado: {
-      backgroundColor: '#ee932b',
+      backgroundColor: theme.primary,
+      borderColor: theme.primary,
     },
 
     textoDia: {
-      color: '#555',
+      color: theme.textSecondary,
       fontWeight: '600',
       fontSize: 13,
     },
 
     textoDiaSelecionado: {
-      color: '#fff',
+      color: theme.onPrimary,
     },
 
     diaAtual: {
       fontSize: 17,
       fontWeight: 'bold',
-      color: '#222',
+      color: theme.text,
       marginTop: 16,
       marginBottom: 12,
     },
 
     card: {
-      backgroundColor: '#fff',
+      backgroundColor: theme.card,
       borderRadius: 16,
       padding: compacto ? 13 : 16,
       marginBottom: 13,
       borderWidth: 1,
-      borderColor: '#E8ECE8',
+      borderColor: theme.border,
     },
 
     cardTopo: {
@@ -638,11 +651,11 @@ const createStyles = (compacto = false) =>
       flexShrink: 1,
       fontSize: 16,
       fontWeight: 'bold',
-      color: '#252525',
+      color: theme.text,
     },
 
     descricao: {
-      color: '#777',
+      color: theme.textSecondary,
       fontSize: 13,
       lineHeight: 19,
       marginTop: 12,
@@ -657,14 +670,14 @@ const createStyles = (compacto = false) =>
     },
 
     horarioLabel: {
-      color: '#555',
+      color: theme.textSecondary,
       fontSize: 14,
       flex: 1,
       minWidth: 90,
     },
 
     inputHorario: {
-      backgroundColor: '#F0F5F0',
+      backgroundColor: theme.soft,
       paddingHorizontal: 16,
       paddingVertical: 9,
       borderRadius: 10,
@@ -673,11 +686,11 @@ const createStyles = (compacto = false) =>
     horarioValor: {
       fontSize: 17,
       fontWeight: 'bold',
-      color: '#f09936',
+      color: theme.primary,
     },
 
     horarioDesativado: {
-      color: '#999',
+      color: theme.textMuted,
     },
 
     botaoEditarHorario: {
@@ -694,17 +707,17 @@ const createStyles = (compacto = false) =>
     },
 
     textoEditarHorario: {
-      color: '#705722',
+      color: theme.primaryDark,
       fontSize: 13,
       fontWeight: 'bold',
     },
 
     textoEditarDesabilitado: {
-      color: '#999',
+      color: theme.textMuted,
     },
 
     botaoSalvar: {
-      backgroundColor: '#f09936',
+      backgroundColor: theme.primary,
       borderRadius: 14,
       minHeight: 52,
       paddingVertical: 15,
@@ -721,7 +734,7 @@ const createStyles = (compacto = false) =>
     },
 
     textoSalvar: {
-      color: '#fff',
+      color: theme.onPrimary,
       fontSize: 16,
       fontWeight: 'bold',
       textAlign: 'center',

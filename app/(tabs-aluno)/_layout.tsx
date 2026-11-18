@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { Tabs } from 'expo-router';
 import {
@@ -37,7 +38,7 @@ export default function TabsAlunoLayout() {
   const TAB_ICONS: Record<string, (focused: boolean) => React.ReactNode> = {
     Home: (f) => (
       <Ionicons
-        name={f ? 'home' : 'home-outline'}
+        name="home"
         size={22}
         color={f ? theme.primary : theme.textMuted}
       />
@@ -53,7 +54,7 @@ export default function TabsAlunoLayout() {
 
     Configuracoes: (f) => (
       <Ionicons
-        name={f ? 'settings' : 'settings-outline'}
+        name="settings"
         size={22}
         color={f ? theme.primary : theme.textMuted}
       />

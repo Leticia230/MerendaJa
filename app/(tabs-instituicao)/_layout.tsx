@@ -49,7 +49,7 @@ export default function TabsLayout() {
   const TAB_ICONS: Record<string, (focused: boolean) => React.ReactNode> = {
     Home: (f) => (
       <Ionicons
-        name={f ? 'home' : 'home-outline'}
+        name="home"
         size={22}
         color={f ? theme.primary : theme.textMuted}
       />
@@ -66,6 +66,7 @@ export default function TabsLayout() {
     Turmas: (f) => (
       <FontAwesome5
         name="university"
+        solid
         size={20}
         color={f ? theme.primary : theme.textMuted}
       />
@@ -73,7 +74,7 @@ export default function TabsLayout() {
 
     Configuracoes: (f) => (
       <Ionicons
-        name={f ? 'settings' : 'settings-outline'}
+        name="settings"
         size={22}
         color={f ? theme.primary : theme.textMuted}
       />

@@ -20,6 +20,35 @@ import {
 import { useResponsive } from '../../hooks/useResponsive';
 import ResponsiveContainer from '../../components/ResponsiveContainer';
 
+// Normaliza o texto para facilitar a comparação.
+const normalizarTexto = (texto: string) => {
+  return texto
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[°ºª]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+// Verifica se a pesquisa corresponde ao nome da turma.
+const correspondeBusca = (nome: string, pesquisa: string) => {
+  const nomeNormalizado = normalizarTexto(nome);
+  const buscaNormalizada = normalizarTexto(pesquisa);
+
+  if (!buscaNormalizada) return true;
+
+  const termos = buscaNormalizada.split(' ').filter(Boolean);
+  const palavras = nomeNormalizado.split(' ').filter(Boolean);
+
+  return termos.every((termo) => {
+    return palavras.some((palavra) =>
+      palavra.startsWith(termo)
+    );
+  });
+};
+
 export default function TurmasScreen() {
   const router = useRouter();
   const { theme } = useAccessibility();
@@ -48,9 +77,12 @@ export default function TurmasScreen() {
     return unsubscribe;
   }, []);
 
-  const filtered = turmas.filter((t) =>
-    t.nome.toLowerCase().includes(q.trim().toLowerCase())
-  );
+  // Filtra as turmas conforme o texto digitado.
+  const filtered = useMemo(() => {
+    return turmas.filter((t) =>
+      correspondeBusca(t.nome, q)
+    );
+  }, [turmas, q]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -114,9 +146,10 @@ export default function TurmasScreen() {
                 size={36}
                 color={theme.textMuted}
               />
+
               <Text style={styles.emptyText}>
-                Nenhuma turma cadastrada ainda. Toque em "Adicionar turma"
-                para criar a primeira.
+                Nenhuma turma cadastrada ainda. Toque em
+                "Adicionar turma" para criar a primeira.
               </Text>
             </View>
           ) : filtered.length === 0 ? (
@@ -126,6 +159,7 @@ export default function TurmasScreen() {
                 size={32}
                 color={theme.textMuted}
               />
+
               <Text style={styles.emptyText}>
                 Nenhuma turma encontrada para "{q}".
               </Text>
@@ -146,7 +180,9 @@ export default function TurmasScreen() {
                 accessibilityLabel={`Turma ${t.nome}, ${t.alunosIds.length} alunos`}
               >
                 <View style={styles.cardInfo}>
-                  <Text style={styles.name}>{t.nome}</Text>
+                  <Text style={styles.name}>
+                    {t.nome}
+                  </Text>
 
                   <Text style={styles.count}>
                     {t.alunosIds.length} aluno
@@ -176,7 +212,10 @@ export default function TurmasScreen() {
               size={20}
               color={theme.onPrimary}
             />
-            <Text style={styles.addBtnText}>Adicionar turma</Text>
+
+            <Text style={styles.addBtnText}>
+              Adicionar turma
+            </Text>
           </Pressable>
         </ResponsiveContainer>
       </ScrollView>
@@ -229,7 +268,7 @@ const createStyles = (
       alignItems: 'center',
       gap: 8,
       borderWidth: 1,
-      borderColor: theme.border,
+      borderColor: '#e4e3e3',
     },
 
     searchInput: {
@@ -280,8 +319,9 @@ const createStyles = (
       flexDirection: 'row',
       alignItems: 'center',
       gap: 10,
-      borderWidth: theme.borderWidth,
-      borderColor: theme.border,
+  
+      borderWidth: 1,
+      borderColor: '#e4e3e3',
     },
 
     cardInfo: {

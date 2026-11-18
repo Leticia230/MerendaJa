@@ -1,6 +1,6 @@
 export type Period = 'semana' | 'mes' | 'ano';
 
-export const TIPOS = ['Café', 'Almoço', 'Jantar'] as const;
+export const TIPOS = ['Café', 'Almoço', 'Jantar', 'Lanche'] as const;
 
 const DIAS_UTEIS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
 
@@ -15,6 +15,9 @@ export function dataDoDiaDaSemana(dia: string, semanasAFrente = 0): string {
 
 export function nomeTipoRefeicao(titulo: string) {
   const texto = titulo.toLowerCase();
+
+  // O lanche vem primeiro para "Lanche da manhã" não virar café.
+  if (texto.includes('lanche')) return 'Lanche';
 
   if (
     texto.includes('café') || texto.includes('cafe') ||

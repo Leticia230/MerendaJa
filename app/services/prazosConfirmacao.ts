@@ -10,7 +10,7 @@ export type DiaSemana =
   | 'sabado'
   | 'domingo';
 
-export type TipoRefeicao = 'cafe' | 'almoco' | 'jantar';
+export type TipoRefeicao = 'cafe' | 'almoco' | 'jantar' | 'lanche';
 
 export type PrazoRefeicao = {
   ativo: boolean;
@@ -27,36 +27,43 @@ const prazosPadrao: PrazosPorDia = {
     cafe: { ativo: true, horario: '09:00' },
     almoco: { ativo: true, horario: '10:00' },
     jantar: { ativo: true, horario: '17:00' },
+    lanche: { ativo: true, horario: '14:00' },
   },
   terca: {
     cafe: { ativo: true, horario: '09:00' },
     almoco: { ativo: true, horario: '10:00' },
     jantar: { ativo: true, horario: '17:00' },
+    lanche: { ativo: true, horario: '14:00' },
   },
   quarta: {
     cafe: { ativo: true, horario: '09:00' },
     almoco: { ativo: true, horario: '10:00' },
     jantar: { ativo: true, horario: '17:00' },
+    lanche: { ativo: true, horario: '14:00' },
   },
   quinta: {
     cafe: { ativo: true, horario: '09:00' },
     almoco: { ativo: true, horario: '10:00' },
     jantar: { ativo: true, horario: '17:00' },
+    lanche: { ativo: true, horario: '14:00' },
   },
   sexta: {
     cafe: { ativo: true, horario: '09:00' },
     almoco: { ativo: true, horario: '10:00' },
     jantar: { ativo: true, horario: '17:00' },
+    lanche: { ativo: true, horario: '14:00' },
   },
   sabado: {
     cafe: { ativo: false, horario: '08:00' },
     almoco: { ativo: false, horario: '09:00' },
     jantar: { ativo: false, horario: '16:00' },
+    lanche: { ativo: false, horario: '13:00' },
   },
   domingo: {
     cafe: { ativo: false, horario: '08:00' },
     almoco: { ativo: false, horario: '09:00' },
     jantar: { ativo: false, horario: '16:00' },
+    lanche: { ativo: false, horario: '13:00' },
   },
 };
 
@@ -70,7 +77,7 @@ const DIAS: DiaSemana[] = [
   'domingo',
 ];
 
-const REFEICOES: TipoRefeicao[] = ['cafe', 'almoco', 'jantar'];
+const REFEICOES: TipoRefeicao[] = ['cafe', 'almoco', 'jantar', 'lanche'];
 
 function obterInstituicaoId(instituicaoId?: string) {
   const id = instituicaoId ?? auth.currentUser?.uid;
@@ -92,6 +99,8 @@ function prazosRef(instituicaoId?: string) {
   );
 }
 
+// Mescla o que está salvo com os valores padrão. Prazos antigos, que ainda
+// não têm o lanche, ganham o lanche com o horário padrão automaticamente.
 function mesclarComPadrao(dados?: Partial<PrazosPorDia>): PrazosPorDia {
   const resultado = { ...prazosPadrao };
 

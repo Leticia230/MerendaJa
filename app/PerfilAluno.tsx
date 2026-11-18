@@ -1,32 +1,106 @@
-import React, { useEffect, useMemo, useState } from 'react';
+
+import React, { useCallback, useMemo, useState } from 'react';
 
 import {
   View,
   StyleSheet,
   ScrollView,
-  KeyboardAvoidingView,
-  Platform,
   Alert,
   ActivityIndicator,
 } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from 'expo-router';
 
 import ScreenHeader from '../components/ScreenHeader';
-import LabeledInput from '../components/LabeledInput';
-import BotaoPrimario from '../components/BotaoPrimario';
 import ResponsiveContainer from '../components/ResponsiveContainer';
 import { useResponsive } from '../hooks/useResponsive';
 import { useAccessibility } from '../components/AccessibilityContext';
 
-import {
-  buscarPerfilAluno,
-  salvarRestricoesAlimentares,
-} from './services/alunos';
+import { buscarPerfilAluno } from './services/alunos';
+import { listarTurmas } from './services/turmas';
+import { useInstituicaoId } from './services/useInstituicaoId';
 
 import { auth } from '../components/firebaseConfig';
 import Text from '../components/AppText';
+
+// Componente para exibir informações somente para consulta
+function ProfileInfo({
+  label,
+  value,
+  icon,
+  theme,
+}: {
+  label: string;
+  value: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  theme: any;
+}) {
+  return (
+    
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: theme.card,
+        borderRadius: 14,
+        padding: 15,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: theme.textMuted + '55',
+      }}
+    >
+      <View
+        style={{
+          width: 42,
+          height: 42,
+          borderRadius: 12,
+          backgroundColor: theme.primary + '25',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginRight: 13,
+        }}
+      >
+        <Ionicons
+          name={icon}
+          size={21}
+          color={theme.primary}
+        />
+      </View>
+
+      <View style={{ flex: 1 }}>
+        <Text
+          style={{
+            fontSize: 12,
+            color: theme.textMuted,
+            fontWeight: '600',
+            marginBottom: 4,
+          }}
+        >
+          {label}
+        </Text>
+
+        <Text
+          style={{
+            fontSize: 15,
+            color: theme.text,
+            fontWeight: '700',
+          }}
+        >
+          {value || 'Não informado'}
+        </Text>
+      </View>
+
+      <Ionicons
+        name="lock-closed-outline"
+        size={16}
+        color={theme.textMuted}
+      />
+    </View>
+
+  );
+}
 
 export default function ProfileScreen() {
   const { theme } = useAccessibility();
@@ -44,100 +118,118 @@ export default function ProfileScreen() {
     [theme, compacto]
   );
 
+  const {
+    instituicaoId,
+    carregando: carregandoInstituicao,
+  } = useInstituicaoId();
+
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [rm, setRm] = useState('');
   const [turma, setTurma] = useState('');
   const [periodo, setPeriodo] = useState('');
-  const [password, setPassword] = useState('');
-  const [dietaryRestrictions, setDietaryRestrictions] = useState('');
 
   const [carregando, setCarregando] = useState(true);
-  const [salvando, setSalvando] = useState(false);
 
-  useEffect(() => {
-    carregarPerfil();
-  }, []);
+  // Recarrega sempre que a tela volta ao foco
+  useFocusEffect(
+    useCallback(() => {
+      if (carregandoInstituicao) return;
 
-  async function carregarPerfil() {
-    try {
-      const alunoId = auth.currentUser?.uid;
+      let ativo = true;
 
-      if (!alunoId) {
-        Alert.alert(
-          'Erro',
-          'Não foi possível identificar o aluno.'
-        );
-        return;
+      async function carregarPerfil() {
+        try {
+          const alunoId = auth.currentUser?.uid;
+
+          if (!alunoId) {
+            Alert.alert(
+              'Erro',
+              'Não foi possível identificar o aluno.'
+            );
+            return;
+          }
+
+          const perfil = await buscarPerfilAluno(alunoId);
+
+          if (!ativo) return;
+
+          if (!perfil) {
+            Alert.alert(
+              'Erro',
+              'Perfil do aluno não encontrado.'
+            );
+            return;
+          }
+
+          setNome(perfil.nome ?? '');
+          setEmail(perfil.email ?? '');
+          setRm(perfil.rm ?? '');
+
+          // Turma e período vêm das turmas da instituição
+          let turmaNome = perfil.turmaNome ?? '';
+          let periodoNome = perfil.periodo ?? '';
+
+          if (instituicaoId) {
+            try {
+              const turmas = await listarTurmas(instituicaoId);
+
+              const doAluno = turmas.filter((t) =>
+                t.alunosIds.includes(alunoId)
+              );
+
+              if (doAluno.length > 0) {
+                turmaNome = doAluno.map((t) => t.nome).join(', ');
+
+                periodoNome = Array.from(
+                  new Set(doAluno.map((t) => t.periodo))
+                ).join(', ');
+              } else {
+                console.log(
+                  '[Perfil] aluno não encontrado em nenhuma turma.',
+                  'uid do login:',
+                  alunoId,
+                  '| turmas:',
+                  JSON.stringify(
+                    turmas.map((t) => ({
+                      nome: t.nome,
+                      alunosIds: t.alunosIds,
+                    }))
+                  )
+                );
+              }
+            } catch (e) {
+              console.error('Erro ao carregar turma do aluno:', e);
+            }
+          } else {
+            console.log(
+              '[Perfil] instituicaoId não encontrado para este aluno.'
+            );
+          }
+
+          if (!ativo) return;
+
+          setTurma(turmaNome);
+          setPeriodo(periodoNome);
+        } catch (error) {
+          console.error('Erro ao carregar perfil:', error);
+
+          Alert.alert(
+            'Erro',
+            'Não foi possível carregar os dados do perfil.'
+          );
+        } finally {
+          if (ativo) setCarregando(false);
+        }
       }
 
-      const perfil = await buscarPerfilAluno(alunoId);
+      carregarPerfil();
 
-      if (!perfil) {
-        Alert.alert(
-          'Erro',
-          'Perfil do aluno não encontrado.'
-        );
-        return;
-      }
-
-      setNome(perfil.nome ?? '');
-      setEmail(perfil.email ?? '');
-      setRm(perfil.rm ?? '');
-      setTurma(perfil.turmaNome ?? '');
-      setPeriodo(perfil.periodo ?? '');
-
-      setDietaryRestrictions(
-        perfil.restricoesAlimentares ?? ''
-      );
-    } catch (error) {
-      console.error('Erro ao carregar perfil:', error);
-
-      Alert.alert(
-        'Erro',
-        'Não foi possível carregar os dados do perfil.'
-      );
-    } finally {
-      setCarregando(false);
-    }
-  }
-
-  async function salvarPerfil() {
-    if (salvando) return;
-
-    try {
-      const alunoId = auth.currentUser?.uid;
-
-      if (!alunoId) {
-        Alert.alert(
-          'Erro',
-          'Não foi possível identificar o aluno.'
-        );
-        return;
-      }
-
-      setSalvando(true);
-
-      await salvarRestricoesAlimentares(
-        alunoId,
-        dietaryRestrictions
-      );
-
-      Alert.alert(
-        'Perfil atualizado',
-        'Suas restrições alimentares foram salvas.'
-      );
-    } catch (error) {
-      console.error('Erro ao salvar perfil:', error);
-
-      Alert.alert(
-        'Erro',
-        'Não foi possível salvar as alterações.'
-      );
-    } finally {
-      setSalvando(false);
-    }
-  }
+      return () => {
+        ativo = false;
+      };
+    }, [instituicaoId, carregandoInstituicao])
+  );
 
   if (carregando) {
     return (
@@ -162,89 +254,108 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.safe}>
       <ScreenHeader title="Meu perfil" />
 
-      <KeyboardAvoidingView
-        style={styles.keyboardView}
-        behavior={
-          Platform.OS === 'ios'
-            ? 'padding'
-            : 'height'
-        }
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
+        <ResponsiveContainer
+          style={[
+            styles.body,
+            { paddingHorizontal: horizontalPadding },
+          ]}
         >
-          <ResponsiveContainer
-            style={[
-              styles.body,
-              { paddingHorizontal: horizontalPadding },
-            ]}
-          >
+          {/* Identificação do aluno */}
+          <View style={styles.profileHeader}>
             <View style={styles.avatar}>
               <Ionicons
                 name="person"
                 size={compacto ? 38 : 44}
-                color="#fff"
+                color={theme.onPrimary}
               />
             </View>
 
-            <LabeledInput
-              testID="profile-name-input"
-              label="Nome"
-              placeholder="Nome completo"
+            <Text style={styles.profileName}>
+              {nome || 'Aluno'}
+            </Text>
+
+            <View style={styles.readOnlyBadge}>
+              <Ionicons
+                name="eye-outline"
+                size={14}
+                color={theme.primary}
+              />
+
+              <Text style={styles.readOnlyText}>
+                Somente visualização
+              </Text>
+            </View>
+          </View>
+
+          {/* Informações pessoais */}
+          <View style={styles.infoSection}>
+            <Text style={styles.sectionTitle}>
+              Informações pessoais
+            </Text>
+
+            <ProfileInfo
+              label="Nome completo"
               value={nome}
-              onChangeText={setNome}
+              icon="person-outline"
+              theme={theme}
             />
 
-            <LabeledInput
-              testID="profile-email-input"
+            <ProfileInfo
               label="E-mail"
-              placeholder="seu@email.com"
-              autoCapitalize="none"
-              keyboardType="email-address"
               value={email}
-              onChangeText={setEmail}
+              icon="mail-outline"
+              theme={theme}
             />
 
-            <LabeledInput
-              testID="profile-rm-input"
-              label="RM"
-              placeholder="Registro do aluno"
+            <ProfileInfo
+              label="Registro de matrícula (RM)"
               value={rm}
-              onChangeText={setRm}
+              icon="card-outline"
+              theme={theme}
             />
 
-            <LabeledInput
-              testID="profile-dietary-restrictions-input"
-              label="Restrições alimentares"
-              placeholder="Ex.: Sem glúten, sem lactose"
-              autoCapitalize="sentences"
-              keyboardType="default"
-              value={dietaryRestrictions}
-              onChangeText={setDietaryRestrictions}
+            {/* Informações escolares */}
+            <Text style={styles.sectionTitle}>
+              Informações escolares
+            </Text>
+
+            <ProfileInfo
+              label="Turma"
+              value={turma}
+              icon="school-outline"
+              theme={theme}
+            />
+
+            <ProfileInfo
+              label="Período"
+              value={periodo}
+              icon="time-outline"
+              theme={theme}
+            />
+          </View>
+
+          {/* Aviso de consulta */}
+          <View style={styles.notice}>
+            <Ionicons
+              name="information-circle-outline"
+              size={22}
+              color={theme.primary}
             />
 
             <Text style={styles.helperText}>
-              Informe alergias, intolerâncias ou outras
-              restrições alimentares importantes.
+              Esta página é destinada somente à consulta.
+              Seus dados são cadastrados e administrados pela
+              instituição. Para solicitar alterações, procure
+              a secretaria.
             </Text>
-
-            <BotaoPrimario
-              testID="profile-save-button"
-              title={
-                salvando
-                  ? 'Salvando...'
-                  : 'Salvar alterações'
-              }
-              onPress={salvarPerfil}
-              disabled={salvando}
-              style={styles.button}
-            />
-          </ResponsiveContainer>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          </View>
+        </ResponsiveContainer>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -254,10 +365,6 @@ const createStyles = (theme: any, compacto: boolean) =>
     safe: {
       flex: 1,
       backgroundColor: theme.background,
-    },
-
-    keyboardView: {
-      flex: 1,
     },
 
     scroll: {
@@ -271,19 +378,24 @@ const createStyles = (theme: any, compacto: boolean) =>
 
     body: {
       flex: 0,
-      paddingTop: compacto ? 8 : 12,
+      paddingTop: compacto ? 12 : 20,
       paddingBottom: 40,
+    },
+
+    // Cabeçalho do perfil
+    profileHeader: {
+      alignItems: 'center',
+      marginBottom: compacto ? 24 : 30,
     },
 
     avatar: {
       width: compacto ? 84 : 100,
       height: compacto ? 84 : 100,
       borderRadius: compacto ? 42 : 50,
-      alignSelf: 'center',
-      marginBottom: compacto ? 16 : 20,
-      backgroundColor: theme.primary,
       alignItems: 'center',
       justifyContent: 'center',
+      backgroundColor: theme.primary,
+      marginBottom: 14,
       shadowColor: theme.primary,
       shadowOpacity: 0.25,
       shadowRadius: compacto ? 7 : 10,
@@ -294,18 +406,65 @@ const createStyles = (theme: any, compacto: boolean) =>
       elevation: 4,
     },
 
-    helperText: {
-      fontSize: compacto ? 10 : 11,
+    profileName: {
+      fontSize: compacto ? 19 : 22,
+      fontWeight: '700',
+      color: theme.text,
+      marginBottom: 4,
+      textAlign: 'center',
+    },
+
+    profileSubtitle: {
+      fontSize: 13,
       color: theme.textMuted,
-      marginTop: -8,
-      marginBottom: 12,
-      lineHeight: compacto ? 15 : 16,
     },
 
-    button: {
-      marginTop: compacto ? 12 : 16,
+    readOnlyBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: theme.primary + '25',
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderRadius: 20,
+      marginTop: 13,
     },
 
+    readOnlyText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: theme.primary,
+    },
+
+    sectionTitle: {
+      fontSize: compacto ? 14 : 15,
+      fontWeight: '800',
+      color: theme.text,
+      marginBottom: 14,
+      marginTop: 8,
+    },
+
+    notice: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 10,
+      padding: 14,
+      marginTop: 12,
+      borderRadius: 12,
+      backgroundColor: theme.primary + '20',
+      borderWidth: 1,
+      borderColor: theme.primary + '55',
+    },
+
+    helperText: {
+      flex: 1,
+      fontSize: compacto ? 11 : 12,
+      color: theme.text,
+      fontWeight: '500',
+      lineHeight: compacto ? 16 : 18,
+    },
+
+    // Carregamento
     loading: {
       flex: 1,
       alignItems: 'center',
@@ -318,5 +477,9 @@ const createStyles = (theme: any, compacto: boolean) =>
       fontSize: compacto ? 13 : 14,
       color: theme.textMuted,
       textAlign: 'center',
+    },
+
+    infoSection: {
+      marginTop: 4,
     },
   });

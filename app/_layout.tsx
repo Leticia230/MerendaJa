@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
-import { LogBox } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { LogBox, View, ActivityIndicator } from 'react-native';
 
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -9,11 +9,14 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { useFonts } from 'expo-font';
 import { StripeProvider } from '@stripe/stripe-react-native';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 import {
   AccessibilityProvider,
   useAccessibility,
 } from '../components/AccessibilityContext';
+import { auth, db } from '../components/firebaseConfig';
 
 LogBox.ignoreAllLogs(true);
 
@@ -21,6 +24,31 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function ThemedApp() {
   const { isDark, theme } = useAccessibility();
+  const router = useRouter();
+  const [carregando, setCarregando] = useState(true);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      try {
+        if (!user) {
+          // ajuste para o caminho real da sua tela de login
+          router.replace('/Login');
+        } else {
+          const snap = await getDoc(doc(db, 'users', user.uid));
+          const tipo = snap.data()?.tipo; // aluno ou instituicao
+          // ajuste para os caminhos reais das suas áreas
+          router.replace(
+          tipo === 'instituicao' ? '/(tabs-instituicao)/Home' : '/(tabs-aluno)/Home'
+        );
+        }
+      } catch (e) {
+        router.replace('/Login');
+      } finally {
+        setCarregando(false);
+      }
+    });
+    return unsub;
+  }, []);
 
   return (
     <>
@@ -35,6 +63,23 @@ function ThemedApp() {
           },
         }}
       />
+
+      {carregando && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: theme.background,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <ActivityIndicator size="large" color={theme.primary} />
+        </View>
+      )}
     </>
   );
 }
@@ -93,9 +138,7 @@ export default function RootLayout() {
 
   return (
     <StripeProvider
-      publishableKey={
-        process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY!
-      }
+      publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY!}
     >
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>

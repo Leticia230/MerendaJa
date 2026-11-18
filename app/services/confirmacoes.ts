@@ -86,6 +86,11 @@ function obterTipoRefeicao(tipo: string) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
 
+  // O lanche vem primeiro para "Lanche da manhã" não virar café.
+  if (texto.includes('lanche')) {
+    return 'lanche';
+  }
+
   if (
     texto.includes('cafe') ||
     texto.includes('manha')
