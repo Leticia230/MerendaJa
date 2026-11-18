@@ -28,21 +28,17 @@
       "favicon": "./assets/logo2.png"
     },
     "plugins": [
-  "expo-router",
-  [
-    "expo-splash-screen",
-    {
-      "image": "./assets/splash-transparente.png",
-      "imageWidth": 1,
-      "resizeMode": "contain",
-      "backgroundColor": "#FFFFFF",
-      "dark": {
-        "image": "./assets/splash-transparente.png",
-        "backgroundColor": "#FFFFFF"
-      }
-    }
-  ]
-  ],
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon-transparente.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF"
+        }
+      ]
+    ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
