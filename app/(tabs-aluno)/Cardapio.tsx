@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
@@ -143,6 +144,22 @@ export default function CardapioAlunoScreen() {
               </View>
             ))
           )}
+
+          {/* Aviso sobre possíveis alterações no cardápio */}
+          {!carregando && (
+            <View style={styles.notice}>
+              <MaterialCommunityIcons
+                name="information-outline"
+                size={20}
+                color={theme.textMuted}
+              />
+
+              <Text style={styles.noticeText}>
+                As refeições podem sofrer alterações. Este cardápio representa
+                apenas o planejamento previsto pela instituição.
+              </Text>
+            </View>
+          )}
         </ResponsiveContainer>
       </ScrollView>
     </SafeAreaView>
@@ -284,5 +301,25 @@ const createStyles = (theme: any, compacto = false) =>
     mealIconCompact: {
       width: 46,
       height: 46,
+    },
+
+    notice: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 10,
+      backgroundColor: theme.card,
+      borderRadius: 12,
+      padding: 14,
+      marginTop: 4,
+      marginBottom: 8,
+      borderWidth: theme.borderWidth || 1,
+      borderColor: theme.border,
+    },
+
+    noticeText: {
+      flex: 1,
+      fontSize: 12,
+      lineHeight: 18,
+      color: theme.textMuted,
     },
   });

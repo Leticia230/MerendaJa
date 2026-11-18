@@ -23,6 +23,7 @@ import {
 import {
   Refeicao,
   TipoRefeicao,
+  Periodo as PeriodoRefeicao,
   adicionarRefeicaoNaData,
   assinarDatasComCardapio,
   atualizarRefeicaoDaData,
@@ -50,7 +51,44 @@ const CATEGORIAS: { id: TipoRefeicao; nome: string }[] = [
   { id: 'cafe', nome: 'Café da manhã' },
   { id: 'almoco', nome: 'Almoço' },
   { id: 'jantar', nome: 'Jantar' },
+  { id: 'lanche', nome: 'Lanche' },
 ];
+
+const PERIODOS: { id: PeriodoRefeicao; nome: string }[] = [
+  { id: 'manha', nome: 'Manhã' },
+  { id: 'tarde', nome: 'Tarde' },
+  { id: 'noite', nome: 'Noite' },
+  { id: 'todos', nome: 'Todos' },
+];
+
+const HORARIO_REGEX = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+
+// Aceita apenas números e monta o formato HH:MM automaticamente.
+function formatarHorario(texto: string) {
+  const digitos = texto.replace(/\D/g, '').slice(0, 4);
+
+  if (digitos.length <= 2) return digitos;
+
+  return `${digitos.slice(0, 2)}:${digitos.slice(2)}`;
+}
+
+// Se vier um horário antigo (ex.: "11:30 - 12:30"), aproveita o primeiro HH:MM.
+function horarioInicial(valor?: string) {
+  if (!valor) return '';
+
+  const encontrado = valor.match(/([01]?\d|2[0-3]):([0-5]\d)/);
+
+  if (!encontrado) return '';
+
+  return `${encontrado[1].padStart(2, '0')}:${encontrado[2]}`;
+}
+
+// Garante que só valores válidos de período entrem pelos parâmetros da rota.
+function periodoInicial(valor?: string): PeriodoRefeicao {
+  return PERIODOS.some((p) => p.id === valor)
+    ? (valor as PeriodoRefeicao)
+    : 'todos';
+}
 
 LocaleConfig.locales['pt-br'] = {
   monthNames: [
@@ -139,6 +177,7 @@ export default function AddRefeicao() {
     icon?: string;
     color?: string;
     tipo?: TipoRefeicao;
+    periodo?: string;
   }>();
 
   const modoEdicao = params.index !== undefined;
@@ -150,14 +189,17 @@ export default function AddRefeicao() {
   );
 
   const [datasComCardapio, setDatasComCardapio] = useState<string[]>([]);
-  const [titulo, setTitulo] = useState(params.titulo ?? '');
-  const [horario, setHorario] = useState(params.horario ?? '');
+  const [horario, setHorario] = useState(horarioInicial(params.horario));
   const [desc, setDesc] = useState(params.desc ?? '');
   const [icon, setIcon] = useState(params.icon ?? ICONES[0]);
   const [color, setColor] = useState(params.color ?? CORES[0]);
 
   const [tipo, setTipo] = useState<TipoRefeicao | ''>(
     params.tipo ?? ''
+  );
+
+  const [periodo, setPeriodo] = useState<PeriodoRefeicao>(
+    periodoInicial(params.periodo)
   );
 
   const [salvando, setSalvando] = useState(false);
@@ -167,6 +209,12 @@ export default function AddRefeicao() {
 
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState(false);
+
+  // O título da refeição é o nome da categoria escolhida.
+  const tituloRefeicao =
+    CATEGORIAS.find((c) => c.id === tipo)?.nome ??
+    params.titulo ??
+    '';
 
   useEffect(() => {
     if (modoEdicao) return;
@@ -204,7 +252,6 @@ export default function AddRefeicao() {
     setErro(null);
     setSucesso(false);
 
-    const tituloNormalizado = titulo.trim();
     const descNormalizado = desc.trim();
 
     if (!data) {
@@ -219,28 +266,39 @@ export default function AddRefeicao() {
       return;
     }
 
-    if (!tituloNormalizado || !descNormalizado || !horario.trim()) {
+    if (!tipo) {
+      setErro('Selecione a categoria da refeição.');
+      return;
+    }
+
+    if (!horario.trim()) {
+      setErro('Informe o horário da refeição.');
+      return;
+    }
+
+    if (!HORARIO_REGEX.test(horario)) {
       setErro(
-        'Preencha o título, o horário e a descrição da refeição.'
+        'Horário inválido. Use o formato HH:MM, entre 00:00 e 23:59.'
       );
       return;
     }
 
-    if (!tipo) {
-      setErro('Selecione a categoria da refeição.');
+    if (!descNormalizado) {
+      setErro('Preencha a descrição da refeição.');
       return;
     }
 
     setSalvando(true);
 
     const refeicao: Refeicao = {
-      titulo: tituloNormalizado,
-      horario: horario.trim(),
+      titulo: tituloRefeicao,
+      horario,
       desc: descNormalizado,
       icon,
       color,
       data,
       tipo,
+      periodo,
     };
 
     try {
@@ -317,7 +375,7 @@ export default function AddRefeicao() {
   function confirmarExclusao() {
     Alert.alert(
       'Excluir refeição',
-      `Tem certeza que deseja excluir "${titulo}" de ${dataPorExtenso(data)}? Essa ação não pode ser desfeita.`,
+      `Tem certeza que deseja excluir "${tituloRefeicao}" de ${dataPorExtenso(data)}? Essa ação não pode ser desfeita.`,
       [
         {
           text: 'Cancelar',
@@ -480,23 +538,63 @@ export default function AddRefeicao() {
               ))}
             </View>
 
-            <LabeledInput
-              testID="refeicao-titulo-input"
-              label="Título"
-              placeholder="Ex: Almoço"
-              editable={!salvando}
-              value={titulo}
-              onChangeText={setTitulo}
-              containerStyle={styles.inputTitulo}
-            />
+            <Text style={styles.label}>
+              Período
+            </Text>
+
+            <View style={styles.row}>
+              {PERIODOS.map((item) => (
+                <Pressable
+                  key={item.id}
+                  testID={`periodo-${item.id}`}
+                  onPress={() => setPeriodo(item.id)}
+                  disabled={salvando}
+                  style={[
+                    styles.categoriaOption,
+                    periodo === item.id && styles.categoriaOptionActive,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Período ${item.nome}`}
+                  accessibilityState={{
+                    selected: periodo === item.id,
+                    disabled: salvando,
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.categoriaText,
+                      periodo === item.id && styles.categoriaTextActive,
+                    ]}
+                  >
+                    {item.nome}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <Text style={styles.hint}>
+              {periodo === 'todos'
+                ? 'A refeição aparece para todos os períodos.'
+                : `A refeição aparece somente para quem estuda no período da ${
+                    periodo === 'manha'
+                      ? 'manhã'
+                      : periodo === 'tarde'
+                        ? 'tarde'
+                        : 'noite'
+                  }.`}
+            </Text>
 
             <LabeledInput
               testID="refeicao-horario-input"
               label="Horário"
-              placeholder="Ex: 11:30 - 12:30"
+              placeholder="HH:MM (ex.: 11:30)"
+              keyboardType="number-pad"
+              maxLength={5}
               editable={!salvando}
               value={horario}
-              onChangeText={setHorario}
+              onChangeText={(texto: string) =>
+                setHorario(formatarHorario(texto))
+              }
               containerStyle={styles.inputPadrao}
             />
 
@@ -830,10 +928,6 @@ const createStyles = (
       color: theme.text,
       fontSize: 14,
       fontWeight: '700',
-    },
-
-    inputTitulo: {
-      marginTop: 16,
     },
 
     inputPadrao: {

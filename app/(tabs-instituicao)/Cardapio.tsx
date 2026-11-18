@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Refeicao, assinarCardapioData } from '../services/cardapio';
+import { NOME_PERIODO } from '../services/periodo';
 import Text from '../../components/AppText';
 import {
   useAccessibility,
@@ -92,6 +93,7 @@ export default function CardapioScreen() {
         icon: refeicao.icon,
         color: refeicao.color,
         tipo: refeicao.tipo ?? '',
+        periodo: refeicao.periodo ?? 'todos',
       },
     });
   }
@@ -200,11 +202,24 @@ export default function CardapioScreen() {
                 testID={`cardapio-meal-${i}`}
                 onPress={() => abrirEdicao(m, i)}
                 accessibilityRole="button"
-                accessibilityLabel={`Editar refeição ${m.titulo}, ${m.horario}`}
+                accessibilityLabel={`Editar refeição ${m.titulo}, ${m.horario}, ${NOME_PERIODO[m.periodo ?? 'todos']}`}
               >
                 <View style={styles.mealInfo}>
                   <Text style={styles.mealTitle}>{m.titulo}</Text>
                   <Text style={styles.mealHorario}>{m.horario}</Text>
+
+                  <View style={styles.periodoBadge}>
+                    <MaterialCommunityIcons
+                      name="account-group-outline"
+                      size={12}
+                      color={theme.primaryDark}
+                    />
+
+                    <Text style={styles.periodoBadgeText}>
+                      {NOME_PERIODO[m.periodo ?? 'todos']}
+                    </Text>
+                  </View>
+
                   <Text style={styles.mealDesc}>{m.desc}</Text>
                 </View>
 
@@ -396,6 +411,25 @@ const createStyles = (
       fontWeight: '700',
       marginBottom: 2,
       flexShrink: 1,
+    },
+
+    periodoBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      gap: 4,
+      backgroundColor: theme.soft,
+      borderRadius: 8,
+      paddingHorizontal: 7,
+      paddingVertical: 3,
+      marginTop: 4,
+      marginBottom: 4,
+    },
+
+    periodoBadgeText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: theme.primaryDark,
     },
 
     mealDesc: {

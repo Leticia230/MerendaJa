@@ -1,3 +1,4 @@
+
 import React, { useEffect, useMemo, useState } from 'react';
 
 import {
@@ -280,16 +281,32 @@ export default function ProfileScreen() {
               onChangeText={setInep}
             />
 
-            <LabeledInput
-              testID="profile-email-input"
-              label="E-mail profissional"
-              placeholder="seu@email.com"
-              autoCapitalize="none"
-              keyboardType="email-address"
-              editable={false}
-              value={email}
-              onChangeText={setEmail}
-            />
+            {/* E-mail somente para visualização */}
+            <View style={styles.emailCard}>
+              <View style={styles.emailIcon}>
+                <Ionicons
+                  name="mail-outline"
+                  size={21}
+                  color={theme.primary}
+                />
+              </View>
+
+              <View style={styles.emailContent}>
+                <Text style={styles.emailLabel}>
+                  E-mail profissional
+                </Text>
+
+                <Text style={styles.emailValue}>
+                  {email || 'Não informado'}
+                </Text>
+              </View>
+
+              <Ionicons
+                name="lock-closed-outline"
+                size={16}
+                color={theme.textMuted}
+              />
+            </View>
 
             <BotaoPrimario
               testID="profile-save-button"
@@ -348,6 +365,45 @@ const createStyles = (theme: any, compacto: boolean) =>
         height: 4,
       },
       elevation: 4,
+    },
+
+    // Cartão do e-mail não editável
+    emailCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.card,
+      borderRadius: 14,
+      padding: 15,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: theme.primary + '50',
+    },
+
+    emailIcon: {
+      width: 42,
+      height: 42,
+      borderRadius: 12,
+      backgroundColor: theme.primary + '25',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 13,
+    },
+
+    emailContent: {
+      flex: 1,
+    },
+
+    emailLabel: {
+      fontSize: 12,
+      color: theme.textMuted,
+      fontWeight: '600',
+      marginBottom: 4,
+    },
+
+    emailValue: {
+      fontSize: 14,
+      color: theme.text,
+      fontWeight: '700',
     },
 
     button: {
